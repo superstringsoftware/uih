@@ -28,7 +28,7 @@ mainWindow = WindowConfig
   , windowOpenGL       = Nothing
   , windowPosition     = Wherever
   , windowResizable    = True
-  , windowInitialSize  = V2 1600 1200
+  , windowInitialSize  = V2 2400 1800
   }
 
 arial :: String
@@ -55,6 +55,8 @@ main = do
   present renderer
 
   appLoop renderer
+  TTF.quit
+  destroyTexture textTexture
 
 appLoop :: Renderer -> IO ()
 appLoop renderer = do
@@ -69,6 +71,7 @@ appLoop renderer = do
 
 
   unless qPressed (appLoop renderer)
+
 
 
 

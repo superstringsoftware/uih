@@ -1,23 +1,31 @@
 {-# LANGUAGE OverloadedStrings #-}
 module SDLText where
 
-import SDL.TTF as TTF
+import SDL.TTF
+import SDL.TTF.FFI (TTFFont)
 import qualified SDL.Raw as Raw
 import SDL as SDL
+
+import Foreign.C.Types (CInt)
 
 import SDL.Vect
 
 defaultFontPath :: String
 defaultFontPath = "/home/aantich/dev/dropbox/Haskell/uih/ARIAL.TTF"
 
-defaultFont size = TTF.openFont defaultFontPath size
+defaultFont :: Int -> IO TTFFont
+defaultFont size = openFont defaultFontPath size
 
+-- creates text texture from a given String
+createTextTexture :: String -> Raw.Color -> TTFFont -> Renderer -> IO Texture
 createTextTexture text color font renderer = do
-    textSurface <- TTF.renderUTF8Blended font text color
-    textTexture <- SDL.createTextureFromSurface renderer textSurface
-    SDL.freeSurface textSurface
+    textSurface <- renderUTF8Blended font text color
+    textTexture <- createTextureFromSurface renderer textSurface
+    freeSurface textSurface
     return textTexture
 
+-- render a given texture at x y coordinates
+renderTexture :: CInt -> CInt -> Texture -> Renderer -> IO ()
 renderTexture x y texture renderer = do
     ti <- queryTexture texture
     -- putStrLn $ "Size is " ++ (show ti)
