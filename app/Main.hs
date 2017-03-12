@@ -3,6 +3,7 @@ module Main where
 
 import Logger
 import SDLText
+import Color
 
 import Foreign.C.String
 import Foreign.Marshal.Alloc
@@ -42,14 +43,16 @@ main = do
   window <- createWindow "My SDL Application" mainWindow
   renderer <- createRenderer window (-1) defaultRenderer
 
-  rendererDrawColor renderer $= V4 0 0 0 0
+  setRenderDrawColorRGBA renderer mdWhite
+  -- rendererDrawColor renderer $= V4 0 0 0 0
   clear renderer
-  rendererDrawColor renderer $= V4 255 255 255 10
-  let rect = Rectangle (P (V2 10 10)) (V2 600 600)
-  -- fillRect renderer (Just rect)
+  -- rendererDrawColor renderer $= V4 255 255 255 10
+  setRenderDrawColorRGBA renderer $ mdGrey 500
+  let rect = Rectangle (P (V2 500 500)) (V2 600 600)
+  fillRect renderer (Just rect)
 
   font <- defaultFont 32
-  textTexture <- createTextTexture "some text -- hello world!" (Raw.Color 127 11 255 0) font renderer
+  textTexture <- createTextTexture "some text -- hello world!" (mdGrey 900) font renderer
   renderTexture 10 10 textTexture renderer
 
   present renderer
