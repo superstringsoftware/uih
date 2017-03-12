@@ -1,9 +1,10 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, DuplicateRecordFields #-}
 module Main where
 
 import Logger
 import SDLText
 import Color
+import Box
 
 import Foreign.C.String
 import Foreign.Marshal.Alloc
@@ -46,10 +47,12 @@ main = do
   setRenderDrawColorRGBA renderer mdWhite
   -- rendererDrawColor renderer $= V4 0 0 0 0
   clear renderer
-  -- rendererDrawColor renderer $= V4 255 255 255 10
-  setRenderDrawColorRGBA renderer $ mdGrey 500
-  let rect = Rectangle (P (V2 500 500)) (V2 600 600)
-  fillRect renderer (Just rect)
+
+  let box = Box {width = 600, height = 120, color = mdGrey 300,
+    shadow = Nothing,
+    border = Just $ Border {width = 2, color = mdBlue 500},
+    padding = V4 0 0 0 0}
+  renderBox 500 500 box renderer
 
   font <- defaultFont 32
   textTexture <- createTextTexture "some text -- hello world!" (mdGrey 900) font renderer

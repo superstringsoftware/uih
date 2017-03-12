@@ -18,10 +18,12 @@ library
   exposed-modules:     Logger
                      , SDLText
                      , Color
+                     , Box
   build-depends:       base >= 4.7 && < 5
                      , clock
                      , sdl2
                      , sdl2-ttf
+                     , linear
   default-language:    Haskell2010
 
 executable uih-exe
