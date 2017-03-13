@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings, DuplicateRecordFields  #-}
-module SDLText where
+module SDL.Bindings where
 
 import Control.Monad.IO.Class
 
@@ -13,7 +13,7 @@ import Foreign.C.Types (CInt)
 
 import SDL.Vect
 import Color
-import Box
+import CSS.Box
 
 -- setting Renderer Draw color based on RGBA values we define in Color
 setRenderDrawColorRGBA ::  MonadIO m => Renderer -> RGBA -> m CInt
@@ -51,26 +51,38 @@ renderBox x y box ren = do
     let w = fromIntegral $ width (box::Box)
     let h = fromIntegral $ height box
 
-    -- drawing border
-    if ( (border box) /= Nothing) then do
-        let (Just brd) = border box
-        let bw = fromIntegral $ width (brd :: Border)
-        let r1 = Rectangle (P (V2 x (y-bw))) (V2 w bw) -- top border
-        let r2 = Rectangle (P (V2 (x+w) (y-bw))) (V2 bw (h+bw+bw)) -- right border
-        let r3 = Rectangle (P (V2 x (y+h))) (V2 w bw) -- bottom border
-        let r4 = Rectangle (P (V2 (x-bw) (y-bw))) (V2 bw (h+bw+bw)) -- left border
-
-        setRenderDrawColorRGBA ren $ color (brd :: Border)
-        fillRect ren (Just r1)
-        fillRect ren (Just r2)
-        fillRect ren (Just r3)
-        fillRect ren (Just r4)
-    else do return ()
-
+    -- drawing borders
+    let topWidth = convertBorderWidth (borderTop box)
+    let bottomWidth = convertBorderWidth (borderBottom box)
+    renderBorder x y w (borderTop box) ren borderRectangleTop
+    renderBorder x (y+h) w (borderBottom box) ren borderRectangleBottom
+    renderBorder (x+w) (y-topWidth) (h+bottomWidth+topWidth) (borderRight box) ren borderRectangleRight
+    renderBorder x (y-topWidth) (h+bottomWidth+topWidth) (borderLeft box) ren borderRectangleLeft
+    
     -- draw main box
     setRenderDrawColorRGBA ren $ color (box :: Box)
     let rect = Rectangle (P (V2 x y)) (V2 w h)
     fillRect ren (Just rect)
+
+-- render horizontal border, x y - coordinates of the start of the border, l - length.
+-- receives one of borderRectangleX functions to setup a correct rectangle
+-- renderBorder :: CInt -> CInt -> CInt -> Maybe Border -> Renderer -> IO ()
+renderBorder x y l border ren recFunc = do
+    -- drawing border
+    if ( border /= Nothing) then do
+        let (Just brd) = border
+        let bw = fromIntegral $ width (brd :: Border)
+        let r = recFunc x y bw l
+        setRenderDrawColorRGBA ren $ color (brd :: Border)
+        fillRect ren (Just r)
+    else do return ()
+
+-- generate rectangles based on the border length, width and starting point
+borderRectangleTop x y bw l =       Rectangle (P (V2 x (y-bw))) (V2 l bw)
+borderRectangleBottom x y bw l =    Rectangle (P (V2 x y)) (V2 l bw)
+borderRectangleLeft x y bw l =      Rectangle (P (V2 (x-bw) y)) (V2 bw l)
+borderRectangleRight x y bw l =     Rectangle (P (V2 x y)) (V2 bw l)
+
 
 {-
 renderBoxShadow :: CInt -> CInt -> Box -> Renderer -> IO ()

@@ -16,9 +16,10 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Logger
-                     , SDLText
+                     , SDL.Bindings
+                     , SDL.InputText
                      , Color
-                     , Box
+                     , CSS.Box
   build-depends:       base >= 4.7 && < 5
                      , clock
                      , sdl2

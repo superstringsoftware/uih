@@ -2,9 +2,9 @@
 module Main where
 
 import Logger
-import SDLText
+import SDL.Bindings
 import Color
-import Box
+import CSS.Box
 
 import Foreign.C.String
 import Foreign.Marshal.Alloc
@@ -44,19 +44,23 @@ main = do
   window <- createWindow "My SDL Application" mainWindow
   renderer <- createRenderer window (-1) defaultRenderer
 
-  setRenderDrawColorRGBA renderer mdWhite
+  setRenderDrawColorRGBA renderer $ mdGrey 900
   -- rendererDrawColor renderer $= V4 0 0 0 0
   clear renderer
 
-  let box = Box {width = 600, height = 120, color = mdGrey 300,
+  let box = Box {width = 1200, height = 120, color = mdGrey 300,
     shadow = Nothing,
-    border = Just $ Border {width = 2, color = mdBlue 500},
-    padding = V4 0 0 0 0}
+    borderTop = Just $ Border {widthI = PX 4, style = Solid, width = 4, color = mdBlue 500},
+    borderRight = Just $ Border {widthI = PX 4, style = Solid, width = 4, color = mdBlue 500},
+    borderBottom = Just $ Border {widthI = PX 4, style = Dashed, width = 8, color = mdBlue 500},
+    borderLeft = Just $ Border {widthI = PX 4, style = Solid, width = 8, color = mdBlue 500},
+    padding = V4 0 0 0 0,
+    margin = V4 0 0 0 0}
   renderBox 500 500 box renderer
 
-  font <- defaultFont 32
+  font <- defaultFont 64
   textTexture <- createTextTexture "some text -- hello world!" (mdGrey 900) font renderer
-  renderTexture 10 10 textTexture renderer
+  renderTexture 520 520 textTexture renderer
 
   present renderer
 
