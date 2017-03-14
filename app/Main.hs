@@ -21,6 +21,8 @@ import SDL.Vect
 
 import SDL.TTF as TTF
 
+import qualified SDL.Primitive as GFX -- sdl2-gfx, seems to work, performance is a question
+
 mainWindow :: WindowConfig
 mainWindow = WindowConfig
   { windowBorder       = True
@@ -61,6 +63,10 @@ main = do
   font <- defaultFont 64
   textTexture <- createTextTexture "some text -- hello world!" (mdGrey 900) font renderer
   renderTexture 520 520 textTexture renderer
+
+  GFX.circle renderer (V2 800 1200) 200 (V4 200 50 50 255)
+  GFX.smoothCircle renderer (V2 1500 1200) 300 (V4 200 50 50 255)
+
 
   present renderer
 

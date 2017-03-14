@@ -15,6 +15,8 @@ import SDL.Vect
 import Color
 import CSS.Box
 
+import GHC.Prim
+
 -- setting Renderer Draw color based on RGBA values we define in Color
 setRenderDrawColorRGBA ::  MonadIO m => Renderer -> RGBA -> m CInt
 setRenderDrawColorRGBA (Renderer ren) rgba = Raw.setRenderDrawColor ren (r rgba) (g rgba) (b rgba) (a rgba)
@@ -58,7 +60,7 @@ renderBox x y box ren = do
     renderBorder x (y+h) w (borderBottom box) ren borderRectangleBottom
     renderBorder (x+w) (y-topWidth) (h+bottomWidth+topWidth) (borderRight box) ren borderRectangleRight
     renderBorder x (y-topWidth) (h+bottomWidth+topWidth) (borderLeft box) ren borderRectangleLeft
-    
+
     -- draw main box
     setRenderDrawColorRGBA ren $ color (box :: Box)
     let rect = Rectangle (P (V2 x y)) (V2 w h)
