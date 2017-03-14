@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, DuplicateRecordFields #-}
+{-# LANGUAGE OverloadedStrings, DuplicateRecordFields, GADTs #-}
 module Screen.TestUI where
 
 import Color
@@ -7,8 +7,8 @@ import Linear
 import Screen.RawWidgets
 
 -- given width and height of the main window return a widget
-mainMenu :: Int -> Int -> Panel
-mainMenu w h = Panel {
+mainMenu :: Int -> Int -> Widget
+mainMenu w h = WPanel $ Panel {
     box = Box {width = w, height = 60, color = mdGrey 100,
         globalX = 0, globalY = 0, parentX = 0, parentY = 0},
     shadow = Nothing,
@@ -19,8 +19,15 @@ mainMenu w h = Panel {
     padding = V4 0 0 0 0
 }
 
-secondMenu :: Int -> Int -> Panel
-secondMenu w h = Panel {
+mFile = WTextLabel $ TextLabel {
+    textBox = Box {width = 100, height = 40, color = mdBlack,
+        globalX = 10, globalY = 16, parentX = 0, parentY = 0},
+    text = "File",
+    fontSize = 14
+}
+
+secondMenu :: Int -> Int -> Widget
+secondMenu w h = WPanel $ Panel {
     box = Box {width = w, height = 260, color = mdBlue 500,
         globalX = 0, globalY = 61, parentX = 0, parentY = 0},
     shadow = Nothing,
@@ -31,8 +38,8 @@ secondMenu w h = Panel {
     padding = V4 0 0 0 0
 }
 
-leftCol :: Int -> Int -> Panel
-leftCol w h = Panel {
+leftCol :: Int -> Int -> Widget
+leftCol w h = WPanel $ Panel {
     box = Box {width = 500, height = h - 325, color = mdWhite,
         globalX = 0, globalY = 325, parentX = 0, parentY = 0},
     shadow = Nothing,
@@ -43,5 +50,5 @@ leftCol w h = Panel {
     padding = V4 0 0 0 0
 }
 
-fullUI :: Int -> Int -> [Panel]
-fullUI w h = [mainMenu w h, secondMenu w h, leftCol w h]
+fullUI :: Int -> Int -> [Widget]
+fullUI w h = [mainMenu w h, secondMenu w h, leftCol w h, mFile]

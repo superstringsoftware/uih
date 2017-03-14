@@ -19,11 +19,31 @@ import GHC.Prim
 
 import Screen.RawWidgets
 
+-- import Data.Text hiding (copy)
+
+-- UGLY UGLY HACK!!! need to figure out how to handle state
+globalFont = defaultFont 32
+
 -- every graphics binding should define Renderable class and instances for all widgets
 -- this is for SDL
 class Renderable a where
     render :: Renderer -> a -> CInt -> CInt -> IO ()
     renderGlobal :: Renderer -> a -> IO ()
+
+instance Renderable Widget where
+    renderGlobal ren (WPanel p) = renderGlobal ren p
+    renderGlobal ren (WTextLabel t) = renderGlobal ren t
+
+instance Renderable TextLabel where
+    render renderer tl x y = do
+        font <- globalFont
+        let box = textBox tl
+        textTexture <- createTextTexture (text tl) (color (box::Box) ) font renderer
+        renderTexture x y textTexture renderer
+    renderGlobal ren tl = let box = textBox tl
+                              x = (fromIntegral $ globalX box)
+                              y = (fromIntegral $ globalY box)
+                              in render ren tl x y
 
 instance Renderable Box where
     render ren box x y = do

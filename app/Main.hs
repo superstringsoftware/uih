@@ -44,7 +44,7 @@ arial = "/home/aantich/dev/dropbox/Haskell/uih/ARIAL.TTF"
 main :: IO ()
 main = do
   initializeAll
-  -- TTF.init
+  TTF.init
 
   window <- createWindow "My SDL Application" mainWindow
   renderer <- createRenderer window (-1) defaultRenderer
@@ -57,17 +57,10 @@ main = do
 
 appLoop :: Renderer -> IO ()
 appLoop renderer = do
-  events <- pollEvents
-  let eventIsQPress event =
-        case eventPayload event of
-          KeyboardEvent keyboardEvent ->
-            keyboardEventKeyMotion keyboardEvent == Pressed &&
-            keysymKeycode (keyboardEventKeysym keyboardEvent) == KeycodeQ
-          _ -> False
-      qPressed = any eventIsQPress events
-
-  mapM_ (checkEvent renderer) events
-  unless qPressed (appLoop renderer)
+  events <- pollEvents -- get the events queue from SDL
+  results <- mapM (checkEvent renderer) events -- gather results
+  let quit = any (== True) results -- checking if any of the results is True
+  unless quit (appLoop renderer)
 
 renderUI :: Int -> Int -> Renderer -> IO ()
 renderUI w h renderer = do
@@ -77,13 +70,20 @@ renderUI w h renderer = do
     mapM_ (renderGlobal renderer) (fullUI w h)
     present renderer
 
+-- returns True if need to quit, false otherwise
+checkEvent :: Renderer -> Event -> IO Bool
 checkEvent renderer event = do
     case eventPayload event of
         WindowResizedEvent dt -> do
             let (V2 w h) = windowResizedEventSize dt
             -- putStrLn $ "Window resized - " ++ show w ++ " " ++ show h
             renderUI (fromIntegral w) (fromIntegral h) renderer
-        _ -> return ()
+            return False
+        QuitEvent -> return True
+        KeyboardEvent keyboardEvent -> do
+            return $ keyboardEventKeyMotion keyboardEvent == Pressed &&
+                keysymKeycode (keyboardEventKeysym keyboardEvent) == KeycodeQ
+        _ -> return False
 
 
 

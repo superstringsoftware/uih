@@ -6,6 +6,10 @@ import Linear
 
 import Foreign.C.Types (CInt)
 
+-- type holding all widget types to process child / parent etc stuff
+data Widget = WBox Box | WPanel Panel | WTextLabel TextLabel | EmptyWidget
+data WidgetParent = WidgetParent Widget [Widget]
+
 -- line styles used in borders - "none" will be Nothing
 data LineStyle = Solid | Dotted | Dashed deriving (Show, Eq)
 
@@ -47,4 +51,11 @@ data Panel = Panel {
     borderBottom :: Maybe Border,
     borderLeft :: Maybe Border,
     padding :: V4 Int -- internal padding for the elements
+} deriving (Show, Eq)
+
+-- basic text label
+data TextLabel = TextLabel {
+    textBox :: Box,
+    text :: String,
+    fontSize :: !Int
 } deriving (Show, Eq)
