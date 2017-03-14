@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, DuplicateRecordFields #-}
+{-# LANGUAGE OverloadedStrings, DuplicateRecordFields, MagicHash #-}
 module Main where
 
 import SDL as SDL hiding (Vector)
@@ -18,6 +18,11 @@ import Data.Vector.Storable hiding (sequence, replicate, any)
 
 import Criterion.Measurement
 import Criterion.Main
+
+import GHC.Prim
+import GHC.Exts
+
+data UCPoint = UCP Int# Int#
 
 mainWindow :: WindowConfig
 mainWindow = WindowConfig

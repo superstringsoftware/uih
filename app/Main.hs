@@ -21,6 +21,8 @@ import SDL.Vect
 
 import SDL.TTF as TTF
 
+import Screen.RawWidgets
+
 import qualified SDL.Primitive as GFX -- sdl2-gfx, seems to work, performance is a question
 
 mainWindow :: WindowConfig
@@ -50,15 +52,19 @@ main = do
   -- rendererDrawColor renderer $= V4 0 0 0 0
   clear renderer
 
-  let box = Box {width = 1200, height = 120, color = mdGrey 300,
-    shadow = Nothing,
-    borderTop = Just $ Border {widthI = PX 4, style = Solid, width = 4, color = mdBlue 500},
-    borderRight = Just $ Border {widthI = PX 4, style = Solid, width = 4, color = mdBlue 500},
-    borderBottom = Just $ Border {widthI = PX 4, style = Dashed, width = 8, color = mdBlue 500},
-    borderLeft = Just $ Border {widthI = PX 4, style = Solid, width = 8, color = mdBlue 500},
-    padding = V4 0 0 0 0,
-    margin = V4 0 0 0 0}
-  renderBox 500 500 box renderer
+  let bx = Box {width = 1200, height = 120, color = mdGrey 300,
+      globalX = 500, globalY = 500, parentX = 500, parentY = 500}
+  let panel = Panel {
+        box = bx,
+        shadow = Nothing,
+        borderTop = Just $ Border {style = Solid, width = 4, color = mdBlue 500},
+        borderRight = Just $ Border {style = Solid, width = 4, color = mdBlue 500},
+        borderBottom = Just $ Border {style = Dashed, width = 8, color = mdBlue 500},
+        borderLeft = Just $ Border {style = Solid, width = 8, color = mdBlue 500},
+        padding = V4 0 0 0 0
+        }
+
+  renderGlobal renderer panel
 
   font <- defaultFont 64
   textTexture <- createTextTexture "some text -- hello world!" (mdGrey 900) font renderer

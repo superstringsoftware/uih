@@ -17,6 +17,44 @@ import CSS.Box
 
 import GHC.Prim
 
+import Screen.RawWidgets
+
+-- every graphics binding should define Renderable class and instances for all widgets
+-- this is for SDL
+class Renderable a where
+    render :: Renderer -> a -> CInt -> CInt -> IO ()
+    renderGlobal :: Renderer -> a -> IO ()
+
+instance Renderable Box where
+    render ren box x y = do
+        let w = fromIntegral $ width (box::Box)
+        let h = fromIntegral $ height box
+        -- draw main box
+        setRenderDrawColorRGBA ren $ color (box :: Box)
+        let rect = Rectangle (P (V2 x y)) (V2 w h)
+        fillRect ren (Just rect)
+    renderGlobal ren box = render ren box (fromIntegral $ globalX box) (fromIntegral $ globalY box)
+
+instance Renderable Panel where
+    render ren pan x y = do
+        let bx = box pan
+        let w = fromIntegral $ width (bx::Box)
+        let h = fromIntegral $ height bx
+
+        -- drawing borders
+        let topWidth = convertBorderWidth (borderTop pan)
+        let bottomWidth = convertBorderWidth (borderBottom pan)
+        renderBorder x y w (borderTop pan) ren borderRectangleTop
+        renderBorder x (y+h) w (borderBottom pan) ren borderRectangleBottom
+        renderBorder (x+w) (y-topWidth) (h+bottomWidth+topWidth) (borderRight pan) ren borderRectangleRight
+        renderBorder x (y-topWidth) (h+bottomWidth+topWidth) (borderLeft pan) ren borderRectangleLeft
+
+        -- draw main box
+        setRenderDrawColorRGBA ren $ color (bx :: Box)
+        let rect = Rectangle (P (V2 x y)) (V2 w h)
+        fillRect ren (Just rect)
+    renderGlobal ren pan = render ren pan (fromIntegral $ globalX $ box pan) (fromIntegral $ globalY $ box pan)
+
 -- setting Renderer Draw color based on RGBA values we define in Color
 setRenderDrawColorRGBA ::  MonadIO m => Renderer -> RGBA -> m CInt
 setRenderDrawColorRGBA (Renderer ren) rgba = Raw.setRenderDrawColor ren (r rgba) (g rgba) (b rgba) (a rgba)
@@ -48,23 +86,6 @@ renderTexture x y texture renderer = do
     let dest = Rectangle (P (V2 x y)) (V2 w h)
     copy renderer texture Nothing (Just dest)
 
-renderBox :: CInt -> CInt -> Box -> Renderer -> IO ()
-renderBox x y box ren = do
-    let w = fromIntegral $ width (box::Box)
-    let h = fromIntegral $ height box
-
-    -- drawing borders
-    let topWidth = convertBorderWidth (borderTop box)
-    let bottomWidth = convertBorderWidth (borderBottom box)
-    renderBorder x y w (borderTop box) ren borderRectangleTop
-    renderBorder x (y+h) w (borderBottom box) ren borderRectangleBottom
-    renderBorder (x+w) (y-topWidth) (h+bottomWidth+topWidth) (borderRight box) ren borderRectangleRight
-    renderBorder x (y-topWidth) (h+bottomWidth+topWidth) (borderLeft box) ren borderRectangleLeft
-
-    -- draw main box
-    setRenderDrawColorRGBA ren $ color (box :: Box)
-    let rect = Rectangle (P (V2 x y)) (V2 w h)
-    fillRect ren (Just rect)
 
 -- render horizontal border, x y - coordinates of the start of the border, l - length.
 -- receives one of borderRectangleX functions to setup a correct rectangle

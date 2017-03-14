@@ -1,20 +1,10 @@
 {-# LANGUAGE OverloadedStrings, DuplicateRecordFields #-}
-module CSS.Box () where
+module Screen.RawWidgets where
 
 import Color
 import Linear
 
 import Foreign.C.Types (CInt)
-
--- width, length, height etc based on CSS
-data Dimension = EM Int | -- em
-                 PX Int | -- px
-                 PC Int | -- percentage
-                 Auto     -- auto
-                 deriving (Show, Eq)
-
-dimToPixel :: Dimension -> Int
-dimToPixel (PX x) = x
 
 -- line styles used in borders - "none" will be Nothing
 data LineStyle = Solid | Dotted | Dashed deriving (Show, Eq)
@@ -27,7 +17,6 @@ data Shadow = Shadow {
 
 -- need to follow CSS eventually
 data Border = Border {
-    widthI :: Dimension, -- initial width, can be in differen dimensions
     width :: !Int,       -- computed width, ALWAYS in pixels
     color :: RGBA,
     style :: LineStyle
@@ -38,15 +27,24 @@ convertBorderWidth :: Maybe Border -> CInt
 convertBorderWidth Nothing = 0
 convertBorderWidth (Just b) = fromIntegral $ width (b :: Border)
 
+-- box without borders and other fancy stuff for quickly putting stuff on screen
 data Box = Box {
+    globalX :: !Int,
+    globalY :: !Int, -- top-left corner coordinates relative to the root window
+    parentX :: !Int,
+    parentY :: !Int, -- top-left corner coordinates relative to the parent
     width :: !Int,   -- computed width, ALWAYS in pixels
     height :: !Int,  -- computed height, ALWAYS in pixels
-    color :: RGBA,
+    color :: RGBA
+} deriving (Show, Eq)
+
+-- fancier box with shadow, borders and padding options
+data Panel = Panel {
+    box :: Box,
     shadow :: Maybe Shadow,
     borderTop :: Maybe Border,
     borderRight :: Maybe Border,
     borderBottom :: Maybe Border,
     borderLeft :: Maybe Border,
-    padding :: V4 Int, -- internal padding for the elements
-    margin :: V4 Int  -- external margin with other elements (as in CSS)
+    padding :: V4 Int -- internal padding for the elements
 } deriving (Show, Eq)
