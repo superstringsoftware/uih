@@ -22,6 +22,7 @@ import SDL.Vect
 import SDL.TTF as TTF
 
 import Screen.RawWidgets
+import Screen.TestUI
 
 import qualified SDL.Primitive as GFX -- sdl2-gfx, seems to work, performance is a question
 
@@ -43,42 +44,16 @@ arial = "/home/aantich/dev/dropbox/Haskell/uih/ARIAL.TTF"
 main :: IO ()
 main = do
   initializeAll
-  TTF.init
+  -- TTF.init
 
   window <- createWindow "My SDL Application" mainWindow
   renderer <- createRenderer window (-1) defaultRenderer
 
-  setRenderDrawColorRGBA renderer $ mdGrey 900
-  -- rendererDrawColor renderer $= V4 0 0 0 0
-  clear renderer
-
-  let bx = Box {width = 1200, height = 120, color = mdGrey 300,
-      globalX = 500, globalY = 500, parentX = 500, parentY = 500}
-  let panel = Panel {
-        box = bx,
-        shadow = Nothing,
-        borderTop = Just $ Border {style = Solid, width = 4, color = mdBlue 500},
-        borderRight = Just $ Border {style = Solid, width = 4, color = mdBlue 500},
-        borderBottom = Just $ Border {style = Dashed, width = 8, color = mdBlue 500},
-        borderLeft = Just $ Border {style = Solid, width = 8, color = mdBlue 500},
-        padding = V4 0 0 0 0
-        }
-
-  renderGlobal renderer panel
-
-  font <- defaultFont 64
-  textTexture <- createTextTexture "some text -- hello world!" (mdGrey 900) font renderer
-  renderTexture 520 520 textTexture renderer
-
-  GFX.circle renderer (V2 800 1200) 200 (V4 200 50 50 255)
-  GFX.smoothCircle renderer (V2 1500 1200) 300 (V4 200 50 50 255)
-
-
-  present renderer
+  renderUI 2400 1800 renderer
 
   appLoop renderer
   TTF.quit
-  destroyTexture textTexture
+  -- destroyTexture textTexture
 
 appLoop :: Renderer -> IO ()
 appLoop renderer = do
@@ -91,9 +66,24 @@ appLoop renderer = do
           _ -> False
       qPressed = any eventIsQPress events
 
-
+  mapM_ (checkEvent renderer) events
   unless qPressed (appLoop renderer)
 
+renderUI :: Int -> Int -> Renderer -> IO ()
+renderUI w h renderer = do
+    setRenderDrawColorRGBA renderer $ mdWhite
+    -- rendererDrawColor renderer $= V4 0 0 0 0
+    clear renderer
+    mapM_ (renderGlobal renderer) (fullUI w h)
+    present renderer
+
+checkEvent renderer event = do
+    case eventPayload event of
+        WindowResizedEvent dt -> do
+            let (V2 w h) = windowResizedEventSize dt
+            -- putStrLn $ "Window resized - " ++ show w ++ " " ++ show h
+            renderUI (fromIntegral w) (fromIntegral h) renderer
+        _ -> return ()
 
 
 
@@ -102,9 +92,14 @@ appLoop renderer = do
 
 
 
+{-
+font <- defaultFont 64
+textTexture <- createTextTexture "some text -- hello world!" (mdGrey 900) font renderer
+renderTexture 520 520 textTexture renderer
 
-
-
+GFX.circle renderer (V2 800 1200) 200 (V4 200 50 50 255)
+GFX.smoothCircle renderer (V2 1500 1200) 300 (V4 200 50 50 255)
+-}
 
 
 
