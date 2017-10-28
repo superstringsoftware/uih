@@ -14,75 +14,79 @@ import Foreign.Storable
 import System.Exit
 
 import qualified SDL.Raw as Raw hiding (free)
-import SDL as SDL
+import qualified SDL as SDL
 import Linear (V4(..))
 import Control.Monad (unless)
 import SDL.Vect
 
-import SDL.TTF as TTF
+import SDL.Fonts as TTF
 
 import Screen.RawWidgets
 import Screen.TestUI
 
+import System.Directory
+
+import SDL.SDLIO
+
 import qualified SDL.Primitive as GFX -- sdl2-gfx, seems to work, performance is a question
 
-mainWindow :: WindowConfig
-mainWindow = WindowConfig
-  { windowBorder       = True
-  , windowHighDPI      = True
-  , windowInputGrabbed = False
-  , windowMode         = Windowed
-  , windowOpenGL       = Nothing
-  , windowPosition     = Wherever
-  , windowResizable    = True
-  , windowInitialSize  = V2 2400 1800
-  }
+import Control.Monad.Trans.State.Strict 
+import Control.Monad.IO.Class (liftIO)
+--import Control.Monad.Trans (lift)
 
-arial :: String
-arial = "/home/aantich/dev/dropbox/Haskell/uih/ARIAL.TTF"
+program :: SDLIO ()
+program = do 
+    initializeAll >> TTF.initFonts
+    st <- get
+    let renderer = mainRenderer st
+    liftIO $ renderUI 1200 800 renderer
+    liftIO $ appLoop renderer
+
+runProgram :: SDLIO a -> IO a
+runProgram prog = evalStateT prog SDLEmptyState
 
 main :: IO ()
 main = do
-  initializeAll
-  TTF.init
+  putStrLn "Starting main..."
 
-  window <- createWindow "My SDL Application" mainWindow
-  renderer <- createRenderer window (-1) defaultRenderer
+  --fls <- listDirectory "/Library/Fonts"
+  --mapM_ print fls
+  runProgram program
+  
 
-  renderUI 2400 1800 renderer
 
-  appLoop renderer
-  TTF.quit
-  -- destroyTexture textTexture
-
-appLoop :: Renderer -> IO ()
+appLoop :: SDL.Renderer -> IO ()
 appLoop renderer = do
-  events <- pollEvents -- get the events queue from SDL
+  events <- SDL.pollEvents -- get the events queue from SDL
   results <- mapM (checkEvent renderer) events -- gather results
   let quit = any (== True) results -- checking if any of the results is True
   unless quit (appLoop renderer)
 
-renderUI :: Int -> Int -> Renderer -> IO ()
+renderUI :: Int -> Int -> SDL.Renderer -> IO ()
 renderUI w h renderer = do
     setRenderDrawColorRGBA renderer $ mdWhite
+    putStrLn "Inside renderUI: set color"
     -- rendererDrawColor renderer $= V4 0 0 0 0
-    clear renderer
+    SDL.clear renderer
+    putStrLn "Cleared renderer"
     mapM_ (renderGlobal renderer) (fullUI w h)
-    present renderer
+    putStrLn "Mapped all rendering actions"
+    SDL.present renderer
+    putStrLn "Presented renderer"
 
 -- returns True if need to quit, false otherwise
-checkEvent :: Renderer -> Event -> IO Bool
+checkEvent :: SDL.Renderer -> SDL.Event -> IO Bool
 checkEvent renderer event = do
-    case eventPayload event of
-        WindowResizedEvent dt -> do
-            let (V2 w h) = windowResizedEventSize dt
+    case SDL.eventPayload event of
+        SDL.WindowResizedEvent dt -> do
+            let (V2 w h) = SDL.windowResizedEventSize dt
             -- putStrLn $ "Window resized - " ++ show w ++ " " ++ show h
             renderUI (fromIntegral w) (fromIntegral h) renderer
             return False
-        QuitEvent -> return True
-        KeyboardEvent keyboardEvent -> do
-            return $ keyboardEventKeyMotion keyboardEvent == Pressed &&
-                keysymKeycode (keyboardEventKeysym keyboardEvent) == KeycodeQ
+        SDL.QuitEvent -> return True
+        SDL.KeyboardEvent keyboardEvent -> do
+            return $ SDL.keyboardEventKeyMotion keyboardEvent == SDL.Pressed &&
+                SDL.keysymKeycode (SDL.keyboardEventKeysym keyboardEvent) == SDL.KeycodeQ
         _ -> return False
 
 

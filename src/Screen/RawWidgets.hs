@@ -3,6 +3,7 @@ module Screen.RawWidgets where
 
 import Color
 import Linear
+import Data.Text
 
 import Foreign.C.Types (CInt)
 
@@ -12,6 +13,11 @@ data WidgetParent = WidgetParent Widget [Widget]
 
 -- line styles used in borders - "none" will be Nothing
 data LineStyle = Solid | Dotted | Dashed deriving (Show, Eq)
+
+data FontRep = FontRep {
+    fontName :: Text,
+    fontSize :: !Int
+} deriving (Show, Eq)
 
 data Shadow = Shadow {
     offsetX :: !Int,
@@ -56,6 +62,14 @@ data Panel = Panel {
 -- basic text label
 data TextLabel = TextLabel {
     textBox :: Box,
+    text :: String,
+    fontSize :: !Int
+} deriving (Show, Eq)
+
+-- 'fancy' text label - using Panel instead of plain Box
+-- can be used for Buttons or decorated text etc
+data FancyTextLabel = FancyTextLabel {
+    textPanel :: Panel,
     text :: String,
     fontSize :: !Int
 } deriving (Show, Eq)

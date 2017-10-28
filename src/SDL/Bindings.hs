@@ -3,8 +3,8 @@ module SDL.Bindings where
 
 import Control.Monad.IO.Class
 
-import SDL.TTF
-import SDL.TTF.FFI (TTFFont)
+--import SDL.TTF
+--import SDL.TTF.FFI (TTFFont)
 import qualified SDL.Raw as Raw
 import SDL as SDL
 import SDL.Internal.Types
@@ -22,7 +22,7 @@ import Screen.RawWidgets
 -- import Data.Text hiding (copy)
 
 -- UGLY UGLY HACK!!! need to figure out how to handle state
-globalFont = defaultFont 32
+--globalFont = defaultFont 32
 
 -- every graphics binding should define Renderable class and instances for all widgets
 -- this is for SDL
@@ -32,18 +32,20 @@ class Renderable a where
 
 instance Renderable Widget where
     renderGlobal ren (WPanel p) = renderGlobal ren p
-    renderGlobal ren (WTextLabel t) = renderGlobal ren t
+    -- renderGlobal ren (WTextLabel t) = renderGlobal ren t
 
+{- 
 instance Renderable TextLabel where
     render renderer tl x y = do
         font <- globalFont
         let box = textBox tl
-        textTexture <- createTextTexture (text tl) (color (box::Box) ) font renderer
+        textTexture <- createTextTexture (text (tl::TextLabel)) (color (box::Box) ) font renderer
         renderTexture x y textTexture renderer
     renderGlobal ren tl = let box = textBox tl
                               x = (fromIntegral $ globalX box)
                               y = (fromIntegral $ globalY box)
                               in render ren tl x y
+-}
 
 instance Renderable Box where
     render ren box x y = do
@@ -82,19 +84,6 @@ setRenderDrawColorRGBA (Renderer ren) rgba = Raw.setRenderDrawColor ren (r rgba)
 rgbaToSDLColor :: RGBA -> Raw.Color
 rgbaToSDLColor c = Raw.Color (r c) (g c) (b c) (a c)
 
-defaultFontPath :: String
-defaultFontPath = "/home/aantich/dev/dropbox/Haskell/uih/ARIAL.TTF"
-
-defaultFont :: Int -> IO TTFFont
-defaultFont size = openFont defaultFontPath size
-
--- creates text texture from a given String
-createTextTexture :: String -> RGBA -> TTFFont -> Renderer -> IO Texture
-createTextTexture text color font renderer = do
-    textSurface <- renderUTF8Blended font text $ rgbaToSDLColor color
-    textTexture <- createTextureFromSurface renderer textSurface
-    freeSurface textSurface
-    return textTexture
 
 -- render a given texture at x y coordinates
 renderTexture :: CInt -> CInt -> Texture -> Renderer -> IO ()
