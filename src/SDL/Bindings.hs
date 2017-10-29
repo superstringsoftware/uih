@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings, DuplicateRecordFields  #-}
 module SDL.Bindings where
 
+import Control.Monad.Trans.State.Strict 
 import Control.Monad.IO.Class
 
 --import SDL.TTF
@@ -19,6 +20,10 @@ import GHC.Prim
 
 import Screen.RawWidgets
 
+import SDL.SDLIO
+import SDL.Font (Font, solid, blended)
+import SDL.Fonts
+
 -- import Data.Text hiding (copy)
 
 -- UGLY UGLY HACK!!! need to figure out how to handle state
@@ -27,38 +32,50 @@ import Screen.RawWidgets
 -- every graphics binding should define Renderable class and instances for all widgets
 -- this is for SDL
 class Renderable a where
-    render :: Renderer -> a -> CInt -> CInt -> IO ()
-    renderGlobal :: Renderer -> a -> IO ()
+    render :: Renderer -> a -> CInt -> CInt -> SDLIO ()
+    renderGlobal :: a -> SDLIO ()
 
 instance Renderable Widget where
-    renderGlobal ren (WPanel p) = renderGlobal ren p
-    -- renderGlobal ren (WTextLabel t) = renderGlobal ren t
+    renderGlobal (WPanel p) = renderGlobal p
+    renderGlobal (WTextLabel t) = renderGlobal t
 
-{- 
+
 instance Renderable TextLabel where
     render renderer tl x y = do
-        font <- globalFont
-        let box = textBox tl
-        textTexture <- createTextTexture (text (tl::TextLabel)) (color (box::Box) ) font renderer
-        renderTexture x y textTexture renderer
-    renderGlobal ren tl = let box = textBox tl
-                              x = (fromIntegral $ globalX box)
-                              y = (fromIntegral $ globalY box)
-                              in render ren tl x y
--}
+        --putStrLn "Inside render TextLabel"
+        --dumpSDLState
+        fnt <- getDefaultFont 
+        -- print fnt
+        case fnt of
+            Just font -> do
+                            let box = textBox tl
+                            tsurf <- liftIO $ blended font (rgbaToV4Color $ color (box::Box) ) (text (tl::TextLabel)) 
+                            tex <- liftIO $ createTextureFromSurface renderer tsurf 
+                            liftIO $ renderTexture x y tex renderer
+            Nothing -> liftIO $ print "Couldn't find font when rendering TextLabel"
+    
+    renderGlobal tl = do    ren <- gets mainRenderer
+                            let box = textBox tl
+                            let x = (fromIntegral $ globalX box)
+                            let y = (fromIntegral $ globalY box)
+                            render ren tl x y
+
 
 instance Renderable Box where
-    render ren box x y = do
+    render ren box x y = liftIO $ do
         let w = fromIntegral $ width (box::Box)
         let h = fromIntegral $ height box
         -- draw main box
         setRenderDrawColorRGBA ren $ color (box :: Box)
         let rect = Rectangle (P (V2 x y)) (V2 w h)
         fillRect ren (Just rect)
-    renderGlobal ren box = render ren box (fromIntegral $ globalX box) (fromIntegral $ globalY box)
+    
+    renderGlobal box = do 
+        ren <- gets mainRenderer 
+        render ren box (fromIntegral $ globalX box) (fromIntegral $ globalY box)
 
 instance Renderable Panel where
-    render ren pan x y = do
+    render ren pan x y = liftIO $ do
         let bx = box pan
         let w = fromIntegral $ width (bx::Box)
         let h = fromIntegral $ height bx
@@ -75,7 +92,8 @@ instance Renderable Panel where
         setRenderDrawColorRGBA ren $ color (bx :: Box)
         let rect = Rectangle (P (V2 x y)) (V2 w h)
         fillRect ren (Just rect)
-    renderGlobal ren pan = render ren pan (fromIntegral $ globalX $ box pan) (fromIntegral $ globalY $ box pan)
+    
+    renderGlobal pan = gets mainRenderer >>= \ren -> (render ren pan (fromIntegral $ globalX $ box pan) (fromIntegral $ globalY $ box pan))
 
 -- setting Renderer Draw color based on RGBA values we define in Color
 setRenderDrawColorRGBA ::  MonadIO m => Renderer -> RGBA -> m CInt

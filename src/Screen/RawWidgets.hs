@@ -62,7 +62,7 @@ data Panel = Panel {
 -- basic text label
 data TextLabel = TextLabel {
     textBox :: Box,
-    text :: String,
+    text :: Text,
     fontSize :: !Int
 } deriving (Show, Eq)
 

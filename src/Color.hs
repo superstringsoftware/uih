@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Color where
-
+import Linear
 import Data.Word
 
 -- Materal design colors implemented as pattern-matched functions
@@ -10,6 +10,9 @@ data RGBA = RGBA {r :: !Word8, g :: !Word8, b :: !Word8, a :: !Word8} deriving (
 -- data RGB = RGB {r :: !Word8, g :: !Word8, b :: !Word8} deriving (Show, Eq)
 
 -- toRGBA rgb = RGBA {r = r rgb, g = g rgb, }
+--rgbaToSDLColor :: RGBA -> Raw.Color
+rgbaToV4Color c = V4 (r c) (g c) (b c) (a c)
+
 
 mdBlack = RGBA 0 0 0 255
 mdWhite = RGBA 255 255 255 255

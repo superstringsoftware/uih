@@ -36,16 +36,22 @@ createTextTexture text color font renderer = do
     return textTexture
 -}
 
-initDefaultFont = do r <- try $ (initialize >> defaultFont 32)
-                     case r of
-                        Left  e   -> print (e::SDLException) >> fail "Could not initialize TTF fonts!"
-                        Right fnt -> return fnt
+safeLoadFont path size = do r <- try $ load path size
+                            case r of
+                                Left  e   -> print (e::SDLException) >> fail "Could not initialize TTF fonts!"
+                                Right fnt -> return fnt
+
+
+getDefaultFont :: SDLIO (Maybe Font)
+getDefaultFont = get >>= \st -> return $ Map.lookup "__DEFAULT__" (loadedFonts st)
 
 initFonts :: SDLIO ()
 initFonts = do 
     fnt <- liftIO initDefaultFont
     st <- get
     let fonts = Map.insert "__DEFAULT__" fnt (loadedFonts st)
-    let stNew = st {loadedFonts = fonts}
-    put stNew
-    liftIO $ print $ show stNew
+    put st {loadedFonts = fonts}
+    where initDefaultFont = do   r <- try $ (initialize >> defaultFont 32)
+                                 case r of
+                                    Left  e   -> print (e::SDLException) >> fail "Could not initialize TTF fonts!"
+                                    Right fnt -> return fnt

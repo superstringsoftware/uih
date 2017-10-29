@@ -29,7 +29,7 @@ import SDL.Exception
 
 import qualified Data.Map.Strict as Map
 
-
+-- record to keep our current SDL subsystem state
 data SDLState = SDLState {
     mainWindow :: Window
   , mainRenderer :: Renderer
@@ -37,7 +37,7 @@ data SDLState = SDLState {
   , allLogs :: [Text]
 } | SDLEmptyState deriving Show
 
--- Stacking State and IO 
+-- Stacking State and IO into a monad
 type SDLIO = StateT SDLState IO
 
 -- needs to be read from config!
@@ -52,30 +52,9 @@ mainWindowSettings = SDL.WindowConfig
   , windowInitialSize  = V2 1200 800
   }
 
--- lifting try into our monad
-trySDLIO :: Exception e => SDLIO a -> SDLIO (Either e a)
-trySDLIO act = do
-    st <- get -- getting current state
-    liftIO $ try $ evalStateT act st -- evaluating action act with state st (so goes into IO), trying it and lifting back to our monad 
 
--- convertSDLIO :: SDLIO a -> IO SDLState
-
--- main initialization functions
-initStateIO :: IO SDLState
-initStateIO = do r <- try $ do
-                                SDL.initializeAll
-                                window <- SDL.createWindow "My SDL Application" mainWindowSettings
-                                renderer <- SDL.createRenderer window (-1) SDL.defaultRenderer
-                                return $ SDLState {mainWindow = window, mainRenderer = renderer, loadedFonts = Map.empty, allLogs = []}
-                 case r of
-                    Left  e   -> print (e::SDLException) >> fail "Could not initialize SDL"
-                    Right st -> (print $ show st) >> return st
-
--- action in our monad that wraps the IO actions: simply initializing the state in SDLIO monad
-initializeAll :: SDLIO ()
-initializeAll = (liftIO initStateIO) >>= put
-
-
+dumpSDLState :: SDLIO ()
+dumpSDLState = get >>= liftIO . print . show
 
 
 

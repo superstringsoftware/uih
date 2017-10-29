@@ -51,4 +51,4 @@ leftCol w h = WPanel $ Panel {
 }
 
 fullUI :: Int -> Int -> [Widget]
-fullUI w h = [mainMenu w h, secondMenu w h, leftCol w h] -- , mFile]
+fullUI w h = [mainMenu w h, secondMenu w h, leftCol w h, mFile]

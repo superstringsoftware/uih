@@ -25,6 +25,8 @@ library
                      , Screen.TestUI
                      , SDL.Fonts
                      , SDL.SDLIO
+                     , SDL.SDLSystem
+                     , Screen.Text
   build-depends:       base >= 4.7 && < 5
                      , clock
                      , sdl2
@@ -34,6 +36,7 @@ library
                      , ghc-prim
                      , transformers
                      , containers
+                     , vector
   default-language:    Haskell2010
 
 executable uih
