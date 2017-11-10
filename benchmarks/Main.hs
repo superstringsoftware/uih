@@ -22,6 +22,9 @@ import Criterion.Main
 import GHC.Prim
 import GHC.Exts
 
+main = return ()
+
+{-
 data UCPoint = UCP Int# Int#
 
 mainWindow :: WindowConfig
@@ -85,3 +88,5 @@ appLoop renderer = do
 
 
   unless qPressed (appLoop renderer)
+
+-}

@@ -7,8 +7,8 @@ import Linear
 import Screen.RawWidgets
 
 -- given width and height of the main window return a widget
-mainMenu :: Int -> Int -> Widget
-mainMenu w h = WPanel $ Panel {
+-- mainMenu :: Int -> Int -> MakeWidget
+mainMenu w h = Panel {
     box = Box {width = w, height = 60, color = mdGrey 100,
         globalX = 0, globalY = 0, parentX = 0, parentY = 0},
     shadow = Nothing,
@@ -19,15 +19,15 @@ mainMenu w h = WPanel $ Panel {
     padding = V4 0 0 0 0
 }
 
-mFile = WTextLabel $ TextLabel {
+mFile = TextLabel {
     textBox = Box {width = 100, height = 40, color = mdBlack,
         globalX = 10, globalY = 16, parentX = 0, parentY = 0},
     text = "File",
     fontSize = 14
 }
 
-secondMenu :: Int -> Int -> Widget
-secondMenu w h = WPanel $ Panel {
+--secondMenu :: Int -> Int -> Widget
+secondMenu w h = Panel {
     box = Box {width = w, height = 260, color = mdBlue 500,
         globalX = 0, globalY = 61, parentX = 0, parentY = 0},
     shadow = Nothing,
@@ -38,8 +38,8 @@ secondMenu w h = WPanel $ Panel {
     padding = V4 0 0 0 0
 }
 
-leftCol :: Int -> Int -> Widget
-leftCol w h = WPanel $ Panel {
+-- leftCol :: Int -> Int -> Widget
+leftCol w h = Panel {
     box = Box {width = 500, height = h - 325, color = mdWhite,
         globalX = 0, globalY = 325, parentX = 0, parentY = 0},
     shadow = Nothing,
@@ -50,5 +50,13 @@ leftCol w h = WPanel $ Panel {
     padding = V4 0 0 0 0
 }
 
-fullUI :: Int -> Int -> [Widget]
-fullUI w h = [mainMenu w h, secondMenu w h, leftCol w h, mFile]
+-- fullUI :: Int -> Int -> [Widget]
+-- fullUI w h = [mainMenu w h, secondMenu w h, leftCol w h, mFile]
+{-
+fullUI w h = WT RootWidget [
+    WT (MakeWidget (mainMenu w h) 0 "mainMenu") []
+  , WT (MakeWidget (secondMenu w h) 1 "secondMenu") []
+  , WT (MakeWidget (leftCol w h) 2 "leftCol") []
+  , WT (MakeWidget mFile 3 "mFile") []
+  ]
+-}

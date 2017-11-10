@@ -3,18 +3,21 @@ module CSS.Box () where
 
 import Color
 import Linear
+import GHC.Real
 
 import Foreign.C.Types (CInt)
 
 -- width, length, height etc based on CSS
-data Dimension = EM Int | -- em
-                 PX Int | -- px
-                 PC Int | -- percentage
+data Dimension = -- EM Int | -- em
+                 PX !Int | -- px
+                 PC !Int | -- percentage
                  Auto     -- auto
                  deriving (Show, Eq)
 
-dimToPixel :: Dimension -> Int
-dimToPixel (PX x) = x
+-- convert dimension to pixels given a parent pixel size
+dimToPixel :: Int -> Dimension -> Int
+dimToPixel _ (PX x) = x
+dimToPixel p (PC x) = round $ fromIntegral (p * x) / 100.0
 
 -- line styles used in borders - "none" will be Nothing
 data LineStyle = Solid | Dotted | Dashed deriving (Show, Eq)

@@ -3,7 +3,7 @@
 -- Fonts handling via sdl2-ttf
 module SDL.Fonts where
 
-import Control.Monad.Trans.State.Strict 
+import Control.Monad.Trans.State.Strict
 import Control.Monad.IO.Class (liftIO)
 
 import SDL.Font
@@ -21,6 +21,7 @@ import SDL.SDLIO
 import qualified Data.Map.Strict as Map
 
 --defaultFontPath :: Text
+{-
 defaultFontPath = "./Roboto-Light.ttf"
 
 defaultFont :: Int -> IO Font
@@ -46,7 +47,7 @@ getDefaultFont :: SDLIO (Maybe Font)
 getDefaultFont = get >>= \st -> return $ Map.lookup "__DEFAULT__" (loadedFonts st)
 
 initFonts :: SDLIO ()
-initFonts = do 
+initFonts = do
     fnt <- liftIO initDefaultFont
     st <- get
     let fonts = Map.insert "__DEFAULT__" fnt (loadedFonts st)
@@ -55,3 +56,5 @@ initFonts = do
                                  case r of
                                     Left  e   -> print (e::SDLException) >> fail "Could not initialize TTF fonts!"
                                     Right fnt -> return fnt
+
+-}

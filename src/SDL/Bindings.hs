@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings, DuplicateRecordFields  #-}
 module SDL.Bindings where
 
-import Control.Monad.Trans.State.Strict 
+import Control.Monad.Trans.State.Strict
 import Control.Monad.IO.Class
 
 --import SDL.TTF
@@ -31,29 +31,28 @@ import SDL.Fonts
 
 -- every graphics binding should define Renderable class and instances for all widgets
 -- this is for SDL
+{-
 class Renderable a where
     render :: Renderer -> a -> CInt -> CInt -> SDLIO ()
     renderGlobal :: a -> SDLIO ()
+-}
 
-instance Renderable Widget where
-    renderGlobal (WPanel p) = renderGlobal p
-    renderGlobal (WTextLabel t) = renderGlobal t
-
+{-
 
 instance Renderable TextLabel where
     render renderer tl x y = do
         --putStrLn "Inside render TextLabel"
         --dumpSDLState
-        fnt <- getDefaultFont 
+        fnt <- getDefaultFont
         -- print fnt
         case fnt of
             Just font -> do
                             let box = textBox tl
-                            tsurf <- liftIO $ blended font (rgbaToV4Color $ color (box::Box) ) (text (tl::TextLabel)) 
-                            tex <- liftIO $ createTextureFromSurface renderer tsurf 
+                            tsurf <- liftIO $ blended font (rgbaToV4Color $ color (box::Box) ) (text (tl::TextLabel))
+                            tex <- liftIO $ createTextureFromSurface renderer tsurf
                             liftIO $ renderTexture x y tex renderer
             Nothing -> liftIO $ print "Couldn't find font when rendering TextLabel"
-    
+
     renderGlobal tl = do    ren <- gets mainRenderer
                             let box = textBox tl
                             let x = (fromIntegral $ globalX box)
@@ -69,9 +68,9 @@ instance Renderable Box where
         setRenderDrawColorRGBA ren $ color (box :: Box)
         let rect = Rectangle (P (V2 x y)) (V2 w h)
         fillRect ren (Just rect)
-    
-    renderGlobal box = do 
-        ren <- gets mainRenderer 
+
+    renderGlobal box = do
+        ren <- gets mainRenderer
         render ren box (fromIntegral $ globalX box) (fromIntegral $ globalY box)
 
 instance Renderable Panel where
@@ -92,7 +91,7 @@ instance Renderable Panel where
         setRenderDrawColorRGBA ren $ color (bx :: Box)
         let rect = Rectangle (P (V2 x y)) (V2 w h)
         fillRect ren (Just rect)
-    
+
     renderGlobal pan = gets mainRenderer >>= \ren -> (render ren pan (fromIntegral $ globalX $ box pan) (fromIntegral $ globalY $ box pan))
 
 -- setting Renderer Draw color based on RGBA values we define in Color
@@ -132,7 +131,7 @@ borderRectangleTop x y bw l =       Rectangle (P (V2 x (y-bw))) (V2 l bw)
 borderRectangleBottom x y bw l =    Rectangle (P (V2 x y)) (V2 l bw)
 borderRectangleLeft x y bw l =      Rectangle (P (V2 (x-bw) y)) (V2 bw l)
 borderRectangleRight x y bw l =     Rectangle (P (V2 x y)) (V2 bw l)
-
+-}
 
 {-
 renderBoxShadow :: CInt -> CInt -> Box -> Renderer -> IO ()

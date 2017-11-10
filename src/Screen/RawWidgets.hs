@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, DuplicateRecordFields #-}
+{-# LANGUAGE OverloadedStrings, DuplicateRecordFields, ExistentialQuantification, StandaloneDeriving #-}
 module Screen.RawWidgets where
 
 import Color
@@ -7,9 +7,61 @@ import Data.Text
 
 import Foreign.C.Types (CInt)
 
+import Control.Monad
+import Control.Applicative
+
+import Data.Monoid
+
+-- The logic below is - put all Widgets in the Tree, render them. Very easy.
+-- Dancing with types is not as obvious though...
+
+-- type class that defines an interface to our widgets -
+-- we will implement its' functions with different bindings - Terminal, SDL, OpenGL etc
+class Show a => Widget a where
+    render :: a -> IO ()
+
 -- type holding all widget types to process child / parent etc stuff
-data Widget = WBox Box | WPanel Panel | WTextLabel TextLabel | EmptyWidget
-data WidgetParent = WidgetParent Widget [Widget]
+-- "a" - is widget type, Int is the index of the widget to id it, Text - either name or textual id, need to think
+-- id is needed for re-rendering etc
+data MakeWidget a = MakeWidget a !Int Text deriving Show
+
+-- Some useful instance declarations
+instance Functor MakeWidget where
+  -- fmap :: (a -> b) -> f a -> f b
+  -- should we increment i??? --> no, b/c then we'll break /fmap id = id/ law
+  fmap f (MakeWidget w i t) = MakeWidget (f w) i t
+
+instance Applicative MakeWidget where
+  -- pure :: a -> f a
+  pure w = MakeWidget w 0 ""
+  -- (<*>) :: f (a -> b) -> f a -> f b
+  (MakeWidget f _ _) <*> (MakeWidget w i t) = MakeWidget (f w) i t
+
+instance Monad MakeWidget where
+  -- (>>=) :: forall a b. m a -> (a -> m b) -> m b
+  (MakeWidget w i t) >>= f = f w
+
+-- Tree of Widgets that holds our UI, with RootWidget being a dummy node
+data WidgetTree = forall a. Widget a => WT (MakeWidget a) [WidgetTree] | RootWidget
+deriving instance Show WidgetTree -- need this because doesn't work inline for some reason
+
+instance Monoid WidgetTree where
+  mempty = RootWidget
+  mappend RootWidget x = x
+  mappend x RootWidget = x
+  mappend (WT w xs)  x = WT w (x:xs)
+
+-- it's mappend
+{-
+addChildUI :: WidgetTree -> WidgetTree -> WidgetTree
+addChildUI RootWidget x = x
+addChildUI (WT w xs)  x = WT w (x:xs)
+-}
+
+data WidgetState = WidgetState {
+    currentIndex :: !Int -- last index of the widget
+  , uiTree       :: WidgetTree -- all widgets in the current ui
+  } deriving Show
 
 -- line styles used in borders - "none" will be Nothing
 data LineStyle = Solid | Dotted | Dashed deriving (Show, Eq)

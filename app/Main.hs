@@ -31,15 +31,18 @@ import SDL.SDLSystem
 
 import qualified SDL.Primitive as GFX -- sdl2-gfx, seems to work, performance is a question
 
-import Control.Monad.Trans.State.Strict 
+import Control.Monad.Trans.State.Strict
 import Control.Monad.IO.Class (liftIO)
 --import Control.Monad.Trans (lift)
 
 import SDL.InputText
 
+main = return ()
+
+{-
 program :: SDLIO ()
-program = do 
-    dumpSDLState >> initializeAll >> dumpSDLState 
+program = do
+    dumpSDLState >> initializeAll >> dumpSDLState
     st <- get
     let renderer = mainRenderer st
     renderUI 1200 800
@@ -55,7 +58,7 @@ main = do
   --fls <- listDirectory "/Library/Fonts"
   --mapM_ print fls
   runProgram program
-  
+
 
 
 appLoop :: SDLIO ()
@@ -94,13 +97,9 @@ checkEvent event = do
             return False
         SDL.QuitEvent -> return True
         SDL.KeyboardEvent keyboardEvent -> return False
-        SDL.TextInputEvent ev -> do 
+        SDL.TextInputEvent ev -> do
                                     liftIO $ print $ show ev
                                     return False
         _ -> return False
 
-
-
-
-
-
+-}

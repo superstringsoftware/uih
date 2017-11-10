@@ -4,7 +4,7 @@
 
 module SDL.SDLSystem where
 
-import Control.Monad.Trans.State.Strict 
+import Control.Monad.Trans.State.Strict
 import Control.Monad.IO.Class (liftIO)
 
 import Control.Exception
@@ -32,12 +32,12 @@ import SDL.SDLIO
 
 import SDL.Fonts
 
-
+{-
 -- lifting try into our monad - probably not needed, but was a good excersize in types
 trySDLIO :: Exception e => SDLIO a -> SDLIO (Either e a)
 trySDLIO act = do
     st <- get -- getting current state
-    liftIO $ try $ evalStateT act st -- evaluating action act with state st (so goes into IO), trying it and lifting back to our monad 
+    liftIO $ try $ evalStateT act st -- evaluating action act with state st (so goes into IO), trying it and lifting back to our monad
 
 -- convertSDLIO :: SDLIO a -> IO SDLState
 
@@ -55,3 +55,5 @@ initStateIO = do r <- try $ do
 -- action in our monad that wraps the IO actions: simply initializing the state in SDLIO monad, initializing fonts etc
 initializeAll :: SDLIO ()
 initializeAll = (liftIO initStateIO) >>= put >> initFonts
+
+-}
