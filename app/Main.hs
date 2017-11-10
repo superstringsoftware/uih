@@ -1,43 +1,91 @@
 {-# LANGUAGE OverloadedStrings, DuplicateRecordFields #-}
 module Main where
 
-import Logger
-import SDL.Bindings
+import Screen.LowLevelWidgets
 import Color
-import CSS.Box
+import Linear
+import Data.Text
+import Data.Monoid
 
-import Foreign.C.String
-import Foreign.Marshal.Alloc
-import Foreign.Ptr
-import Foreign.Storable
 
-import System.Exit
+textLabel = MkWidget {
+    widget = "Hello World" :: Text
+  , box = Box {
+            globalX = 300
+          , globalY = 100
+          , parentX = 300
+          , parentY = 100
+          , width   = 0
+          , height  = 0
+      }
+  }
 
-import qualified SDL.Raw as Raw hiding (free)
-import qualified SDL as SDL
-import Linear (V4(..))
-import Control.Monad (unless)
-import SDL.Vect
+solidBlackBorder = Just $ Border {
+    width = 1
+  , color = mdBlack
+  , style = Solid
+}
 
-import SDL.Fonts as TTF
+buttonPanel = MkWidget {
+    box = Box {
+            globalX = 300
+          , globalY = 400
+          , parentX = 300
+          , parentY = 400
+          , width   = 0
+          , height  = 0
+      }
+  , widget = Panel {
+        shadow = Nothing
+      , borderTop = solidBlackBorder
+      , borderRight = solidBlackBorder
+      , borderBottom = solidBlackBorder
+      , borderLeft = solidBlackBorder
+      , padding = V4 10 10 10 10
+      , color   = mdGrey 500
+      }
+  }
 
-import Screen.RawWidgets
-import Screen.TestUI
+buttonLabel = MkWidget {
+    widget = "OK" :: Text
+  , box = Box {
+            globalX = 0
+          , globalY = 0
+          , parentX = 10
+          , parentY = 10
+          , width   = 0
+          , height  = 0
+      }
+  }
 
-import System.Directory
+mainWidget = MkWidget {
+      widget = ()
+    , box = Box {
+          globalX = 0
+        , globalY = 0
+        , parentX = 0
+        , parentY = 0
+        , width   = 0
+        , height  = 0
+    }
+  }
 
-import SDL.SDLIO
-import SDL.SDLSystem
 
-import qualified SDL.Primitive as GFX -- sdl2-gfx, seems to work, performance is a question
+button = (injectWidget buttonPanel) <> (injectWidget buttonLabel)
+mainUI = (injectWidget mainWidget) <> (injectWidget textLabel) <> button
 
-import Control.Monad.Trans.State.Strict
-import Control.Monad.IO.Class (liftIO)
---import Control.Monad.Trans (lift)
+instance Widget () where
+  render _ = return ()
 
-import SDL.InputText
+instance Widget Panel where
+  render = print
 
-main = return ()
+instance Widget Text where
+  render = print
+
+
+main = do
+  render mainUI
 
 {-
 program :: SDLIO ()

@@ -20,7 +20,6 @@ import CSS.Box
 import Color
 
 import Data.Text
-import Screen.Text as ST
 
 import SDL.Font
 import SDL.Fonts

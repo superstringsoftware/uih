@@ -22,7 +22,6 @@ import CSS.Box
 
 import GHC.Prim
 
-import Screen.RawWidgets
 
 import Data.Text
 import SDL.Exception

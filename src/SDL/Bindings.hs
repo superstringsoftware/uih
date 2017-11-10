@@ -18,8 +18,6 @@ import CSS.Box
 
 import GHC.Prim
 
-import Screen.RawWidgets
-
 import SDL.SDLIO
 import SDL.Font (Font, solid, blended)
 import SDL.Fonts
