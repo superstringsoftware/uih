@@ -25,9 +25,11 @@ renderUI = do
   let rec1 = SDL.Rectangle (P $ V2 10 10) (V2 100 300)
   let rec2 = SDL.Rectangle (P $ V2 400 90) (V2 200 50)
   let boxes = PrimBoxes (fromList [rec1, rec2]) (V4 200 200 200 20)
+  let txt = PrimText { text = "Hello World", fontName = "default", fontSize = 0, x = 400, y = 400 }
   renderer <- gets mainRenderer
   SDL.clear renderer
   renderPrimitive renderer boxes
+  renderPrimitive renderer (PrimTexts txt (V4 200 50 50 20))
   SDL.present renderer
 
 

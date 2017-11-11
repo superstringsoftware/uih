@@ -8,7 +8,7 @@ import Control.Monad.IO.Class
 
 import qualified SDL.Raw as Raw
 import SDL as SDL hiding (Vector)
-import SDL.Internal.Types
+-- import SDL.Internal.Types
 import SDL.Font (Font, solid, blended)
 -- import SDL.Vect hiding (Vector)
 
@@ -17,8 +17,11 @@ import Foreign.C.Types (CInt)
 import Color
 
 import Data.Text hiding (copy)
-import Data.Vector.Storable -- vectors needed by SDL render prims are Storable
+import Data.Vector.Storable hiding (copy)-- vectors needed by SDL render prims are Storable
 import Data.Word
+
+import UIH.SDL.SDLIO
+import UIH.SDL.Fonts
 
 -- basic datatypes
 -- first element of constructor is coordinates, second - color in SDL format
@@ -30,7 +33,7 @@ data PrimText  = PrimText { text :: Text, fontName :: Text, fontSize :: CInt, x 
 data RenderPrims = PrimPoints (Vector PrimPoint) PrimColor
                  | PrimLines  (Vector PrimPoint) PrimColor
                  | PrimBoxes  (Vector PrimBox)   PrimColor
-                 | PrimTexts  (Vector PrimText)  PrimColor
+                 | PrimTexts  PrimText           PrimColor
 
 -- to stack layers on top of each other, need to render them in order.
 -- also may use some optimizations such as render to texture and then blending etc
@@ -39,7 +42,7 @@ type Layer = Vector RenderPrims
 -- function that renders a primitive to a current render target
 -- the most low level, with explicit renderers and fonts, in the IO monad
 -- this will need to be wrapped into our custom state keeping monad
-renderPrimitive :: MonadIO m => Renderer -> RenderPrims -> m ()
+renderPrimitive :: Renderer -> RenderPrims -> SDLIO ()
 -- setting a color via StateVar provided by SDL and then drawing.
 renderPrimitive ren (PrimPoints ps color) = (rendererDrawColor ren) $= color >> drawPoints ren ps
 renderPrimitive ren (PrimLines  ps color) = (rendererDrawColor ren) $= color >> drawLines  ren ps
@@ -48,5 +51,23 @@ renderPrimitive ren (PrimBoxes  ps color) = (rendererDrawColor ren) $= color >> 
 -- drawing text is the most tricky
 -- NOT IMPLEMENTED
 renderPrimitive ren (PrimTexts txt color) = do
-  error "renderPrimitive PrimTexts is not implemented yet!"
-  return ()
+  fnt <- getDefaultFont
+  case fnt of
+      Just font -> do
+                      tsurf <- blended font color (text txt)
+                      tex   <- createTextureFromSurface ren tsurf
+                      renderTexture (x txt) (y txt) tex ren
+                      freeSurface tsurf
+                      destroyTexture tex
+      Nothing -> liftIO $ print "Couldn't find font when rendering TextLabel"
+
+
+-- render a given texture at x y coordinates
+renderTexture :: MonadIO m => CInt -> CInt -> Texture -> Renderer -> m ()
+renderTexture x y texture renderer = do
+  ti <- queryTexture texture
+  -- putStrLn $ "Size is " ++ (show ti)
+  let w = textureWidth ti
+  let h = textureHeight ti
+  let dest = Rectangle (P (V2 x y)) (V2 w h)
+  copy renderer texture Nothing (Just dest)
