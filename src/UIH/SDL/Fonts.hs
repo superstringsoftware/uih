@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings, DuplicateRecordFields  #-}
 
 -- Fonts handling via sdl2-ttf
-module SDL.Fonts where
+module UIH.SDL.Fonts where
 
 import Control.Monad.Trans.State.Strict
 import Control.Monad.IO.Class (liftIO)
@@ -16,7 +16,7 @@ import Data.Text hiding (copy)
 import Control.Exception
 import SDL.Exception
 
-import SDL.SDLIO
+import UIH.SDL.SDLIO
 
 import qualified Data.Map.Strict as Map
 

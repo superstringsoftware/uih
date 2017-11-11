@@ -26,6 +26,7 @@ import Data.Text hiding (copy)
 
 import Screen.LowLevelWidgets
 
+{-
 -- setting Renderer Draw color based on RGBA values we define in Color
 setRenderDrawColorRGBA ::  MonadIO m => Renderer -> RGBA -> m CInt
 setRenderDrawColorRGBA (Renderer ren) rgba = Raw.setRenderDrawColor ren (r rgba) (g rgba) (b rgba) (a rgba)
@@ -57,7 +58,7 @@ renderTexture x y texture renderer = do
     let h = textureHeight ti
     let dest = Rectangle (P (V2 x y)) (V2 w h)
     copy renderer texture Nothing (Just dest)
-
+-}
 {-
 instance Widget Panel SDLState where
   renderAt x y pan = liftIO . print

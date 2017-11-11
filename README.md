@@ -1,4 +1,15 @@
-Before building --
+## Some conceptual ideas:
+
+We need 3 representations for the UI:
+
+1) Declarative set up
+2) Internal representation that has explicit calculated dimensions, styles etc + keeps the current state, getting it from reactive vars and the like -- these 2 need to be abstract and general enough to allow different rendering engines.
+Layering logic needs to be handled here as well - renderer should just draw without thinking, in the right order.
+3) Low-level library specific efficient rendering primitives - this can be SDL, OpenGL, Vulkan etc...
+
+For events handling, when registering a handler with a widget / event, need to register a *region* (x,y,w,h) with a low-level lib specific event dispatcher, so that it can map primitive events and route them to a respective high-level handler
+
+## Before building --
 
 export PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig/
 
@@ -16,7 +27,7 @@ checkout Cairo? -- https://hackage.haskell.org/package/sdl2-cairo
 https://hackage.haskell.org/package/cairo-0.13.3.1
 
 
-* Macos font locations:
+## Macos font locations:
 
 "User"	~/Library/Fonts/
 Each user has complete control over the fonts installed in their Home. These fonts are available to that user when he or she is logged in to the computer. Fonts installed here are not available to all users of the computer.

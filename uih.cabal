@@ -16,15 +16,12 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Logger
-                     , Screen.LowLevelWidgets
-                     , Screen.DummyIO
-                     , SDL.Bindings
-                     , SDL.InputText
+                     , UIH.SDL.Rendering
+                     , UIH.SDL.Tests
+                     , UIH.SDL.Fonts
+                     , UIH.SDL.SDLIO
+                     , UIH.SDL.System
                      , Color
-                     , CSS.Box
-                     , SDL.Fonts
-                     , SDL.SDLIO
-                     , SDL.SDLSystem
                      , OpenGL.OpenGLTest
   build-depends:       base >= 4.7 && < 5
                      , clock

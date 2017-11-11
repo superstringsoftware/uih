@@ -5,7 +5,7 @@ import SDL as SDL hiding (Vector)
 import Linear (V4(..))
 import Control.Monad (unless)
 
-import SDL.Bindings
+-- import SDL.Bindings
 import qualified SDL.Raw as Raw
 
 import Color

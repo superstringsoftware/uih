@@ -1,7 +1,6 @@
 {-# LANGUAGE OverloadedStrings, DuplicateRecordFields #-}
 module Main where
 
-import Screen.LowLevelWidgets
 import Color
 import Linear
 import Data.Text hiding (any)
@@ -10,13 +9,35 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.State.Strict
 import Control.Monad
 
-import SDL.SDLIO
-import SDL.SDLSystem
-import SDL.Bindings
+import UIH.SDL.SDLIO
+import UIH.SDL.System
 import qualified SDL as SDL
+
+import UIH.SDL.Tests
+
+runProgram :: SDLIO a -> IO a
+runProgram prog = evalStateT prog SDLEmptyState
+
+main :: IO ()
+main = do
+  putStrLn "Starting main..."
+
+  --fls <- listDirectory "/Library/Fonts"
+  --mapM_ print fls
+  runProgram program
+
+
 
 -- import Screen.DummyIO
 
+
+
+
+
+
+
+
+{-
 textLabel = MkWidget {
     widget = "Hello World" :: Text
   , box = Box {
@@ -95,16 +116,6 @@ program = do
     renderUI 1200 800
     appLoop
 
-runProgram :: SDLIO a -> IO a
-runProgram prog = evalStateT prog SDLEmptyState
-
-main :: IO ()
-main = do
-  putStrLn "Starting main..."
-
-  --fls <- listDirectory "/Library/Fonts"
-  --mapM_ print fls
-  runProgram program
 
 
 
@@ -147,3 +158,4 @@ checkEvent event = do
                                     liftIO $ print $ show ev
                                     return False
         _ -> return False
+-}

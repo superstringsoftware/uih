@@ -1,35 +1,19 @@
 {-# LANGUAGE OverloadedStrings, DuplicateRecordFields  #-}
 
--- SDLIO Monad - State, IO...
+module UIH.SDL.System where
 
-module SDL.SDLSystem where
+import UIH.SDL.SDLIO
+import UIH.SDL.Fonts
+
+import SDL.Exception
+import Control.Exception
+
+import qualified SDL as SDL
+import qualified Data.Map.Strict as Map
 
 import Control.Monad.Trans.State.Strict
 import Control.Monad.IO.Class (liftIO)
 
-import Control.Exception
-
-import qualified SDL.Raw as Raw
-
-import qualified SDL as SDL
-import SDL.Internal.Types
-import SDL.Vect
-import SDL.Font
---import SDL.Video
-
-import Color
-import CSS.Box
-
-import GHC.Prim
-
-
-import Data.Text
-import SDL.Exception
-
-import qualified Data.Map.Strict as Map
-import SDL.SDLIO
-
-import SDL.Fonts
 
 
 -- lifting try into our monad - probably not needed, but was a good excersize in types

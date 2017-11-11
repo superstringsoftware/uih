@@ -2,27 +2,26 @@
 
 -- SDLIO Monad - State, IO...
 
-module SDL.SDLIO where
+module UIH.SDL.SDLIO where
 
 import Control.Monad.Trans.State.Strict
 import Control.Monad.IO.Class (liftIO)
 
-import Control.Exception
+-- import Control.Exception
 
-import qualified SDL.Raw as Raw
+-- import qualified SDL.Raw as Raw
 
-import qualified SDL as SDL
-import SDL.Internal.Types
-import SDL.Vect
+import SDL as SDL hiding (get)
+-- import SDL.Internal.Types
+-- import SDL.Vect
 import SDL.Font
 --import SDL.Video
 
 import Color
-import CSS.Box
 
-import GHC.Prim
+-- import GHC.Prim
 import Data.Text
-import SDL.Exception
+-- import SDL.Exception
 
 import qualified Data.Map.Strict as Map
 
@@ -39,13 +38,13 @@ data SDLState = SDLState {
 type SDLIO = StateT SDLState IO
 
 -- needs to be read from config!
-mainWindowSettings = SDL.WindowConfig
+mainWindowSettings = WindowConfig
   { windowBorder       = True
   , windowHighDPI      = True
   , windowInputGrabbed = False
-  , windowMode         = SDL.Windowed
+  , windowMode         = Windowed
   , windowOpenGL       = Nothing
-  , windowPosition     = SDL.Wherever
+  , windowPosition     = Wherever
   , windowResizable    = True
   , windowInitialSize  = V2 1200 800
   }
