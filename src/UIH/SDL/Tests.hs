@@ -5,7 +5,7 @@ import UIH.SDL.Rendering
 import UIH.SDL.System
 import UIH.SDL.SDLIO
 
-import qualified SDL as SDL
+import SDL as SDL
 
 import Control.Monad.Trans.State.Strict
 import Control.Monad.IO.Class (liftIO)
@@ -16,16 +16,29 @@ import Data.Vector.Storable hiding (mapM, any)
 
 import SDL.Vect
 
+import Screen.Tests
+
 
 program = do
-  dumpSDLState >> initializeAll >> dumpSDLState >> renderUI >> appLoop
+  dumpSDLState >> UIH.SDL.System.initializeAll >> dumpSDLState >> renderUI1 >> appLoop
 
+renderUI1 = do
+  _debug $ "Drawing " Prelude.++ show testUI
+  (Just tex) <- widgetToTexture testUI
+  renderer <- gets mainRenderer
+  SDL.rendererRenderTarget renderer $= Nothing -- rendering to Screen
+  rendererDrawColor renderer $= V4 0 0 0 0
+  SDL.clear renderer
+  qinf <- SDL.queryTexture tex
+  let rect = SDL.Rectangle (P $ V2 0 0) (V2 (textureWidth qinf) (textureHeight qinf))
+  SDL.copy renderer tex Nothing (Just rect)
+  SDL.present renderer
 
 renderUI = do
   let rec1 = SDL.Rectangle (P $ V2 10 10) (V2 100 300)
   let rec2 = SDL.Rectangle (P $ V2 400 90) (V2 200 50)
   let boxes = PrimBoxes (fromList [rec1, rec2]) (V4 200 200 200 20)
-  let txt = PrimText { text = "Hello World", fontName = "default", fontSize = 0, x = 400, y = 400 }
+  let txt = PrimText { pText = "Hello World", fontName = "default", fontSize = 0, cx = 400, cy = 400 }
   renderer <- gets mainRenderer
   SDL.clear renderer
   renderPrimitive renderer boxes

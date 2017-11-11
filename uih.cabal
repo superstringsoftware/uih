@@ -21,6 +21,9 @@ library
                      , UIH.SDL.Fonts
                      , UIH.SDL.SDLIO
                      , UIH.SDL.System
+                     , UIH.SDL.Converter
+                     , Screen.MiddleWidgets
+                     , Screen.Tests
                      , Color
                      , OpenGL.OpenGLTest
   build-depends:       base >= 4.7 && < 5

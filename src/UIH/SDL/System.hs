@@ -29,8 +29,13 @@ initStateIO :: IO SDLState
 initStateIO = do r <- try $ do
                                 SDL.initializeAll
                                 window <- SDL.createWindow "My SDL Application" mainWindowSettings
-                                renderer <- SDL.createRenderer window (-1) SDL.defaultRenderer
-                                return $ SDLState {mainWindow = window, mainRenderer = renderer, loadedFonts = Map.empty, allLogs = []}
+                                renderer <- SDL.createRenderer window (-1) SDL.defaultRenderer {SDL.rendererTargetTexture = True}
+                                return $ SDLState {
+                                    mainWindow = window,
+                                    mainRenderer = renderer,
+                                    loadedFonts = Map.empty,
+                                    allLogs = []
+                                  }
                  case r of
                     Left  e   -> print (e::SDLException) >> fail "Could not initialize SDL"
                     Right st -> (print $ show st) >> return st
