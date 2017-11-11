@@ -30,7 +30,7 @@ data Widget = Panel {
   , filePath :: Text
   } | Canvas {
     name :: Text
-  } | Complex Widget [Widget] -- represents a composite widget: Panel (should always root!! - use GADT?) with children elements
+  } | Complex Widget [Widget] -- represents a composite widget: Panel (should always be root!! - use GADT?) with children elements
     | EmptyWidget
     deriving Show
 
