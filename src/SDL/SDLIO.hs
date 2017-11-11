@@ -26,7 +26,7 @@ import SDL.Exception
 
 import qualified Data.Map.Strict as Map
 
-{-
+
 -- record to keep our current SDL subsystem state
 data SDLState = SDLState {
     mainWindow :: Window
@@ -53,5 +53,3 @@ mainWindowSettings = SDL.WindowConfig
 
 dumpSDLState :: SDLIO ()
 dumpSDLState = get >>= liftIO . print . show
-
--}

@@ -31,7 +31,7 @@ import SDL.SDLIO
 
 import SDL.Fonts
 
-{-
+
 -- lifting try into our monad - probably not needed, but was a good excersize in types
 trySDLIO :: Exception e => SDLIO a -> SDLIO (Either e a)
 trySDLIO act = do
@@ -54,5 +54,3 @@ initStateIO = do r <- try $ do
 -- action in our monad that wraps the IO actions: simply initializing the state in SDLIO monad, initializing fonts etc
 initializeAll :: SDLIO ()
 initializeAll = (liftIO initStateIO) >>= put >> initFonts
-
--}

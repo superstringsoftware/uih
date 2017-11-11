@@ -4,9 +4,18 @@ module Main where
 import Screen.LowLevelWidgets
 import Color
 import Linear
-import Data.Text
+import Data.Text hiding (any)
 import Data.Monoid
+import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Trans.State.Strict
+import Control.Monad
 
+import SDL.SDLIO
+import SDL.SDLSystem
+import SDL.Bindings
+import qualified SDL as SDL
+
+-- import Screen.DummyIO
 
 textLabel = MkWidget {
     widget = "Hello World" :: Text
@@ -71,23 +80,13 @@ mainWidget = MkWidget {
   }
 
 
-button = (injectWidget buttonPanel) <> (injectWidget buttonLabel)
-mainUI = (injectWidget mainWidget) <> (injectWidget textLabel) <> button
-
-instance Widget () where
-  render _ = return ()
-
-instance Widget Panel where
-  render = print
-
-instance Widget Text where
-  render = print
+-- building UI via cool monoid
+-- button :: WidgetTree SDLState
+-- button = (injectWidget buttonPanel) <> (injectWidget buttonLabel)
+mainUI :: WidgetTree SDLState
+mainUI = (injectWidget mainWidget)  <> (injectWidget textLabel) -- <> button
 
 
-main = do
-  render mainUI
-
-{-
 program :: SDLIO ()
 program = do
     dumpSDLState >> initializeAll >> dumpSDLState
@@ -125,8 +124,7 @@ renderUI w h = do
     -- rendererDrawColor renderer $= V4 0 0 0 0
     SDL.clear renderer
     -- putStrLn "Cleared renderer"
-    mapM_ renderGlobal (fullUI w h)
-    renderGlobal testBox
+    render mainUI
 
     -- putStrLn "Mapped all rendering actions"
     SDL.present renderer
@@ -149,5 +147,3 @@ checkEvent event = do
                                     liftIO $ print $ show ev
                                     return False
         _ -> return False
-
--}

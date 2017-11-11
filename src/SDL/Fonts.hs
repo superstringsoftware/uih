@@ -21,7 +21,7 @@ import SDL.SDLIO
 import qualified Data.Map.Strict as Map
 
 --defaultFontPath :: Text
-{-
+
 defaultFontPath = "./Roboto-Light.ttf"
 
 defaultFont :: Int -> IO Font
@@ -56,5 +56,3 @@ initFonts = do
                                  case r of
                                     Left  e   -> print (e::SDLException) >> fail "Could not initialize TTF fonts!"
                                     Right fnt -> return fnt
-
--}

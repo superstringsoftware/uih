@@ -17,6 +17,7 @@ library
   hs-source-dirs:      src
   exposed-modules:     Logger
                      , Screen.LowLevelWidgets
+                     , Screen.DummyIO
                      , SDL.Bindings
                      , SDL.InputText
                      , Color

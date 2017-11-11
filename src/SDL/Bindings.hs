@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, DuplicateRecordFields  #-}
+{-# LANGUAGE OverloadedStrings, DuplicateRecordFields, MultiParamTypeClasses  #-}
 module SDL.Bindings where
 
 import Control.Monad.Trans.State.Strict
@@ -21,6 +21,47 @@ import GHC.Prim
 import SDL.SDLIO
 import SDL.Font (Font, solid, blended)
 import SDL.Fonts
+
+import Data.Text hiding (copy)
+
+import Screen.LowLevelWidgets
+
+-- setting Renderer Draw color based on RGBA values we define in Color
+setRenderDrawColorRGBA ::  MonadIO m => Renderer -> RGBA -> m CInt
+setRenderDrawColorRGBA (Renderer ren) rgba = Raw.setRenderDrawColor ren (r rgba) (g rgba) (b rgba) (a rgba)
+
+rgbaToSDLColor :: RGBA -> Raw.Color
+rgbaToSDLColor c = Raw.Color (r c) (g c) (b c) (a c)
+
+instance Widget () SDLState where
+  renderAt _ _ _ = return ()
+
+instance Widget Text SDLState where
+  renderAt x y t = do
+    renderer <- gets mainRenderer
+    fnt <- getDefaultFont
+    case fnt of
+        Just font -> do
+                        tsurf <- liftIO $ blended font (rgbaToV4Color $ mdGrey 500 ) t
+                        tex <- liftIO $ createTextureFromSurface renderer tsurf
+                        liftIO $ renderTexture (fromIntegral x) (fromIntegral y) tex renderer
+        Nothing -> liftIO $ print "Couldn't find font when rendering TextLabel"
+
+
+-- render a given texture at x y coordinates
+renderTexture :: CInt -> CInt -> Texture -> Renderer -> IO ()
+renderTexture x y texture renderer = do
+    ti <- queryTexture texture
+    -- putStrLn $ "Size is " ++ (show ti)
+    let w = textureWidth ti
+    let h = textureHeight ti
+    let dest = Rectangle (P (V2 x y)) (V2 w h)
+    copy renderer texture Nothing (Just dest)
+
+{-
+instance Widget Panel SDLState where
+  renderAt x y pan = liftIO . print
+-}
 
 -- import Data.Text hiding (copy)
 
@@ -91,25 +132,6 @@ instance Renderable Panel where
         fillRect ren (Just rect)
 
     renderGlobal pan = gets mainRenderer >>= \ren -> (render ren pan (fromIntegral $ globalX $ box pan) (fromIntegral $ globalY $ box pan))
-
--- setting Renderer Draw color based on RGBA values we define in Color
-setRenderDrawColorRGBA ::  MonadIO m => Renderer -> RGBA -> m CInt
-setRenderDrawColorRGBA (Renderer ren) rgba = Raw.setRenderDrawColor ren (r rgba) (g rgba) (b rgba) (a rgba)
-
-rgbaToSDLColor :: RGBA -> Raw.Color
-rgbaToSDLColor c = Raw.Color (r c) (g c) (b c) (a c)
-
-
--- render a given texture at x y coordinates
-renderTexture :: CInt -> CInt -> Texture -> Renderer -> IO ()
-renderTexture x y texture renderer = do
-    ti <- queryTexture texture
-    -- putStrLn $ "Size is " ++ (show ti)
-    let w = textureWidth ti
-    let h = textureHeight ti
-    let dest = Rectangle (P (V2 x y)) (V2 w h)
-    copy renderer texture Nothing (Just dest)
-
 
 -- render horizontal border, x y - coordinates of the start of the border, l - length.
 -- receives one of borderRectangleX functions to setup a correct rectangle

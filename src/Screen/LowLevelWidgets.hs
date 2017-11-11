@@ -1,10 +1,13 @@
-{-# LANGUAGE OverloadedStrings, DuplicateRecordFields, ExistentialQuantification, StandaloneDeriving #-}
+{-# LANGUAGE OverloadedStrings, DuplicateRecordFields, ExistentialQuantification,
+StandaloneDeriving, MultiParamTypeClasses, FlexibleInstances, RankNTypes, AllowAmbiguousTypes #-}
 module Screen.LowLevelWidgets where
 
 import Color
 import Linear
 import Data.Text
 import Data.Monoid
+import Control.Monad.Trans.State.Strict
+import Control.Monad.IO.Class
 
 -- box without borders and other fancy stuff for quickly putting stuff on screen
 data Box = Box {
@@ -21,22 +24,33 @@ data MakeWidget a = MkWidget {
   , widget    :: a   -- whatever we are rendering inside
   } deriving Show
 
-class Show a => Widget a where
-    render :: a -> IO ()
+-- very important typeclass that handles all rendering via state monad
+-- s is a State type in the state monad we are using
+class Show a => Widget a s where
+    renderAt :: Int -> Int -> a -> StateT s IO ()
+    render   :: a -> StateT s IO ()
+    render x = renderAt 0 0 x
 
--- Tree of Widgets that holds our UI, with RootWidget being a dummy node
-data WidgetTree = forall a. Widget a => WT (MakeWidget a) [WidgetTree] | RootWidget
-deriving instance Show WidgetTree -- need this because doesn't work inline for some reason
+-- to render a widget we need to renderAt with coordinates set by bounding box
+instance Widget a s => Widget (MakeWidget a) s where
+  renderAt x y w = renderAt (x + globalX (box w)) (y + globalY (box w)) (widget w)
 
 -- making WidgetTree an instance of Widget so that we can render it properly
-instance Widget WidgetTree where
-  render RootWidget = return ()
-  render (WT w xs) = render (widget w) >> mapM_ render xs
+instance Widget (WidgetTree s) s where
+  -- renderAt _ _ RootWidget = return ()
+  renderAt x y (WT w xs) = renderAt x y w >> mapM_ (renderAt x y) xs
 
-injectWidget :: forall a. Widget a => MakeWidget a -> WidgetTree
+
+-- Tree of Widgets that holds our UI, with RootWidget being a dummy node
+-- paramtetrized by s - which is a State type in the State monad above
+-- Becomes complicated I know
+data WidgetTree s = forall a. Widget a s => WT (MakeWidget a) [(WidgetTree s)] | RootWidget
+deriving instance Show (WidgetTree s) -- need this because doesn't work inline for some reason
+
+injectWidget :: Widget a s => MakeWidget a -> WidgetTree s
 injectWidget w = WT w []
 
-instance Monoid WidgetTree where
+instance Monoid (WidgetTree s) where
   mempty = RootWidget
   mappend RootWidget x = x
   mappend x RootWidget = x
