@@ -55,7 +55,7 @@ basicInfoBox x y w h txt = Complex (emptyPanel { x = x, y = y, width = w, height
 basicButton  x y w h txt = Complex (emptyPanel
                         { x = x, y = y, width = w, height = h, color = mdGrey 700,
                           borders = [solidBorder, solidBorder, solidBorder, solidBorder] })
-                          [emptyTextLabel {text = txt, x = 6, y = 6, color = mdRed 11}]
+                          [emptyTextLabel {text = txt, x = 30, y = 10, color = mdRed 11}]
 
 -- It's not really a monoid!!!! - associativity doesnt work properly, needs fixing
 instance Monoid Widget where

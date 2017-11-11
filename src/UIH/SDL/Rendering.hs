@@ -28,7 +28,6 @@ import Screen.MiddleWidgets
 -- Why the heck can't we render directly??? Take a widget, render it to texture, do final composing later on??
 widgetToTexture :: Widget -> SDLIO (Maybe Texture)
 widgetToTexture w@(TextLabel {color = rclr, text = txt, x, y}) = do
-  _debug $ "Rendering TextLabel: " ++ show w
   ren <- gets mainRenderer
   fnt <- getDefaultFont
   let clr = rgbaToV4Color rclr
@@ -36,13 +35,11 @@ widgetToTexture w@(TextLabel {color = rclr, text = txt, x, y}) = do
       Just font -> do
                       tsurf <- blended font clr txt
                       tex   <- createTextureFromSurface ren tsurf
-                      renderTexture 0 0 tex ren
                       freeSurface tsurf
                       return (Just tex)
       Nothing -> liftIO (print "Couldn't find font when rendering TextLabel") >> return Nothing
 
 widgetToTexture w@(Panel {width, height, color}) = do
-  _debug $ "Rendering Panel: " ++ show w
   ren <- gets mainRenderer
   tex <- createTexture ren ARGB8888 TextureAccessTarget (V2 (fromIntegral width) (fromIntegral height))
   rendererRenderTarget ren $= Just tex
@@ -51,31 +48,22 @@ widgetToTexture w@(Panel {width, height, color}) = do
   return $ Just tex
 
 widgetToTexture (Complex p@(Panel {}) ws) = do
-  _debug $ "Rendering Complex: " ++ show p
   Just mainTex <- widgetToTexture p
-  _debugTexture mainTex
   Prelude.mapM_ (renderToTexture mainTex) ws
-  _debug $ "Finished mapping!"
   return $ Just mainTex
   where renderToTexture tex w = do
-            liftIO $ print "Inside children rendering, texture to render to is:"
-            _debugTexture tex
-            _debug $ "Widget is: " ++ show w
             ren <- gets mainRenderer
             Just t <- widgetToTexture w
-            _debugTexture t
-            _debugTexture tex
-            _debug $ "And now Widget is: " ++ show w
             qinf <- queryTexture t
             rendererRenderTarget ren $= Just tex -- rendering to texture
             let rect = SDL.Rectangle (P $ V2 (fromIntegral (xOfWidget w)) (fromIntegral (yOfWidget w))) (V2 (textureWidth qinf) (textureHeight qinf))
-            liftIO $ print $ "Rectangle to copy to is: " ++ show rect
             SDL.copy ren t Nothing (Just rect)
-            --destroyTexture t
+            destroyTexture t
 
 
 widgetToTexture (Complex _ _) = error "Should not render Complex Widgets where root node is not Panel"
 
+_debug :: String -> SDLIO ()
 _debug = liftIO . print
 _debugTexture tex = do
   qi <- queryTexture tex
