@@ -43,7 +43,7 @@ renderPrimitive :: MonadIO m => Renderer -> RenderPrims -> m ()
 -- setting a color via StateVar provided by SDL and then drawing.
 renderPrimitive ren (PrimPoints ps color) = (rendererDrawColor ren) $= color >> drawPoints ren ps
 renderPrimitive ren (PrimLines  ps color) = (rendererDrawColor ren) $= color >> drawLines  ren ps
-renderPrimitive ren (PrimBoxes  ps color) = (rendererDrawColor ren) $= color >> drawRects  ren ps
+renderPrimitive ren (PrimBoxes  ps color) = (rendererDrawColor ren) $= color >> fillRects  ren ps
 
 -- drawing text is the most tricky
 -- NOT IMPLEMENTED
