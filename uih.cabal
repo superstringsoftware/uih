@@ -21,11 +21,13 @@ library
                      , UIH.SDL.Fonts
                      , UIH.SDL.SDLIO
                      , UIH.SDL.System
-                     , UIH.SDL.Converter
+                     , UIH.SDL.InputText
                      , Screen.MiddleWidgets
                      , Screen.Tests
                      , Color
                      , OpenGL.OpenGLTest
+                     , HTML.Tests
+                     , Reactive.Var
   build-depends:       base >= 4.7 && < 5
                      , clock
                      , sdl2
@@ -37,6 +39,8 @@ library
                      , containers
                      , vector
                      , GLUT
+                     , blaze-html
+                     , blaze-markup
   default-language:    Haskell2010
 
 executable uih

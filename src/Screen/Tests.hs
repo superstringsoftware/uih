@@ -11,7 +11,8 @@ import Control.Monad.IO.Class
 import Screen.MiddleWidgets
 
 bi = basicInfoBox 200 50  300 80 "Hello World"
-bi1 = basicInfoBox 200 150 300 80 "Not So Good"
-bb = basicButton  240 250 200 80 "OK"
+bi1 = basicInfoBox 200 150 300 80 "Not So Good Because Its a Long String"
+bb = basicButton  240 350 200 80 "OK"
+bin = (basicInput 200 250 300 80 "Input text string") {cursorPos = 3}
 
-testUI = ((emptyPanel {width = 500, height = 500} <> bi) <> bi1) <> bb
+testUI = (((emptyPanel {width = 500, height = 500} <> bi) <> bi1) <> bin) <> bb

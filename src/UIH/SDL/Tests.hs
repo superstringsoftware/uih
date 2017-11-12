@@ -20,9 +20,9 @@ import Screen.Tests
 
 
 program = do
-  dumpSDLState >> UIH.SDL.System.initializeAll >> dumpSDLState >> renderUI1 >> appLoop
+  dumpSDLState >> UIH.SDL.System.initializeAll >> dumpSDLState >> renderUI >> appLoop
 
-renderUI1 = do
+renderUI = do
   _debug $ "Drawing " Prelude.++ show testUI
   (Just tex) <- widgetToTexture testUI
   renderer <- gets mainRenderer
@@ -32,17 +32,6 @@ renderUI1 = do
   qinf <- SDL.queryTexture tex
   let rect = SDL.Rectangle (P $ V2 0 0) (V2 (textureWidth qinf) (textureHeight qinf))
   SDL.copy renderer tex Nothing (Just rect)
-  SDL.present renderer
-
-renderUI = do
-  let rec1 = SDL.Rectangle (P $ V2 10 10) (V2 100 300)
-  let rec2 = SDL.Rectangle (P $ V2 400 90) (V2 200 50)
-  let boxes = PrimBoxes (fromList [rec1, rec2]) (V4 200 200 200 20)
-  let txt = PrimText { pText = "Hello World", fontName = "default", fontSize = 0, cx = 400, cy = 400 }
-  renderer <- gets mainRenderer
-  SDL.clear renderer
-  renderPrimitive renderer boxes
-  renderPrimitive renderer (PrimTexts txt (V4 200 50 50 20))
   SDL.present renderer
 
 

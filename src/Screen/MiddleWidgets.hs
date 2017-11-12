@@ -23,6 +23,13 @@ data Widget = Panel {
   , font  :: Text
   , size  :: !Int
   , color :: RGBA
+  } | InputText {
+    panel :: Widget -- must be a Panel!!! - this is ugly design wise need to redo (again)
+  , text  :: Text
+  , font  :: Text
+  , size  :: !Int
+  , color :: RGBA
+  , cursorPos :: !Int
   } | Image {
     x :: !Int
   , y :: !Int -- top-left corner coordinates relative to the parent
@@ -36,9 +43,12 @@ data Widget = Panel {
 
 -- helper function to get dimensions of the Widget (needed for easier rendering if it's a complex Widget)
 xOfWidget (Complex w _) = x w
+xOfWidget w@InputText{} = x (panel w)
 xOfWidget w = x w
 yOfWidget (Complex w _) = y w
+yOfWidget w@InputText{} = y (panel w)
 yOfWidget w = y w
+
 
 {-
 instance Show Widget where
@@ -56,6 +66,12 @@ basicButton  x y w h txt = Complex (emptyPanel
                         { x = x, y = y, width = w, height = h, color = mdGrey 700,
                           borders = [solidBorder, solidBorder, solidBorder, solidBorder] })
                           [emptyTextLabel {text = txt, x = 30, y = 10, color = mdRed 11}]
+
+basicInput   x y w h txt = InputText { size = 14, cursorPos = 0, font = "__DEFAULT__", panel = emptyPanel
+                            { x = x, y = y, width = w, height = h, color = mdGrey 700,
+                                borders = [solidBorder, solidBorder, solidBorder, solidBorder] },
+                                text = txt, color = mdRed 11}
+
 
 -- It's not really a monoid!!!! - associativity doesnt work properly, needs fixing
 instance Monoid Widget where

@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, DuplicateRecordFields, NamedFieldPuns, OverloadedLabels  #-}
+{-# LANGUAGE OverloadedStrings, DuplicateRecordFields, NamedFieldPuns, OverloadedLabels, RecordWildCards  #-}
 module UIH.SDL.Rendering where
 
 import Control.Monad.Trans.State.Strict
@@ -16,49 +16,69 @@ import Foreign.C.Types (CInt)
 
 import Color
 
-import Data.Text hiding (copy)
+import Data.Text as T hiding (copy)
 import qualified Data.Vector.Storable as V -- vectors needed by SDL render prims are Storable
 import Data.Word
 
 import UIH.SDL.SDLIO
 import UIH.SDL.Fonts
+import UIH.SDL.System
 
 import Screen.MiddleWidgets
 
 -- Why the heck can't we render directly??? Take a widget, render it to texture, do final composing later on??
 widgetToTexture :: Widget -> SDLIO (Maybe Texture)
-widgetToTexture w@(TextLabel {color = rclr, text = txt, x, y}) = do
+-- static text label
+widgetToTexture w@TextLabel {color = rclr, text = txt, x, y} = do
   ren <- gets mainRenderer
   fnt <- getDefaultFont
   let clr = rgbaToV4Color rclr
   case fnt of
-      Just font -> do
-                      tsurf <- blended font clr txt
-                      tex   <- createTextureFromSurface ren tsurf
-                      freeSurface tsurf
-                      return (Just tex)
+      Just font -> Just <$> textToTexture txt ren font clr
       Nothing -> liftIO (print "Couldn't find font when rendering TextLabel") >> return Nothing
 
-widgetToTexture w@(Panel {width, height, color}) = do
+widgetToTexture w@Panel {width, height, color} = do
   ren <- gets mainRenderer
-  tex <- createTexture ren ARGB8888 TextureAccessTarget (V2 (fromIntegral width) (fromIntegral height))
+  tex <- createTexture ren RGBA8888 TextureAccessTarget (V2 (fromIntegral width) (fromIntegral height))
   rendererRenderTarget ren $= Just tex
   rendererDrawColor ren $= rgbaToV4Color color
   fillRect ren Nothing
   return $ Just tex
 
-widgetToTexture (Complex p@(Panel {}) ws) = do
+widgetToTexture (Complex p@Panel {} ws) = do
   Just mainTex <- widgetToTexture p
   Prelude.mapM_ (renderToTexture mainTex) ws
   return $ Just mainTex
   where renderToTexture tex w = do
             ren <- gets mainRenderer
             Just t <- widgetToTexture w
-            qinf <- queryTexture t
-            rendererRenderTarget ren $= Just tex -- rendering to texture
-            let rect = SDL.Rectangle (P $ V2 (fromIntegral (xOfWidget w)) (fromIntegral (yOfWidget w))) (V2 (textureWidth qinf) (textureHeight qinf))
-            SDL.copy ren t Nothing (Just rect)
+            textureToTexture tex t (fromIntegral $ xOfWidget w) (fromIntegral $ yOfWidget w)
             destroyTexture t
+
+-- rendering dynamically editing text
+widgetToTexture w@InputText { .. } = do
+  let (s1, s2) = T.splitAt cursorPos text -- splitting status string at the cursor position
+  ren <- gets mainRenderer
+  fnt <- getDefaultFont
+  let clr = rgbaToV4Color color
+  case fnt of
+      Nothing -> liftIO (print "Couldn't find font when rendering InputText") >> return Nothing
+      Just font -> do
+        t1 <- textToTexture s1 ren font clr
+        t2 <- textToTexture s2 ren font clr
+        i1 <- queryTexture t1
+        i2 <- queryTexture t2
+        let (w1, h1) = (textureWidth i1, textureHeight i1)
+        let (w2, h2) = (textureWidth i2, textureHeight i2)
+        _debug (show i1) >> _debug (show i2)
+        Just tex <- widgetToTexture panel -- now rendering bounding box
+        tex1 <- textureToTexture tex  t1 0  0
+        tex2 <- textureToTexture tex1 t2 w1 0
+        -- updating global cursor position
+        modify' (\st -> st { cursor = (cursor st) {x = w1 - 1, y = 100, height = h1} })
+        cursorOn
+        return $ Just tex2
+
 
 
 widgetToTexture (Complex _ _) = error "Should not render Complex Widgets where root node is not Panel"
@@ -69,43 +89,24 @@ _debugTexture tex = do
   qi <- queryTexture tex
   liftIO $ print $ "[DEBUG][Texture] " Prelude.++ show qi
 
--- basic datatypes
--- first element of constructor is coordinates, second - color in SDL format
-type PrimPoint = Point V2 CInt
-type PrimBox   = Rectangle CInt
-type PrimColor = V4 Word8
-data PrimText  = PrimText { pText :: Text, fontName :: Text, fontSize :: CInt, cx :: CInt, cy :: CInt }
+-- various utility functions
 
-data RenderPrims = PrimPoints (V.Vector PrimPoint) PrimColor
-                 | PrimLines  (V.Vector PrimPoint) PrimColor
-                 | PrimBoxes  (V.Vector PrimBox)   PrimColor
-                 | PrimTexts  PrimText           PrimColor
 
--- to stack layers on top of each other, need to render them in order.
--- also may use some optimizations such as render to texture and then blending etc
-type Layer = V.Vector RenderPrims
+-- Internal helper functions
+textureToTexture texTgt texSrc x y = do
+          ren <- gets mainRenderer
+          qinf <- queryTexture texSrc
+          rendererRenderTarget ren $= Just texTgt -- rendering to texture
+          let rect = SDL.Rectangle (P $ V2 x y) (V2 (textureWidth qinf) (textureHeight qinf))
+          SDL.copy ren texSrc Nothing (Just rect)
+          return texTgt
 
--- function that renders a primitive to a current render target
--- the most low level, with explicit renderers and fonts, in the IO monad
--- this will need to be wrapped into our custom state keeping monad
-renderPrimitive :: Renderer -> RenderPrims -> SDLIO ()
--- setting a color via StateVar provided by SDL and then drawing.
-renderPrimitive ren (PrimPoints ps color) = (rendererDrawColor ren) $= color >> drawPoints ren ps
-renderPrimitive ren (PrimLines  ps color) = (rendererDrawColor ren) $= color >> drawLines  ren ps
-renderPrimitive ren (PrimBoxes  ps color) = (rendererDrawColor ren) $= color >> fillRects  ren ps
-
--- drawing text is the most tricky
-renderPrimitive ren (PrimTexts txt color) = do
-  fnt <- getDefaultFont
-  case fnt of
-      Just font -> do
-                      tsurf <- blended font color (pText txt)
-                      tex   <- createTextureFromSurface ren tsurf
-                      renderTexture (cx txt) (cy txt) tex ren
-                      freeSurface tsurf
-                      destroyTexture tex
-      Nothing -> liftIO $ print "Couldn't find font when rendering TextLabel"
-
+textToTexture :: MonadIO m => Text -> Renderer -> Font -> V4 Word8 -> m Texture
+textToTexture txt ren font color = do
+  tsurf <- blended font color txt
+  tex   <- createTextureFromSurface ren tsurf
+  freeSurface tsurf
+  return tex
 
 -- render a given texture at x y coordinates
 renderTexture :: MonadIO m => CInt -> CInt -> Texture -> Renderer -> m ()
