@@ -62,14 +62,13 @@ drawCursor flag = do
 
 drawCursorRaw x y h clr1 clr2 ren ms = do
   rendererRenderTarget ren $= Nothing
-  rendererDrawColor ren $= clr1
+  rendererDrawColor ren $= V4 10 10 255 100 -- clr1
   drawLine ren (P $ V2 x y) (P $ V2 x (y + h) )
-  print "Calling timer white"
+  present ren
   delay ms
   rendererRenderTarget ren $= Nothing
   rendererDrawColor ren $= clr2
   drawLine ren (P $ V2 x y) (P $ V2 x (y + h) )
-  print "Calling timer black"
   return $ Reschedule ms
 
 
