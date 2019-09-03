@@ -28,6 +28,7 @@ library
                      , OpenGL.OpenGLTest
                      , HTML.Tests
                      , Reactive.Var
+                     , FRP.Banana
   build-depends:       base >= 4.7 && < 5
                      , clock
                      , sdl2
