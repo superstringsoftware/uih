@@ -74,12 +74,15 @@ basicInput   x y w h txt = InputText { size = 14, cursorPos = 0, font = "__DEFAU
 
 
 -- It's not really a monoid!!!! - associativity doesnt work properly, needs fixing
+instance Semigroup Widget where
+  (<>) (Complex w ws) nw = Complex w (ws ++ [nw]) -- if already complex on the left, simply adding to list
+  (<>) w nw = Complex w [nw] -- otherwise, simply building Complex from an element
+
 instance Monoid Widget where
   mempty = EmptyWidget
   mappend EmptyWidget x = x
   mappend x EmptyWidget = x
-  mappend (Complex w ws) nw = Complex w (ws ++ [nw]) -- if already complex on the left, simply adding to list
-  mappend w nw = Complex w [nw] -- otherwise, simply building Complex from an element
+  mappend x y = x <> y
 
 
 -- line styles used in borders - "none" will be Nothing

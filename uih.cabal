@@ -23,6 +23,7 @@ library
                      , UIH.SDL.System
                      , UIH.SDL.InputText
                      , Screen.MiddleWidgets
+                     , Screen.Widgets
                      , Screen.Tests
                      , Color
                      , OpenGL.OpenGLTest
@@ -42,6 +43,8 @@ library
                      , GLUT
                      , blaze-html
                      , blaze-markup
+                     , reactive-banana
+                     
   default-language:    Haskell2010
 
 executable uih
@@ -84,6 +87,7 @@ executable uih-bench
                        , random
                        , vector
                        , criterion
+                       , criterion-measurement
     default-language:    Haskell2010
 
 test-suite uih-test

@@ -54,7 +54,7 @@ instance Show Timer where
 type SDLIO = StateT SDLState IO
 
 -- needs to be read from config!
-mainWindowSettings = WindowConfig
+mainWindowSettings = defaultWindow
   { windowBorder       = True
   , windowHighDPI      = True
   , windowInputGrabbed = False

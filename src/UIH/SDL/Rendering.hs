@@ -34,7 +34,7 @@ widgetToTexture w@TextLabel {color = rclr, text = txt, x, y} = do
   fnt <- getDefaultFont
   let clr = rgbaToV4Color rclr
   case fnt of
-      Just font -> Just <$> textToTexture txt ren font clr
+      Just font -> Just <$> textToTexture txt ren clr font
       Nothing -> liftIO (print "Couldn't find font when rendering TextLabel") >> return Nothing
 
 widgetToTexture w@Panel {width, height, color} = do
@@ -64,8 +64,8 @@ widgetToTexture w@InputText { .. } = do
   case fnt of
       Nothing -> liftIO (print "Couldn't find font when rendering InputText") >> return Nothing
       Just font -> do
-        t1 <- textToTexture s1 ren font clr
-        t2 <- textToTexture s2 ren font clr
+        t1 <- textToTexture s1 ren clr font
+        t2 <- textToTexture s2 ren clr font
         i1 <- queryTexture t1
         i2 <- queryTexture t2
         let (w1, h1) = (textureWidth i1, textureHeight i1)
@@ -101,12 +101,20 @@ textureToTexture texTgt texSrc x y = do
           SDL.copy ren texSrc Nothing (Just rect)
           return texTgt
 
-textToTexture :: MonadIO m => Text -> Renderer -> Font -> V4 Word8 -> m Texture
-textToTexture txt ren font color = do
+textToTexture :: MonadIO m => Text -> Renderer -> V4 Word8 -> Font -> m Texture
+textToTexture txt ren color font = do
   tsurf <- blended font color txt
   tex   <- createTextureFromSurface ren tsurf
   freeSurface tsurf
   return tex
+
+textToMaybeTexture :: MonadIO m => Text -> Renderer -> V4 Word8 -> Font -> m (Maybe Texture)
+textToMaybeTexture txt ren color font = do
+  tsurf <- blended font color txt
+  tex   <- createTextureFromSurface ren tsurf
+  freeSurface tsurf
+  return $ Just tex
+  
 
 -- render a given texture at x y coordinates
 renderTexture :: MonadIO m => CInt -> CInt -> Texture -> Renderer -> m ()
