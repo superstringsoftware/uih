@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 88db9e28dcd615ed95e8dd19516c2ca073abbae36773e6437467a9a19f42581e
+-- hash: 7917ba775ff584218c0c6055eda24b20ef5b57939dcdb4278ec611db5add5cef
 
 name:           uih
 version:        0.1.0.0
@@ -30,16 +30,6 @@ library
       Color
       FRP.Banana
       Logger
-      OpenGL.OpenGLTest
-      Screen.MiddleWidgets
-      Screen.Tests
-      Screen.Widgets
-      UIH.SDL.Fonts
-      UIH.SDL.InputText
-      UIH.SDL.Rendering
-      UIH.SDL.SDLIO
-      UIH.SDL.System
-      UIH.SDL.Tests
       UIH.SDL2.Basic
       UIH.SDL2.Fonts
       UIH.SDL2.RenderMonad
@@ -52,9 +42,7 @@ library
   hs-source-dirs:
       src
   build-depends:
-      GLUT
-    , OpenGL
-    , base >=4.7 && <5
+      base >=4.7 && <5
     , clock
     , containers
     , ghc-prim
@@ -64,31 +52,6 @@ library
     , sdl2-ttf
     , text
     , transformers
-    , vector
-  default-language: Haskell2010
-
-executable opengl
-  main-is: opengltest.hs
-  other-modules:
-      Main
-      Paths_uih
-  hs-source-dirs:
-      app
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
-  build-depends:
-      GLUT
-    , OpenGL
-    , base
-    , clock
-    , containers
-    , ghc-prim
-    , linear
-    , reactive-banana
-    , sdl2
-    , sdl2-ttf
-    , text
-    , transformers
-    , uih
     , vector
   default-language: Haskell2010
 
@@ -100,9 +63,7 @@ executable uih
       app
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      GLUT
-    , OpenGL
-    , base
+      base
     , clock
     , containers
     , directory
@@ -127,9 +88,7 @@ test-suite math-test
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      GLUT
-    , OpenGL
-    , base >=4.7 && <5
+      base >=4.7 && <5
     , clock
     , containers
     , ghc-prim
