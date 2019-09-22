@@ -71,9 +71,12 @@ checkEvent renUI event = do
         SDL.QuitEvent -> return True
         SDL.KeyboardEvent keyboardEvent -> return False
         SDL.MouseMotionEvent me -> do 
-            let pos = SDL.mouseMotionEventPos me
-            liftIO $ putStrLn $ "Mouse moved to: " ++ show pos
-            return False
+            let P (V2 x y) = SDL.mouseMotionEventPos me
+            -- liftIO $ putStrLn $ "Mouse moved to: " ++ show x ++ ", " ++ show y
+            evs <- getEventSource (fromIntegral x) (fromIntegral y)
+            maybe (return False)
+                  (\i -> liftIO (putStrLn $ "Hovering over id: " ++ show i) >> return False)
+                  evs
         SDL.TextInputEvent ev -> do
                                     liftIO $ print $ show ev
                                     return False

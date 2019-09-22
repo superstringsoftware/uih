@@ -96,10 +96,10 @@ fireEvent ev = do
     
 
 -- given x,y coordinates finds a widget that contains them and returns it (if any)
-getEventSource :: Monad m => Int -> Int -> ManagerMonadT m (Maybe (PolyWidget m))
+getEventSource :: Monad m => Int -> Int -> ManagerMonadT m (Maybe Int)
 getEventSource x y = do
     ws <- widgets <$> get
-    let res = Map.elems $ Map.filter (isInWidget x y) ws
+    let res = Map.keys $ Map.filter (isInWidget x y) ws
     case res of
         [] -> return Nothing
         (e:xs) -> return $ Just e -- returning first collider that catches the event, no propagation or anything, that's TBD

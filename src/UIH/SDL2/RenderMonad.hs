@@ -47,7 +47,9 @@ type SDLIO = StateT SDLState IO
 -- needs to be read from config!
 mainWindowSettings = defaultWindow
   { windowBorder       = True
-  , windowHighDPI      = True
+  -- There are issues with high DPI windows b/c we need to recalculate all coordinates when drawing / checking event
+  -- coordinates, so its support is pending
+  , windowHighDPI      = False 
   , windowInputGrabbed = False
   , windowMode         = Windowed
   --, windowOpenGL       = Nothing
