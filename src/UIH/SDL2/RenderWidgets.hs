@@ -57,6 +57,7 @@ instance Renderable SDLIO Button where
     renderScreen btn@Button { coll = (CollRect x y w h) } = do
         ren <- getRenderer
         tex <- render btn
+        cl <- getCollider btn
         renderTexture (fromIntegral x) (fromIntegral y) tex ren
         liftIO $ destroyTexture tex -- NEED TO CACHE EVENTUALLY!!!
         return btn -- Need to update collider!
