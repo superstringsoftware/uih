@@ -42,12 +42,9 @@ renderUI = do
     SDL.rendererRenderTarget renderer $= Nothing -- rendering to Screen
     rendererDrawColor renderer $= V4 255 255 255 0
     SDL.clear renderer
-    lift $ mapM_ fn ws
+    lift $ mapM_ renderScreen ws
     SDL.present renderer
-    where
-        fn :: PolyWidget SDLIO -> SDLIO () 
-        fn (PolyWidget w _) = renderScreen w
-
+    
 appLoop :: SDLUI ()
 appLoop = do
     renderUI
@@ -86,6 +83,6 @@ checkEvent renUI event = do
                 return False
         SDL.TextInputEvent ev -> do
                 liftIO $ print $ show ev
-                alterTextWidget (textInputEventText ev)
+                -- alterTextWidget (textInputEventText ev)
                 return False
         _ -> return False

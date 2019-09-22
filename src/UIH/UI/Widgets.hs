@@ -6,6 +6,7 @@
     , TypeApplications
     , FlexibleContexts
     , ExistentialQuantification
+    , OverloadedLists
      #-}
 
 {-
@@ -26,20 +27,17 @@ I don't think the solution exists in Haskell.
 
 Probably the best compromise is very well designed low-level small set of basic widgets, where larger widgets are
 constructed from this set.
+
+Exploring this idea further here. 
 -}
 module UIH.UI.Widgets where
 
 -- rendering-independent widgets
 import Color
 import Data.Text
+import Data.Sequence
 
 import GHC.Records
-
--- polymorphic boxing for any kind of widgets supporting Renderable interface in a monad m
-data Monad m => PolyWidget m = forall a. Renderable m a => PolyWidget a (Text -> a -> PolyWidget m)
-
-updateButtonText :: (Monad m, Renderable m Button) => Text -> Button -> PolyWidget m
-updateButtonText txt btn = PolyWidget (btn { text = txt } :: Button ) updateButtonText
 
 data Collider = CollRect {
         x,y,w,h :: !Int
@@ -53,22 +51,17 @@ isInCollider x y (CollRect a b w h) =
 isInCollider x y (CollCircle a b r) = 
     if (x-a)^2 + (y-b)^2 < r^2 then True else False
 
-isInWidget :: Monad m => Int -> Int -> PolyWidget m -> Bool
-isInWidget x y (PolyWidget a _) = isInCollider x y (getCollider a)
+isInWidget x y w = isInCollider x y (getCollider w)
 
-data Box = Box {
+data BasicWidget = Box {
     coll :: Collider,
     color :: Color
-} deriving (Show, Eq)
-
-data TextLabel = TextLabel {
+} | TextLabel {
     coll :: Collider,
     color :: Color,
     fontName :: Text,
     text :: Text
-} deriving (Show, Eq)
-
-data Button = Button {
+} | Button {
     coll :: Collider,
     bgColor :: Color,
     -- text label position relative to the Collider
@@ -92,9 +85,7 @@ class HasField "coll" a Collider => HasCollider a where
     getCollider ::  a -> Collider
     getCollider r = getField @"coll" r
 
-instance HasCollider Button
-instance HasCollider Box
-instance HasCollider TextLabel
+instance HasCollider BasicWidget
 
 class (Monad m, HasCollider a) => Renderable m a where
     -- what we return from *intermediary* rendering function, e.g. Texture in SDL

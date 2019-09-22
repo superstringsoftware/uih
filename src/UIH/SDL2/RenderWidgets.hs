@@ -19,44 +19,27 @@ import Control.Monad.IO.Class (liftIO)
 
 import SDL
 
-instance Renderable SDLIO Box where
-    type Res SDLIO Box = Texture
+instance Renderable SDLIO BasicWidget where
+    type Res SDLIO BasicWidget = Texture
     -- render :: Box -> SDLIO Texture
     render (Box (CollRect x y w h) clr) = getRenderer >>= boxToTexture (fromIntegral w) (fromIntegral h) clr
-    renderScreen box@(Box (CollRect x y w h) clr) = do
-        tex <- render box
-        ren <- getRenderer
-        renderTexture (fromIntegral x) (fromIntegral y) tex ren
-        liftIO $ destroyTexture tex -- NEED TO CACHE EVENTUALLY!!!
-        return ()
- 
-instance Renderable SDLIO TextLabel where
-    type Res SDLIO TextLabel = Texture
     render (TextLabel (CollRect x y w h) clr fname text) = do
         (Just fnt) <- getDefaultFont -- WRONG, HANDLE ERRORS!!!
         ren <- getRenderer
         textToTexture text ren clr fnt
-    renderScreen tl@(TextLabel (CollRect x y w h) _ _ _) = do
-        ren <- getRenderer
-        tex <- render tl
-        renderTexture (fromIntegral x) (fromIntegral y) tex ren
-        liftIO $ destroyTexture tex -- NEED TO CACHE EVENTUALLY!!!
-        return () -- Need to update collider!
-    
--- asf
-instance Renderable SDLIO Button where
-    type Res SDLIO Button = Texture
-    -- render :: Box -> SDLIO Texture
     render btn@Button { coll = (CollRect x y w h) } = do
         ren  <- getRenderer
-        tex1 <- boxToTexture (fromIntegral w) (fromIntegral h) (bgColor (btn::Button)) ren
+        tex1 <- boxToTexture (fromIntegral w) (fromIntegral h) (bgColor (btn::BasicWidget)) ren
         (Just fnt) <- getDefaultFont -- WRONG, HANDLE ERRORS!!!
-        tex2 <- textToTexture (text (btn::Button) ) ren (fontColor btn) fnt
+        tex2 <- textToTexture (text btn ) ren (fontColor btn) fnt
         copyTextureClip tex1 (fromIntegral $ txtX btn) (fromIntegral $ txtY btn) tex2 ren True
         pure tex1
-    renderScreen btn@Button { coll = (CollRect x y w h) } = do
+    renderScreen w = do
+        tex <- render w
         ren <- getRenderer
-        tex <- render btn
-        renderTexture (fromIntegral x) (fromIntegral y) tex ren
+        let coll = getCollider w
+        renderTexture (fromIntegral $ x (coll::Collider) ) (fromIntegral $ y (coll::Collider)) tex ren
         liftIO $ destroyTexture tex -- NEED TO CACHE EVENTUALLY!!!
-        return () -- Need to update collider!
+        return ()
+ 
+

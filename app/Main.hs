@@ -25,13 +25,14 @@ main = do
 
 program = do
   initializeAll 
-  addWidgetWithHandler (PolyWidget testButton updateButtonText) (EventHandler testHandler)
+  addWidgetWithHandler testButton (EventHandler testHandler)
   -- SDL.startTextInput $ Rect 0 0 300 60
   -- SDL.stopTextInput
   appLoop
 
 
-testHandler :: Event SDLIO -> SDLUI ()
+
+testHandler :: Event -> SDLUI ()
 testHandler ev@(Event EvHover (i,w)) = liftIO $ putStrLn $ "Hovering over widget # " ++ show i
 
 

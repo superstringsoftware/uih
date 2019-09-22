@@ -31,9 +31,9 @@ data EventTypes = EvHover
     | EventGeneric
     deriving (Eq, Show)
 
-data Event m = Event {
+data Event = Event {
     eventType :: EventTypes,
-    source :: (Int, PolyWidget m)
+    source :: (Int, BasicWidget)
 }
 
 -- Polymorphic UI state in the monad m
@@ -42,9 +42,9 @@ data UIState m = UIState {
     idCounter :: !Int, 
     -- polymorphic map from Ints (ids) to Renderables
     -- Eventually we want to track colliders separately, since not every widget will be an event source
-    widgets :: Map.Map Int (PolyWidget m),
+    widgets :: Map.Map Int BasicWidget,
     -- event handlers for widget with id = key
-    handlers :: Map.Map Int [(EventHandler m)],
+    handlers :: Map.Map Int [EventHandler m],
     -- certain state in terms of current focus / hover etc widgets -- 
     -- needed to handle text events etc
     currentHoverId :: Maybe Int,
@@ -53,7 +53,7 @@ data UIState m = UIState {
 
 -- Event handlers are actions from Event 
 data EventHandler m = EventHandler {
-    runHandler :: Event m -> ManagerMonadT m ()
+    runHandler :: Event -> ManagerMonadT m ()
 }
 
 initUIState = UIState {
@@ -67,6 +67,7 @@ initUIState = UIState {
 setCurrentFocusId i = modify' (\s -> s { currentFocusId = i }) 
 
 -- ok this is some crazy existential stuff
+{-
 alterTextWidget :: Monad m => Text -> ManagerMonadT m ()
 alterTextWidget txt = do
     wpm <- getFocusWidget
@@ -81,9 +82,9 @@ alterTextWidget txt = do
                     let ws' = Map.insert i wp' ws
                     modify' (\s -> s { widgets = ws' } )
                     return ()) mi
+-}
 
-
-getFocusWidget :: Monad m => ManagerMonadT m (Maybe (PolyWidget m))
+getFocusWidget :: Monad m => ManagerMonadT m (Maybe BasicWidget)
 getFocusWidget = do
     im <- gets currentFocusId
     ws <- gets widgets
@@ -93,7 +94,7 @@ type ManagerMonadT m = StateT (UIState m) m
 
 -- adding a new widget to UIState
 -- returns ID of newly added widget
-registerWidget :: Monad m => PolyWidget m -> ManagerMonadT m Int
+registerWidget :: Monad m => BasicWidget -> ManagerMonadT m Int
 registerWidget w = do
     s <- get
     ws <- widgets <$> get
@@ -114,11 +115,11 @@ addHandler h i = do
           fn (Just chs) = Just (h:chs)
 
 -- adds new widget and a handler          
-addWidgetWithHandler :: Monad m => PolyWidget m -> EventHandler m -> ManagerMonadT m Int
+addWidgetWithHandler :: Monad m => BasicWidget -> EventHandler m -> ManagerMonadT m Int
 addWidgetWithHandler w h = registerWidget w >>= \i -> addHandler h i >> return i
 
 -- firing event to all registered handlers
-fireEvent :: Monad m => Event m -> ManagerMonadT m ()
+fireEvent :: Monad m => Event -> ManagerMonadT m ()
 fireEvent ev = do
     let (i, pw) = source ev -- getting index and widget of the event
     res <- Map.lookup <$> pure i <*> (handlers <$> get) -- getting list of handlers if any
@@ -128,7 +129,7 @@ fireEvent ev = do
           
     
 -- given x,y coordinates finds a widget that contains them and returns it (if any)
-getEventSource :: Monad m => Int -> Int -> ManagerMonadT m (Maybe (Int, PolyWidget m))
+getEventSource :: Monad m => Int -> Int -> ManagerMonadT m (Maybe (Int, BasicWidget))
 getEventSource x y = do
     ws <- widgets <$> get
     let res = Map.assocs $ Map.filter (isInWidget x y) ws
