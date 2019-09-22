@@ -1,104 +1,144 @@
-name:                uih
-version:             0.1.0.0
--- synopsis:
--- description:
-homepage:            https://github.com/jhoxray/uih#readme
-license:             BSD3
-license-file:        LICENSE
-author:              J X-Ray Ho
-maintainer:          jho.xray@gmail.com
-copyright:           Copyright: (c) 2016 J X-Ray Ho
-category:            languages
-build-type:          Simple
-extra-source-files:  README.md
-cabal-version:       >=1.10
+cabal-version: 1.12
 
-library
-  hs-source-dirs:      src
-  exposed-modules:     Logger
-                     , UIH.SDL.Rendering
-                     , UIH.SDL.Tests
-                     , UIH.SDL.Fonts
-                     , UIH.SDL.SDLIO
-                     , UIH.SDL.System
-                     , UIH.SDL.InputText
-                     , Screen.MiddleWidgets
-                     , Screen.Widgets
-                     , Screen.Tests
-                     , Color
-                     , OpenGL.OpenGLTest
-                     , HTML.Tests
-                     , Reactive.Var
-                     , FRP.Banana
-  build-depends:       base >= 4.7 && < 5
-                     , clock
-                     , sdl2
-                     , sdl2-ttf
-                     , linear
-                     , text
-                     , ghc-prim
-                     , transformers
-                     , containers
-                     , vector
-                     , GLUT
-                     , blaze-html
-                     , blaze-markup
-                     , reactive-banana
-                     
-  default-language:    Haskell2010
+-- This file has been generated from package.yaml by hpack version 0.31.2.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 88db9e28dcd615ed95e8dd19516c2ca073abbae36773e6437467a9a19f42581e
 
-executable uih
-  hs-source-dirs:      app
-  main-is:             Main.hs
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
-  build-depends:       base
-                     , sdl2
-                     , sdl2-ttf
-                     , linear
-                     , uih
-                     , sdl2-gfx
-                     , ghc-prim
-                     , directory
-                     , transformers
-                     , text
-  default-language:    Haskell2010
-
-
-executable opengl
-  hs-source-dirs:      app
-  main-is:             opengltest.hs
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
-  build-depends:       base
-                     , uih
-                     , GLUT
-  default-language:    Haskell2010
-
-executable uih-bench
-    hs-source-dirs:      benchmarks
-    main-is:             Main.hs
-    ghc-options:         -threaded -rtsopts -with-rtsopts=-N
-    build-depends:       base
-                       , sdl2
-                       , sdl2-ttf
-                       , linear
-                       , uih
-                       , sdl2-gfx
-                       , ghc-prim
-                       , random
-                       , vector
-                       , criterion
-                       , criterion-measurement
-    default-language:    Haskell2010
-
-test-suite uih-test
-  type:                exitcode-stdio-1.0
-  hs-source-dirs:      test
-  main-is:             Spec.hs
-  build-depends:       base
-                     , uih
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
-  default-language:    Haskell2010
+name:           uih
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/jhoxray/uih#readme>
+homepage:       https://github.com/https://github.com/jhoxray/uih#readme#readme
+bug-reports:    https://github.com/https://github.com/jhoxray/uih#readme/issues
+author:         Author name here
+maintainer:     jho.xray@gmail.com
+copyright:      2019 Author name here
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    ChangeLog.md
 
 source-repository head
-  type:     git
-  location: https://github.com/jhoxray/uih
+  type: git
+  location: https://github.com/https://github.com/jhoxray/uih#readme
+
+library
+  exposed-modules:
+      Color
+      FRP.Banana
+      Logger
+      OpenGL.OpenGLTest
+      Screen.MiddleWidgets
+      Screen.Tests
+      Screen.Widgets
+      UIH.SDL.Fonts
+      UIH.SDL.InputText
+      UIH.SDL.Rendering
+      UIH.SDL.SDLIO
+      UIH.SDL.System
+      UIH.SDL.Tests
+      UIH.SDL2.Basic
+      UIH.SDL2.Fonts
+      UIH.SDL2.RenderMonad
+      UIH.SDL2.RenderWidgets
+      UIH.SDL2.System
+      UIH.UI.ManagerMonad
+      UIH.UI.Widgets
+  other-modules:
+      Paths_uih
+  hs-source-dirs:
+      src
+  build-depends:
+      GLUT
+    , OpenGL
+    , base >=4.7 && <5
+    , clock
+    , containers
+    , ghc-prim
+    , linear
+    , reactive-banana
+    , sdl2
+    , sdl2-ttf
+    , text
+    , transformers
+    , vector
+  default-language: Haskell2010
+
+executable opengl
+  main-is: opengltest.hs
+  other-modules:
+      Main
+      Paths_uih
+  hs-source-dirs:
+      app
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      GLUT
+    , OpenGL
+    , base
+    , clock
+    , containers
+    , ghc-prim
+    , linear
+    , reactive-banana
+    , sdl2
+    , sdl2-ttf
+    , text
+    , transformers
+    , uih
+    , vector
+  default-language: Haskell2010
+
+executable uih
+  main-is: Main.hs
+  other-modules:
+      Paths_uih
+  hs-source-dirs:
+      app
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      GLUT
+    , OpenGL
+    , base
+    , clock
+    , containers
+    , directory
+    , ghc-prim
+    , linear
+    , reactive-banana
+    , sdl2
+    , sdl2-gfx
+    , sdl2-ttf
+    , text
+    , transformers
+    , uih
+    , vector
+  default-language: Haskell2010
+
+test-suite math-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_uih
+  hs-source-dirs:
+      test
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      GLUT
+    , OpenGL
+    , base >=4.7 && <5
+    , clock
+    , containers
+    , ghc-prim
+    , linear
+    , reactive-banana
+    , sdl2
+    , sdl2-ttf
+    , text
+    , transformers
+    , uih
+    , vector
+  default-language: Haskell2010

@@ -4,7 +4,7 @@ import Linear
 import Data.Word
 
 -- Materal design colors implemented as pattern-matched functions
-
+type Color = V4 Word8
 -- RGBA color
 data RGBA = RGBA {r :: !Word8, g :: !Word8, b :: !Word8, a :: !Word8} deriving (Show, Eq)
 -- data RGB = RGB {r :: !Word8, g :: !Word8, b :: !Word8} deriving (Show, Eq)

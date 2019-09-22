@@ -116,7 +116,7 @@ textToMaybeTexture txt ren color font = do
   return $ Just tex
   
 
--- render a given texture at x y coordinates
+-- render a given texture at x y coordinates ON SCREEN
 renderTexture :: MonadIO m => CInt -> CInt -> Texture -> Renderer -> m ()
 renderTexture x y texture renderer = do
   ti <- queryTexture texture

@@ -2,12 +2,7 @@ flags: {}
 extra-package-dbs: []
 packages:
 - .
-extra-deps:
-- sdl2-ttf-2.0.1
-- wx-0.92.3.0
-- wxc-0.92.3.0
-- wxcore-0.92.3.0
-- wxdirect-0.92.3.0
+extra-deps: 
 - reactive-banana-1.2.1.0
 # resolver: lts-9.11
 resolver: lts-14.4

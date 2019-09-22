@@ -1,0 +1,83 @@
+name:                uih
+version:             0.1.0.0
+github:              https://github.com/jhoxray/uih#readme
+license:             BSD3
+author:              "Author name here"
+maintainer:          "jho.xray@gmail.com"
+copyright:           "2019 Author name here"
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/jhoxray/uih#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+- text
+- ghc-prim
+- vector
+- sdl2-ttf
+- sdl2
+- clock
+- GLUT
+- transformers
+- containers
+- OpenGL
+- reactive-banana
+- linear
+
+
+library:
+  source-dirs: src
+
+executables:
+  uih:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - base
+    - sdl2
+    - sdl2-ttf
+    - linear
+    - uih
+    - sdl2-gfx
+    - ghc-prim
+    - directory
+    - transformers
+    - text
+
+  opengl:
+    main:                opengltest.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - uih
+    - base
+    
+    
+
+tests:
+  math-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - uih

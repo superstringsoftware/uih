@@ -1,26 +1,19 @@
 {-# LANGUAGE OverloadedStrings, DuplicateRecordFields  #-}
 
 -- Fonts handling via sdl2-ttf
-module UIH.SDL.Fonts where
+module UIH.SDL2.Fonts where
 
 import Control.Monad.Trans.State.Strict
 import Control.Monad.IO.Class (liftIO)
 
 import SDL.Font
---import qualified SDL.Raw as Raw
---import SDL as SDL
---import SDL.Internal.Types
---import SDL.Vect
-
 import Data.Text hiding (copy)
 import Control.Exception
 import SDL.Exception
 
-import UIH.SDL.SDLIO
+import UIH.SDL2.RenderMonad
 
 import qualified Data.Map.Strict as Map
-
---defaultFontPath :: Text
 
 defaultFontPath = "./Roboto-Light.ttf"
 

@@ -9,11 +9,9 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.State.Strict
 import Control.Monad
 
-import UIH.SDL.SDLIO
-import UIH.SDL.System
+import UIH.SDL2.RenderMonad
+import UIH.SDL2.System
 import qualified SDL as SDL
-
-import UIH.SDL.Tests
 
 runProgram :: SDLIO a -> IO a
 runProgram prog = evalStateT prog SDLEmptyState
