@@ -10,4 +10,4 @@ extra-deps:
 - wxdirect-0.92.3.0
 - reactive-banana-1.2.1.0
 # resolver: lts-9.11
-resolver: lts-13.6
+resolver: lts-14.4
