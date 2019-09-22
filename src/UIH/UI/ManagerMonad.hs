@@ -10,8 +10,10 @@
      #-}
 module UIH.UI.ManagerMonad where
 
--- this is a (pure?) state monad that keeps the current UI state and handles low-level events from SDL,
--- transforming them to high-level UI events (button clicks etc)
+-- this is a (pure?) state monad that keeps the current UI state 
+-- It is connected to SDL low level events etc via SDL2.SDLUI monad, 
+-- which handles SDL events transformation etc
+-- This one is a handy abstraction that potentially allows other rendering engines to be used.
 
 import UIH.UI.Widgets
 
@@ -42,7 +44,11 @@ data UIState m = UIState {
     -- Eventually we want to track colliders separately, since not every widget will be an event source
     widgets :: Map.Map Int (PolyWidget m),
     -- event handlers for widget with id = key
-    handlers :: Map.Map Int [(EventHandler m)]
+    handlers :: Map.Map Int [(EventHandler m)],
+    -- certain state in terms of current focus / hover etc widgets -- 
+    -- needed to handle text events etc
+    currentHoverId :: Maybe Int,
+    currentFocusId :: Maybe Int -- widget that has focus, used for text editing mostly
 }
 
 -- Event handlers are actions from Event 
@@ -53,8 +59,35 @@ data EventHandler m = EventHandler {
 initUIState = UIState {
     idCounter = 0,
     widgets = Map.empty,
-    handlers = Map.empty
+    handlers = Map.empty,
+    currentHoverId = Nothing,
+    currentFocusId = Nothing
 }
+
+setCurrentFocusId i = modify' (\s -> s { currentFocusId = i }) 
+
+-- ok this is some crazy existential stuff
+alterTextWidget :: Monad m => Text -> ManagerMonadT m ()
+alterTextWidget txt = do
+    wpm <- getFocusWidget
+    case wpm of
+        Nothing -> return ()
+        (Just (PolyWidget w upd)) -> do
+            let wp' = upd txt w
+            mi <- gets currentFocusId -- can go directly to Just because we know there is a focus widget
+            ws <- gets widgets
+            maybe (return ())
+                  (\i -> do 
+                    let ws' = Map.insert i wp' ws
+                    modify' (\s -> s { widgets = ws' } )
+                    return ()) mi
+
+
+getFocusWidget :: Monad m => ManagerMonadT m (Maybe (PolyWidget m))
+getFocusWidget = do
+    im <- gets currentFocusId
+    ws <- gets widgets
+    return $ maybe Nothing (\i -> Map.lookup i ws) im
 
 type ManagerMonadT m = StateT (UIState m) m
 
@@ -94,12 +127,11 @@ fireEvent ev = do
           res
           
     
-
 -- given x,y coordinates finds a widget that contains them and returns it (if any)
-getEventSource :: Monad m => Int -> Int -> ManagerMonadT m (Maybe Int)
+getEventSource :: Monad m => Int -> Int -> ManagerMonadT m (Maybe (Int, PolyWidget m))
 getEventSource x y = do
     ws <- widgets <$> get
-    let res = Map.keys $ Map.filter (isInWidget x y) ws
+    let res = Map.assocs $ Map.filter (isInWidget x y) ws
     case res of
         [] -> return Nothing
         (e:xs) -> return $ Just e -- returning first collider that catches the event, no propagation or anything, that's TBD

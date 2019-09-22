@@ -36,7 +36,7 @@ initFonts = do
     let fonts = Map.insert "__DEFAULT__" fnt (loadedFonts st)
     put st {loadedFonts = fonts}
     where initDefaultFont = do   
-            r <- try $ (initialize >> defaultFont 32)
+            r <- try $ (initialize >> defaultFont 16)
             either (\e -> print (e::SDLException) >> fail "Could not initialize TTF fonts!")
                    (\font -> return font) r
                                         

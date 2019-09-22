@@ -17,7 +17,10 @@ import Data.Text
 import GHC.Records
 
 -- polymorphic boxing for any kind of widgets supporting Renderable interface in a monad m
-data Monad m => PolyWidget m = forall a. Renderable m a => PolyWidget a
+data Monad m => PolyWidget m = forall a. Renderable m a => PolyWidget a (Text -> a -> PolyWidget m)
+
+updateButtonText :: (Monad m, Renderable m Button) => Text -> Button -> PolyWidget m
+updateButtonText txt btn = PolyWidget (btn { text = txt } :: Button ) updateButtonText
 
 data Collider = CollRect {
         x,y,w,h :: !Int
@@ -32,7 +35,7 @@ isInCollider x y (CollCircle a b r) =
     if (x-a)^2 + (y-b)^2 < r^2 then True else False
 
 isInWidget :: Monad m => Int -> Int -> PolyWidget m -> Bool
-isInWidget x y (PolyWidget a) = isInCollider x y (getCollider a)
+isInWidget x y (PolyWidget a _) = isInCollider x y (getCollider a)
 
 data Box = Box {
     coll :: Collider,
@@ -57,9 +60,9 @@ data Button = Button {
 } deriving (Show, Eq)
 
 testButton = Button {
-    coll = CollRect 100 100 200 100,
+    coll = CollRect 100 100 100 50,
     bgColor = (rgbaToV4Color $ mdGrey 700),
-    txtX = 20, txtY = 20,
+    txtX = 20, txtY = 8,
     fontColor = (rgbaToV4Color $ mdWhite),
     fontName = "whatevs",
     text = "I'm a Button Clipping!"

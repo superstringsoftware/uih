@@ -10,10 +10,13 @@ import Control.Monad.Trans.State.Strict
 import Control.Monad
 
 import UIH.SDL2.SDLUI
+import UIH.SDL2.RenderMonad
 import UIH.UI.ManagerMonad
 import UIH.UI.Widgets
 
 import qualified SDL as SDL
+
+import SDL.Raw.Types (Rect(..))
 
 main :: IO ()
 main = do
@@ -22,13 +25,14 @@ main = do
 
 program = do
   initializeAll 
-  registerWidget $ PolyWidget testButton
+  addWidgetWithHandler (PolyWidget testButton updateButtonText) (EventHandler testHandler)
+  -- SDL.startTextInput $ Rect 0 0 300 60
+  -- SDL.stopTextInput
   appLoop
 
 
-
-
-
+testHandler :: Event SDLIO -> SDLUI ()
+testHandler ev@(Event EvHover (i,w)) = liftIO $ putStrLn $ "Hovering over widget # " ++ show i
 
 
 

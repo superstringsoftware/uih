@@ -1,8 +1,9 @@
 module UIH.SDL2.SDLUI where
 
 -- stitching high-level ManagerMonad and low-level SDLIO (RenderMonad) together to handle SDL based UI
+-- CENTRAL ENTRY POINT INTO UI!!!
 
-import UIH.UI.ManagerMonad
+import UIH.UI.ManagerMonad as MM
 
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.State.Strict
@@ -14,7 +15,7 @@ import Data.Text hiding (copy, any)
 import Control.Exception
 import SDL.Exception
 
-import SDL hiding (initializeAll)
+import SDL as SDL hiding (initializeAll)
 
 import UIH.SDL2.RenderMonad
 import UIH.SDL2.Fonts
@@ -45,7 +46,7 @@ renderUI = do
     SDL.present renderer
     where
         fn :: PolyWidget SDLIO -> SDLIO Collider 
-        fn (PolyWidget w) = renderScreen w
+        fn (PolyWidget w _) = renderScreen w
 
 appLoop :: SDLUI ()
 appLoop = do
@@ -69,15 +70,22 @@ checkEvent renUI event = do
             renUI --(fromIntegral w) (fromIntegral h)
             return False
         SDL.QuitEvent -> return True
-        SDL.KeyboardEvent keyboardEvent -> return False
+        SDL.KeyboardEvent ev -> do
+                --liftIO $ print $ show ev
+                return False
         SDL.MouseMotionEvent me -> do 
             let P (V2 x y) = SDL.mouseMotionEventPos me
             -- liftIO $ putStrLn $ "Mouse moved to: " ++ show x ++ ", " ++ show y
-            evs <- getEventSource (fromIntegral x) (fromIntegral y)
+            -- converting into mouse hover event if any widget is under the mouse
+            mevs <- getEventSource (fromIntegral x) (fromIntegral y)
             maybe (return False)
-                  (\i -> liftIO (putStrLn $ "Hovering over id: " ++ show i) >> return False)
-                  evs
+                  (\evs@(i,_) -> fireEvent (MM.Event EvHover evs) >> setCurrentFocusId (Just i) >> return False)
+                  mevs
+        SDL.TextEditingEvent ev -> do
+                liftIO $ print $ show ev
+                return False
         SDL.TextInputEvent ev -> do
-                                    liftIO $ print $ show ev
-                                    return False
+                liftIO $ print $ show ev
+                alterTextWidget (textInputEventText ev)
+                return False
         _ -> return False
