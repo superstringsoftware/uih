@@ -45,7 +45,7 @@ renderUI = do
     lift $ mapM_ fn ws
     SDL.present renderer
     where
-        fn :: PolyWidget SDLIO -> SDLIO Collider 
+        fn :: PolyWidget SDLIO -> SDLIO () 
         fn (PolyWidget w _) = renderScreen w
 
 appLoop :: SDLUI ()

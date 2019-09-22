@@ -8,6 +8,25 @@
     , ExistentialQuantification
      #-}
 
+{-
+This whole ordeal shows how ANNOYING haskell's type system is at times.
+If only we could extend SumTypes with having generic collections defined with the parent subtype,
+the issue of adding new widgets would cease to exist.
+
+As things are, we have to do this crazy type-fu with existentials, multiparameter typeclass families and such,
+while still having to compromise on flexibility.
+
+We either have to have a pre-defined set of widgets, put them all in one sum type and then have full access to update
+functions etc, but then it becomes impossible for users to create their own widgets.
+
+Alternative is this polymorphic existential type, but then we are facing big issues with updating the state with
+flexible data, in essence moving the problem from one type to another type - update events in this case.
+
+I don't think the solution exists in Haskell.
+
+Probably the best compromise is very well designed low-level small set of basic widgets, where larger widgets are
+constructed from this set.
+-}
 module UIH.UI.Widgets where
 
 -- rendering-independent widgets
@@ -83,6 +102,6 @@ class (Monad m, HasCollider a) => Renderable m a where
     -- Intermediate render function, returning Res
     render :: a -> m (Res m a)
     -- Final render function, drawing to screen and returning whatever pure data we were rendering, updated if needed
-    renderScreen :: a -> m Collider
+    renderScreen :: a -> m ()
     
     

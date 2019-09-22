@@ -74,7 +74,7 @@ alterTextWidget txt = do
         Nothing -> return ()
         (Just (PolyWidget w upd)) -> do
             let wp' = upd txt w
-            mi <- gets currentFocusId -- can go directly to Just because we know there is a focus widget
+            mi <- gets currentFocusId 
             ws <- gets widgets
             maybe (return ())
                   (\i -> do 

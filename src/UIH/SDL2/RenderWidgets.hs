@@ -28,7 +28,7 @@ instance Renderable SDLIO Box where
         ren <- getRenderer
         renderTexture (fromIntegral x) (fromIntegral y) tex ren
         liftIO $ destroyTexture tex -- NEED TO CACHE EVENTUALLY!!!
-        return $ getCollider box
+        return ()
  
 instance Renderable SDLIO TextLabel where
     type Res SDLIO TextLabel = Texture
@@ -41,7 +41,7 @@ instance Renderable SDLIO TextLabel where
         tex <- render tl
         renderTexture (fromIntegral x) (fromIntegral y) tex ren
         liftIO $ destroyTexture tex -- NEED TO CACHE EVENTUALLY!!!
-        return $ getCollider tl -- Need to update collider!
+        return () -- Need to update collider!
     
 -- asf
 instance Renderable SDLIO Button where
@@ -59,4 +59,4 @@ instance Renderable SDLIO Button where
         tex <- render btn
         renderTexture (fromIntegral x) (fromIntegral y) tex ren
         liftIO $ destroyTexture tex -- NEED TO CACHE EVENTUALLY!!!
-        return $ getCollider btn -- Need to update collider!
+        return () -- Need to update collider!
