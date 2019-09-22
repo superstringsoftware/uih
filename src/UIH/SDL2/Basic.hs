@@ -38,3 +38,26 @@ renderTexture x y texture renderer = do
     let h = textureHeight ti
     let dest = Rectangle (P (V2 x y)) (V2 w h)
     copy renderer texture Nothing (Just dest)
+
+-- copy source texture to target texture at x y coords, CLIPPING source texture if it's bigger
+-- DELETES source texture if delete = True
+copyTextureClip :: MonadIO m => Texture -> CInt -> CInt -> Texture -> Renderer -> Bool -> m Texture
+copyTextureClip target x y source renderer delete = do
+    tiT <- queryTexture target
+    tiS <- queryTexture source
+    -- liftIO $ putStrLn $ "Size is " ++ (show ti) ++ " x,y: " ++ show x ++ ", " ++ show y
+    let wT = textureWidth tiT
+    let hT = textureHeight tiT
+    let wS = textureWidth tiS
+    let hS = textureHeight tiS
+    -- setting up correct source and destination rectangle sizes
+    let recW = if (x + wS) > wT then wT - x else wS
+    let recH = if (y + hS) > hT then hT - y else hS
+    let destR = Rectangle (P (V2 x y)) (V2 recW recH)
+    let srcR  = Rectangle (P (V2 0 0)) (V2 recW recH)
+    rendererRenderTarget renderer $= Just target -- setting background box as render target
+    copy renderer source (Just srcR) (Just destR)
+    rendererRenderTarget renderer $= Nothing -- resetting render target back to screen
+    if delete then destroyTexture source else pure ()
+    return target
+    

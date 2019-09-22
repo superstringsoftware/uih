@@ -40,9 +40,9 @@ renderUI :: SDLIO ()
 renderUI = do
     renderer <- gets mainRenderer
     SDL.rendererRenderTarget renderer $= Nothing -- rendering to Screen
-    rendererDrawColor renderer $= V4 0 0 0 0
+    rendererDrawColor renderer $= V4 255 255 255 0
     SDL.clear renderer
-    renderScreen $ TextLabel (CollRect 120 120 200 40) (rgbaToV4Color $ mdRed 500) "whatevs" "Hello World"
+    renderScreen testButton
     SDL.present renderer
 
 appLoop :: SDLIO ()

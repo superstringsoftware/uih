@@ -32,6 +32,25 @@ data TextLabel = TextLabel {
     text :: Text
 } deriving (Show, Eq)
 
+data Button = Button {
+    coll :: Collider,
+    bgColor :: Color,
+    -- text label position relative to the Collider
+    txtX, txtY :: !Int,
+    fontColor :: Color,
+    fontName :: Text,
+    text :: Text
+} deriving (Show, Eq)
+
+testButton = Button {
+    coll = CollRect 100 100 200 100,
+    bgColor = (rgbaToV4Color $ mdGrey 700),
+    txtX = 20, txtY = 20,
+    fontColor = (rgbaToV4Color $ mdWhite),
+    fontName = "whatevs",
+    text = "I'm a Button Clipping!"
+}
+
 class Monad m => Renderable m a where
     -- what we return from *intermediary* rendering function, e.g. Texture in SDL
     type Res m a
