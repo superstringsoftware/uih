@@ -26,6 +26,7 @@ main = do
 program = do
   initializeAll 
   addWidgetWithHandler testButton (EventHandler testHandler)
+  renderUI
   -- SDL.startTextInput $ Rect 0 0 300 60
   -- SDL.stopTextInput
   appLoop

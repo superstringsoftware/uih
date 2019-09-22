@@ -6,7 +6,7 @@
     , TypeApplications
     , FlexibleContexts
     , RankNTypes
-    
+    , BlockArguments
      #-}
 module UIH.UI.ManagerMonad where
 
@@ -24,7 +24,7 @@ import Control.Monad.IO.Class (liftIO)
 
 import Control.Monad
 
-import Data.Text
+import Data.Text as T
 
 data EventTypes = EvHover 
     | EvClick
@@ -48,7 +48,8 @@ data UIState m = UIState {
     -- certain state in terms of current focus / hover etc widgets -- 
     -- needed to handle text events etc
     currentHoverId :: Maybe Int,
-    currentFocusId :: Maybe Int -- widget that has focus, used for text editing mostly
+    currentFocusId :: Maybe Int, -- widget that has focus, used for text editing mostly
+    editingText :: Text -- text currently being edited
 }
 
 -- Event handlers are actions from Event 
@@ -61,34 +62,53 @@ initUIState = UIState {
     widgets = Map.empty,
     handlers = Map.empty,
     currentHoverId = Nothing,
-    currentFocusId = Nothing
+    currentFocusId = Nothing,
+    editingText = ""
 }
 
 setCurrentFocusId i = modify' (\s -> s { currentFocusId = i }) 
 
--- ok this is some crazy existential stuff
-{-
+-- process backspace if we are editing currently
+backspaceEditingText :: Monad m => ManagerMonadT m ()
+backspaceEditingText = do
+    txt <- gets editingText
+    if txt /= "" then do
+        let txt' = T.init txt
+        alterTextWidget txt'
+        modify' \s -> s { editingText = txt' }
+    else pure ()
+
+addEditingText :: Monad m => Text -> ManagerMonadT m ()
+addEditingText text = do
+    txt <- gets editingText
+    let txt' = txt <> text
+    alterTextWidget txt'
+    modify' \s -> s { editingText = txt' }
+
+
+-- Set a textual widget to a new text
 alterTextWidget :: Monad m => Text -> ManagerMonadT m ()
-alterTextWidget txt = do
-    wpm <- getFocusWidget
-    case wpm of
-        Nothing -> return ()
-        (Just (PolyWidget w upd)) -> do
-            let wp' = upd txt w
-            mi <- gets currentFocusId 
-            ws <- gets widgets
-            maybe (return ())
-                  (\i -> do 
+alterTextWidget txt = 
+    getFocusWidget >>=
+    maybe (return ()) 
+          (\(i,widg) -> 
+            case widg of
+                Box{..} -> return ()
+                w -> do
+                    let wp' = w { text = txt }
+                    ws <- gets widgets
                     let ws' = Map.insert i wp' ws
                     modify' (\s -> s { widgets = ws' } )
-                    return ()) mi
--}
+                    return ())
+    
+                
 
-getFocusWidget :: Monad m => ManagerMonadT m (Maybe BasicWidget)
+-- returns a pair of focus widget with its index
+getFocusWidget :: Monad m => ManagerMonadT m (Maybe (Int, BasicWidget))
 getFocusWidget = do
     im <- gets currentFocusId
     ws <- gets widgets
-    return $ maybe Nothing (\i -> Map.lookup i ws) im
+    return $ maybe Nothing (\i -> maybe Nothing (\w -> Just (i,w)) (Map.lookup i ws)) im
 
 type ManagerMonadT m = StateT (UIState m) m
 

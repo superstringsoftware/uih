@@ -84,7 +84,7 @@ class HasField "coll" a Collider => HasCollider a where
     -- polymorphic getCollider function
     getCollider ::  a -> Collider
     getCollider r = getField @"coll" r
-
+    
 instance HasCollider BasicWidget
 
 class (Monad m, HasCollider a) => Renderable m a where

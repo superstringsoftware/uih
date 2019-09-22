@@ -47,7 +47,7 @@ renderUI = do
     
 appLoop :: SDLUI ()
 appLoop = do
-    renderUI
+    -- renderUI
     renderer <- lift $ gets mainRenderer
     events <- SDL.pollEvents -- get the events queue from SDL
     results <- mapM (checkEvent renderUI) events -- gather results
@@ -69,7 +69,11 @@ checkEvent renUI event = do
         SDL.QuitEvent -> return True
         SDL.KeyboardEvent ev -> do
                 --liftIO $ print $ show ev
-                return False
+                let k = keysymKeycode $ keyboardEventKeysym ev
+                -- liftIO $ print $ show k
+                case k of
+                    KeycodeBackspace -> backspaceEditingText >> renUI >> return False
+                    _                -> return False
         SDL.MouseMotionEvent me -> do 
             let P (V2 x y) = SDL.mouseMotionEventPos me
             -- liftIO $ putStrLn $ "Mouse moved to: " ++ show x ++ ", " ++ show y
@@ -82,7 +86,8 @@ checkEvent renUI event = do
                 liftIO $ print $ show ev
                 return False
         SDL.TextInputEvent ev -> do
-                liftIO $ print $ show ev
-                -- alterTextWidget (textInputEventText ev)
+                -- liftIO $ print $ show ev
+                addEditingText (textInputEventText ev)
+                renUI
                 return False
         _ -> return False
