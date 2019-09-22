@@ -65,21 +65,21 @@ testButton = Button {
     text = "I'm a Button Clipping!"
 }
 
-class HasField "coll" a Collider => IsCollider a where
+class HasField "coll" a Collider => HasCollider a where
     -- polymorphic getCollider function
     getCollider ::  a -> Collider
     getCollider r = getField @"coll" r
 
-instance IsCollider Button
-instance IsCollider Box
-instance IsCollider TextLabel
+instance HasCollider Button
+instance HasCollider Box
+instance HasCollider TextLabel
 
-class (Monad m, IsCollider a) => Renderable m a where
+class (Monad m, HasCollider a) => Renderable m a where
     -- what we return from *intermediary* rendering function, e.g. Texture in SDL
     type Res m a
     -- Intermediate render function, returning Res
     render :: a -> m (Res m a)
     -- Final render function, drawing to screen and returning whatever pure data we were rendering, updated if needed
-    renderScreen :: a -> m a
+    renderScreen :: a -> m Collider
     
     

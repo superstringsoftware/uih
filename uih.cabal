@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 7917ba775ff584218c0c6055eda24b20ef5b57939dcdb4278ec611db5add5cef
+-- hash: 7066f10e2905d0b84d94c21693fe1fc001ad608d0b9137eca5a91f47884dea06
 
 name:           uih
 version:        0.1.0.0
@@ -34,7 +34,7 @@ library
       UIH.SDL2.Fonts
       UIH.SDL2.RenderMonad
       UIH.SDL2.RenderWidgets
-      UIH.SDL2.System
+      UIH.SDL2.SDLUI
       UIH.UI.ManagerMonad
       UIH.UI.Widgets
   other-modules:

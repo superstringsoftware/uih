@@ -1,17 +1,13 @@
-{-# LANGUAGE OverloadedStrings, 
-    DuplicateRecordFields, NamedFieldPuns, OverloadedLabels, RecordWildCards
-    , MultiParamTypeClasses 
-    , TypeFamilies
-    , TypeSynonymInstances
-    , FlexibleInstances #-}
+module UIH.SDL2.SDLUI where
 
-module UIH.SDL2.System where
+-- stitching high-level ManagerMonad and low-level SDLIO (RenderMonad) together to handle SDL based UI
 
--- MAIN ENTRY POINT TO SETTING UP THE RENDERING SYSTEM
+import UIH.UI.ManagerMonad
 
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.State.Strict
 import Control.Monad (unless)
+import Control.Monad.Trans.Class
 
 import SDL.Font
 import Data.Text hiding (copy, any)
@@ -28,44 +24,56 @@ import UIH.SDL2.RenderWidgets
 
 import Color
 
+-- stacking manager monad and SDLIO together
+type SDLUI = ManagerMonadT SDLIO
 
-initializeAll :: SDLIO ()
-initializeAll = (liftIO initStateIO) >>= put >> initFonts
+runSDLUI :: SDLUI a -> IO a
+runSDLUI prog = runSDLIO $ evalStateT prog initUIState
 
-program = do
-    dumpSDLState >> initializeAll >> dumpSDLState >> renderUI >> appLoop
+initializeAll :: SDLUI ()
+initializeAll = lift ((liftIO initStateIO) >>= put >> initFonts >> dumpSDLState)
 
 -- hh
-renderUI :: SDLIO ()    
+renderUI :: SDLUI ()    
 renderUI = do
-    renderer <- gets mainRenderer
+    renderer <- lift $ gets mainRenderer
+    ws <- gets widgets
     SDL.rendererRenderTarget renderer $= Nothing -- rendering to Screen
     rendererDrawColor renderer $= V4 255 255 255 0
     SDL.clear renderer
-    renderScreen testButton
+    lift $ mapM_ fn ws
     SDL.present renderer
+    where
+        fn :: PolyWidget SDLIO -> SDLIO Collider 
+        fn (PolyWidget w) = renderScreen w
 
-appLoop :: SDLIO ()
+appLoop :: SDLUI ()
 appLoop = do
-    renderer <- gets mainRenderer
+    renderUI
+    renderer <- lift $ gets mainRenderer
     events <- SDL.pollEvents -- get the events queue from SDL
-    results <- mapM checkEvent events -- gather results
+    results <- mapM (checkEvent renderUI) events -- gather results
     let quit = any (== True) results -- checking if any of the results is True
     unless quit appLoop
 
+-- Main Event Loop
 -- returns True if need to quit, false otherwise
-checkEvent :: SDL.Event -> SDLIO Bool
-checkEvent event = do
+checkEvent :: SDLUI () -> SDL.Event ->  SDLUI Bool
+checkEvent renUI event = do
     --liftIO $ print $ show $ event
-    renderer <- gets mainRenderer
+    renderer <- lift $ gets mainRenderer
     case SDL.eventPayload event of
         SDL.WindowResizedEvent dt -> do
             let (SDL.V2 w h) = SDL.windowResizedEventSize dt
             -- putStrLn $ "Window resized - " ++ show w ++ " " ++ show h
-            renderUI --(fromIntegral w) (fromIntegral h)
+            renUI --(fromIntegral w) (fromIntegral h)
             return False
         SDL.QuitEvent -> return True
         SDL.KeyboardEvent keyboardEvent -> return False
+        SDL.MouseMotionEvent me -> do 
+            let pos = SDL.mouseMotionEventPos me
+            liftIO $ putStrLn $ "Mouse moved to: " ++ show pos
+            return False
         SDL.TextInputEvent ev -> do
                                     liftIO $ print $ show ev
                                     return False

@@ -31,6 +31,10 @@ data SDLState = SDLState {
   , bgColor       :: V4 Word8  
 } | SDLEmptyState deriving Show
 
+runSDLIO :: SDLIO a -> IO a
+runSDLIO prog = evalStateT prog SDLEmptyState
+
+
 getRenderer :: SDLIO Renderer
 getRenderer = mainRenderer <$> get
 
