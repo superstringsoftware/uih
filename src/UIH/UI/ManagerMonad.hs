@@ -52,7 +52,7 @@ registerWidget w = do
 getEventSource :: Monad m => Int -> Int -> ManagerMonadT m (Maybe (PolyWidget m))
 getEventSource x y = do
     ws <- widgets <$> get
-    res <- (filterM (isInWidget x y) (Map.elems ws))
+    let res = Map.elems $ Map.filter (isInWidget x y) ws
     case res of
         [] -> return Nothing
         (e:xs) -> return $ Just e

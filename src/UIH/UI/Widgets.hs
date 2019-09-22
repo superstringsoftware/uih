@@ -31,8 +31,8 @@ isInCollider x y (CollRect a b w h) =
 isInCollider x y (CollCircle a b r) = 
     if (x-a)^2 + (y-b)^2 < r^2 then True else False
 
-isInWidget :: Monad m => Int -> Int -> PolyWidget m -> m Bool
-isInWidget x y (PolyWidget a) = getCollider a >>= \col -> pure (isInCollider x y col)
+isInWidget :: Monad m => Int -> Int -> PolyWidget m -> Bool
+isInWidget x y (PolyWidget a) = isInCollider x y (getCollider a)
 
 data Box = Box {
     coll :: Collider,
@@ -65,14 +65,21 @@ testButton = Button {
     text = "I'm a Button Clipping!"
 }
 
-class (Monad m, HasField "coll" a Collider) => Renderable m a where
+class HasField "coll" a Collider => IsCollider a where
+    -- polymorphic getCollider function
+    getCollider ::  a -> Collider
+    getCollider r = getField @"coll" r
+
+instance IsCollider Button
+instance IsCollider Box
+instance IsCollider TextLabel
+
+class (Monad m, IsCollider a) => Renderable m a where
     -- what we return from *intermediary* rendering function, e.g. Texture in SDL
     type Res m a
     -- Intermediate render function, returning Res
     render :: a -> m (Res m a)
     -- Final render function, drawing to screen and returning whatever pure data we were rendering, updated if needed
     renderScreen :: a -> m a
-    -- polymorphic getCollider function
-    getCollider ::  a -> m Collider
-    getCollider r = pure $ getField @"coll" r
+    
     
