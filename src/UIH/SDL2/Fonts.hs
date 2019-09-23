@@ -22,10 +22,11 @@ defaultFontPath = "./Roboto-Light.ttf"
 defaultFont :: Int -> IO Font
 defaultFont size = load defaultFontPath size
 
-safeLoadFont path size = do r <- try $ load path size
-                            case r of
-                                Left  e   -> print (e::SDLException) >> fail "Could not initialize TTF fonts!"
-                                Right fnt -> return fnt
+safeLoadFont path size = 
+    do r <- try $ load path size
+       either (\e -> print (e::SDLException) >> return Nothing)
+              (\fnt -> return $ Just fnt) r
+                      
 
 
 getDefaultFont :: SDLIO (Maybe Font)

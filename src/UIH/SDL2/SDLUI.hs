@@ -110,6 +110,7 @@ checkEvent event = do
             -- putStrLn $ "Window resized - " ++ show w ++ " " ++ show h
             -- renUI --(fromIntegral w) (fromIntegral h)
             setDirty
+            setNeedsRecalculation True
             return False
         SDL.QuitEvent -> return True
         SDL.KeyboardEvent ev -> do
