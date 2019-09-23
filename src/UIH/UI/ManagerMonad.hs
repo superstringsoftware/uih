@@ -62,8 +62,16 @@ data UIState m u = UIState {
     currentHoverId :: Maybe Int,
     currentFocusId :: Maybe Int, -- widget that has focus, used for text editing mostly
     editingText :: Text, -- text currently being edited
+    isDirty :: Bool, -- does the UI need to be redrawn?
     userState   :: Maybe u
 }
+
+setDirty :: Monad m => ManagerMonadT m u ()
+setDirty = modify' (\s -> s { isDirty = True })
+setClean :: Monad m => ManagerMonadT m u ()
+setClean = modify' (\s -> s { isDirty = False })
+getDirty :: Monad m => ManagerMonadT m u Bool
+getDirty = gets isDirty
 
 setUserState :: Monad m => u -> ManagerMonadT m u ()
 setUserState us = modify' (\s -> s { userState = Just us })
@@ -86,6 +94,7 @@ initUIState us = UIState {
     currentHoverId = Nothing,
     currentFocusId = Nothing,
     editingText = "",
+    isDirty = True,
     userState = us
 }
 
@@ -106,12 +115,14 @@ textHandler ev@(Event EvKbBackspace (i,w)) = do
         let txt' = T.init txt
         let w' = w { text = txt' }
         modifyWidget i w'
+        setDirty
     else pure ()
 textHandler ev@(Event (EvTextInput tinp) (i,w)) = do
     liftIO $ putStrLn $ "Text to widget # " ++ show i
     let txt = (text w) <> tinp
     let w' = w { text = txt }
     modifyWidget i w'
+    setDirty
 textHandler _ = pure ()    
 
 

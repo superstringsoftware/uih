@@ -53,23 +53,26 @@ appLoop :: SDLUI u ()
 appLoop = do
     -- renderUI
     renderer <- lift $ gets mainRenderer
+    isDirty <- getDirty
+    if isDirty then renderUI >> setClean else pure ()
     events <- SDL.pollEvents -- get the events queue from SDL
-    results <- mapM (checkEvent renderUI) events -- gather results
+    results <- mapM checkEvent events -- gather results
     let quit = any (== True) results -- checking if any of the results is True
     unless quit appLoop
 
 -- Main Event Loop - this method plays central role in connecting underlying SDLIO monad from where
 -- SDL events originate and ManagerMonad, which handles firing transformed events to event handlers
 -- returns True if need to quit, false otherwise
-checkEvent :: SDLUI u () -> SDL.Event ->  SDLUI u Bool
-checkEvent renUI event = do
+checkEvent :: SDL.Event ->  SDLUI u Bool
+checkEvent event = do
     --liftIO $ print $ show $ event
     renderer <- lift $ gets mainRenderer
     case SDL.eventPayload event of
         SDL.WindowResizedEvent dt -> do
             let (SDL.V2 w h) = SDL.windowResizedEventSize dt
             -- putStrLn $ "Window resized - " ++ show w ++ " " ++ show h
-            renUI --(fromIntegral w) (fromIntegral h)
+            -- renUI --(fromIntegral w) (fromIntegral h)
+            setDirty
             return False
         SDL.QuitEvent -> return True
         SDL.KeyboardEvent ev -> do
@@ -80,7 +83,7 @@ checkEvent renUI event = do
                     KeycodeBackspace -> do 
                         mevs <- getFocusWidget
                         maybe (return False)
-                              (\evs -> fireEvent (MM.Event EvKbBackspace evs) >> renUI >> return False)
+                              (\evs -> fireEvent (MM.Event EvKbBackspace evs) >> return False)
                               mevs
                     _                -> return False
         SDL.MouseMotionEvent me -> do 
@@ -98,6 +101,6 @@ checkEvent renUI event = do
                 -- liftIO $ print $ show ev
                 mevs <- getFocusWidget
                 maybe (return False)
-                      (\evs -> fireEvent (MM.Event (EvTextInput (textInputEventText ev)) evs) >> renUI >> return False)
+                      (\evs -> fireEvent (MM.Event (EvTextInput (textInputEventText ev)) evs) >> return False)
                       mevs
         _ -> return False
