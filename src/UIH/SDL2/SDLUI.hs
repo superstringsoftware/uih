@@ -34,6 +34,9 @@ import Color
 
 import PreludeFixes
 
+import SDL.Video.Vulkan (vkGetDrawableSize)
+import SDL.Video.OpenGL (glGetDrawableSize)
+
 -- stacking manager monad and SDLIO together
 -- u is the user state type that is *for the UI only*!
 -- So, users of the library will use SDLUI MyState as their UI program type
@@ -51,6 +54,13 @@ initializeAll = do
     lift ((liftIO initStateIO) >>= put >> initFonts)
     liftIO $ putStrLn " done."
     -- initializing ManagerMonad
+    window <- lift $ gets mainWindow
+    V2 width height <- (window.-windowSize?=)
+    V2 realw realh  <- window.-glGetDrawableSize   --vkGetDrawableSize
+    liftIO $ putStrLn $ "Logical size: " ++ show width ++ "x" ++ show height
+    liftIO $ putStrLn $ "Physical size: " ++ show realw ++ "x" ++ show realh
+    let scale = V2 (realw `div` width) (realh `div` height)
+    lift $ modify' (\s-> s { scaleXY = scale })
     pure ()
 
 -- hh

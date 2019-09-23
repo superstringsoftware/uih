@@ -142,6 +142,7 @@ getFocusWidget = do
 
 -- adding a new widget to UIState
 -- returns ID of newly added widget
+-- ALSO recalculates sizes if we use high dpi!
 registerWidgetPlain :: Monad m => Widget -> ManagerMonadT m u Int
 registerWidgetPlain w = do
     s <- get

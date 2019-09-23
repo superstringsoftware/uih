@@ -36,6 +36,7 @@ data SDLState = SDLState {
   , cursor        :: CursorStatus
   , bgColor       :: V4 Word8
   , cachedWidgets :: Map.Map WidgetId SDLComplexWidget -- cache of the low level widgets
+  , scaleXY       :: V2 CInt -- in case we use highDPI, this will be the scale
 } | SDLEmptyState 
 
 runSDLIO :: SDLIO a -> IO a
@@ -55,7 +56,7 @@ mainWindowSettings = defaultWindow
   { windowBorder       = True
   -- There are issues with high DPI windows b/c we need to recalculate all coordinates when drawing / checking event
   -- coordinates, so its support is pending
-  , windowHighDPI      = False 
+  , windowHighDPI      = True 
   , windowInputGrabbed = False
   , windowMode         = Windowed
   --, windowOpenGL       = Nothing
@@ -81,7 +82,8 @@ initStateIO = do
                 loadedFonts = Map.empty,
                 cursor = CursorStatus 0 0 (V4 255 255 255 0) 0 Nothing,
                 bgColor = V4 210 210 210 0,
-                cachedWidgets = Map.empty
+                cachedWidgets = Map.empty,
+                scaleXY = V2 1 1
                 }
     either (\e -> print (e::SDLException) >> fail "Could not initialize SDL")
            (\st -> return st) r
