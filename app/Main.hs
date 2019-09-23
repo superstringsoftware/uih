@@ -28,7 +28,14 @@ main = do
 
 program = do
   initializeAll 
-  registerUIWidget $ newTextInput testButton
+  registerWidget InputText {
+      fontData = FontDataDefault,
+      text = "input",
+      valign = Center, halign = Left,
+      layout defaultCenterLayout,
+      background = BGColor $ mdGrey 700,
+      cacheRect = V4 0 0 0 0
+  }
   renderUI
   -- SDL.startTextInput $ Rect 0 0 300 60
   -- SDL.stopTextInput

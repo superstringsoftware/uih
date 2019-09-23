@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, DuplicateRecordFields  #-}
+{-# LANGUAGE OverloadedStrings, DuplicateRecordFields, RecordWildCards  #-}
 
 -- Fonts handling via sdl2-ttf
 module UIH.SDL2.Fonts where
@@ -14,6 +14,8 @@ import SDL.Exception
 import UIH.SDL2.RenderMonad
 
 import qualified Data.Map.Strict as Map
+
+import UIH.UI.AbstractWidgets
 
 defaultFontPath = "./Roboto-Light.ttf"
 

@@ -11,6 +11,7 @@ module UIH.SDL2.RenderWidgets where
 -- implementations of Renderable for Widgets in the SDLIO monad
 
 import UIH.UI.BasicWidgets
+import UIH.UI.Renderable
 import UIH.SDL2.RenderMonad
 import UIH.SDL2.Basic
 import UIH.SDL2.Fonts

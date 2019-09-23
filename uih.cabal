@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 70cbda9dc6a11e3ed9c9746d8fc829223a86efd921f74ece5ad408d823e23eb5
+-- hash: 0801077ed23ab2424fcb77985e8afb93963773e12356b37547a966228989012a
 
 name:           uih
 version:        0.1.0.0
@@ -40,6 +40,7 @@ library
       UIH.UI.BasicWidgets
       UIH.UI.Handlers
       UIH.UI.ManagerMonad
+      UIH.UI.Renderable
       UIH.UI.SimpleTree
       UIH.UI.Widgets
   other-modules:

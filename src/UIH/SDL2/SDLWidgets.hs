@@ -8,6 +8,8 @@ import Data.Word
 import SDL
 import SDL.Font
 
+import Color
+
 import UIH.UI.AbstractWidgets
 
 -- since AbstractWidget may be converted to a bunch of low-level widgets,
@@ -20,26 +22,36 @@ import UIH.UI.AbstractWidgets
 -- Then the flow is: 
 -- - top level SDLComplexWidgets have their coordinates relative to the screen
 -- - the rest relative to the parent
-data SDLComplexWidget = SDLComplexWidget SDLWidget [SDLComplexWidget]
+-- data SDLComplexWidget = SDLComplexWidget SDLWidget [SDLComplexWidget]
+
+-- simply rendering everything in order, 1st widget serves as target texture
+type SDLComplexWidget = [SDLWidget]
 
 -- low level SDL widgets used for caching
 data SDLWidget = SDLBox { -- simply a colored box (eventually need to add with an image)
     bgColor :: V4 Word8,
-    x,y,w,h :: !CInt, -- cached dimensions and position
+    cachedRect :: V4 CInt, -- cached bounding box dimensions
     tex :: Maybe Texture -- cached texture
 } | SDLText { -- text without any background
     text :: Text,
     font :: Font, -- SDL font object to render with
     color :: V4 Word8, -- color to render text with
-    x,y,w,h :: !CInt, -- cached bounding box dimensions
+    cachedRect :: V4 CInt, -- cached bounding box dimensions
     tex :: Maybe Texture -- cached texture
 } | SDLTextBox { -- text with box as a background
     text :: Text,
     font :: Font, -- SDL font object to render with
     color :: V4 Word8, -- color to render text with
-    x,y,w,h :: !CInt, -- cached bounding box dimensions
+    cachedRect :: V4 CInt, -- cached bounding box dimensions
     bgColor :: V4 Word8, -- background color for the box
-    dleft,dtop,dright,dbottom :: !CInt, -- padding for the text texture relative to the bounding box
+    paddingRect :: V4 CInt, -- padding for the text texture relative to the bounding box
     tex :: Maybe Texture -- cached texture
 } 
+
+rect2CInt (V4 x y w h) = V4 (fromIntegral x) (fromIntegral y) (fromIntegral w) (fromIntegral h)
+
+background2Color (BGColor clr) = clr
+background2Color _ = rgbaToV4Color $ mdRed 500
+
+
 

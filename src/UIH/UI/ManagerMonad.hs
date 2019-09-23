@@ -15,7 +15,7 @@ module UIH.UI.ManagerMonad where
 -- which handles SDL events transformation etc
 -- This one is a handy abstraction that potentially allows other rendering engines to be used.
 
-import UIH.UI.BasicWidgets
+-- import UIH.UI.BasicWidgets
 import UIH.UI.AbstractWidgets
 import UIH.UI.SimpleTree
 
@@ -41,7 +41,7 @@ data EventTypes = EvHover
 -- events
 data Event = Event {
     eventType :: EventTypes,
-    source :: (WidgetId, BasicWidget)
+    source :: (WidgetId, Widget)
 }
 
 -- Event handlers are actions from Event to ManagerMonadT m u 
@@ -75,7 +75,7 @@ data UIState m u = UIState {
     idCounter :: !Int, 
     -- polymorphic map from Ints (ids) to Renderables
     -- Eventually we want to track colliders separately, since not every widget will be an event source
-    widgets :: Map.Map WidgetId BasicWidget,
+    widgets :: Map.Map WidgetId Widget,
     -- event handlers for widget with id = key
     handlers :: Map.Map Int [EventHandler m u],
     -- certain state in terms of current focus / hover etc widgets -- 
@@ -84,10 +84,7 @@ data UIState m u = UIState {
     currentFocusId :: Maybe WidgetId, -- widget that has focus, used for text editing mostly
     editingText :: Text, -- text currently being edited
     isDirty :: Bool, -- does the UI need to be redrawn?
-    userState   :: Maybe u,
-
-    -- new beginnings:
-    compositeWidgets :: Map.Map WidgetId Widget
+    userState   :: Maybe u    
 }
 
 setDirty :: Monad m => ManagerMonadT m u ()
@@ -120,13 +117,13 @@ initUIState us = UIState {
 
 setCurrentFocusId i = modify' (\s -> s { currentFocusId = i }) 
 
-modifyWidget :: MonadIO m => Int -> BasicWidget -> ManagerMonadT m u () 
+modifyWidget :: MonadIO m => Int -> Widget -> ManagerMonadT m u () 
 modifyWidget i w = do
     ws <- gets widgets
     modify' (\s -> s { widgets = Map.insert i w ws })
 
 -- returns a pair of focus widget with its index
-getFocusWidget :: Monad m => ManagerMonadT m u (Maybe (Int, BasicWidget))
+getFocusWidget :: Monad m => ManagerMonadT m u (Maybe (Int, Widget))
 getFocusWidget = do
     im <- gets currentFocusId
     ws <- gets widgets
@@ -134,8 +131,8 @@ getFocusWidget = do
 
 -- adding a new widget to UIState
 -- returns ID of newly added widget
-registerWidget :: Monad m => BasicWidget -> ManagerMonadT m u Int
-registerWidget w = do
+registerWidgetPlain :: Monad m => Widget -> ManagerMonadT m u Int
+registerWidgetPlain w = do
     s <- get
     ws <- widgets <$> get
     idc <- idCounter <$> get
@@ -145,18 +142,14 @@ registerWidget w = do
     return idc'
 
 -- add event handler to handlers list at key i
-addHandler :: Monad m => Int -> EventHandler m u -> ManagerMonadT m u ()
-addHandler i h = do
+addHandlerPlain :: Monad m => Int -> EventHandler m u -> ManagerMonadT m u ()
+addHandlerPlain i h = do
     s <- get
     let hs = handlers s
     let hs' = Map.alter fn i hs
     put s { handlers = hs' }
     where fn Nothing = Just [h]
           fn (Just chs) = Just (h:chs)
-
--- adds new widget and a handler          
-addWidgetWithHandlers :: Monad m => BasicWidget -> [EventHandler m u] -> ManagerMonadT m u Int
-addWidgetWithHandlers w hs = registerWidget w >>= \i -> mapM_ (addHandler i) hs >> return i
 
 -- firing event to all registered handlers
 fireEvent :: Monad m => Event -> ManagerMonadT m u ()
@@ -169,7 +162,7 @@ fireEvent ev = do
           
     
 -- given x,y coordinates finds a widget that contains them and returns it (if any)
-getEventSource :: Monad m => Int -> Int -> ManagerMonadT m u (Maybe (Int, BasicWidget))
+getEventSource :: Monad m => Int -> Int -> ManagerMonadT m u (Maybe (Int, Widget))
 getEventSource x y = do
     ws <- widgets <$> get
     let res = Map.assocs $ Map.filter (isInWidget x y) ws
@@ -177,3 +170,12 @@ getEventSource x y = do
         [] -> return Nothing
         (e:xs) -> return $ Just e -- returning first collider that catches the event, no propagation or anything, that's TBD
     
+-- recalculates sizes of all top level widgets after a resize as needed        
+-- w h - new size of the screen
+recalculateRectangles :: Monad m => Int -> Int -> ManagerMonadT m u ()
+recalculateRectangles w h = do 
+    ws <- widgets <$> get
+    let ws' = Map.map (calculateCacheRect w h) ws
+    modify' (\s -> s { widgets = ws'} )
+
+initUI w h = recalculateRectangles w h

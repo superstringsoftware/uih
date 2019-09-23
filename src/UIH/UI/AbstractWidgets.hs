@@ -24,13 +24,13 @@ import UIH.UI.SimpleTree
 type WidgetId = Int
 
 data FontStyle = Normal | Bold | Italic
-data TextAlign = Center | Left | Right
+data TextAlign = CenterAlign | LeftAlign | RightAlign
 data FontData = FontData {
     fontName :: !Text,
     fontSize :: !Int,
     fontStyle :: FontStyle,
     fontColor :: Color
-}
+} | FontDataDefault
 
 data Background = 
     BGColor Color
@@ -58,8 +58,8 @@ type AbstractWidgetTransformer = (AbstractWidget -> AbstractWidget)
 
 -- some pure handler helpers to manipulate abstract widgets
 -- can be turned into handlers eventually easy enough
-hndlBackspace :: AbstractWidget -> AbstractWidget
-hndlBackspace w = if (text w) /= "" then w { text = T.init (text w) } else w
+hndlBackspace :: AbstractWidget -> (AbstractWidget, Bool)
+hndlBackspace w = if (text w) /= "" then (w { text = T.init (text w) }, True) else (w, False)
 
 hndlAppendText :: Text -> AbstractWidget -> AbstractWidget
 hndlAppendText txt w = w { text = (text w) <> txt }
@@ -69,8 +69,12 @@ hndlPrependText txt w = w { text = txt <> (text w) }
 
 -- helper function; calculates dimensions of all children *relative to the parent* 
 -- so for top level widgets will be relative to the screen
-calculateCacheRect :: Int -> Int -> AbstractWidget -> AbstractWidget
+calculateCacheRect :: Int -> Int -> Widget -> Widget
 calculateCacheRect w h widg = widg { cacheRect = layoutToRectangle (layout widg) (V4 0 0 w h) }
+
+isInWidget x y widg = 
+    let (V4 a b w h) = cacheRect widg
+    in  if ( (x>a) && (x < a + w) && (y>b) && (y<b+h) ) then True else False
 
 {-
 -- ok not sure if recursion terminates here... should be with empty list, right?
@@ -147,6 +151,9 @@ l_SHT dl dt dr h = StretchH_Top $ V4 dl dt dr h
 l_SHB dl db dr h = StretchH_Bot $ V4 dl db dr h
 l_SVL dl dt w db = StretchV_Left $ V4 dl dt w db
 l_SVR dr dt w db = StretchV_Right $ V4 dr dt w db
+
+-- default layout - centering
+defaultCenterLayout = l_SA 8 4 8 4
 
 -- converts layout to absolute coordinates given an enclosing rectangle coords 
 -- Rectangles are (x,y,w,h) 
