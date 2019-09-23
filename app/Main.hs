@@ -12,7 +12,8 @@ import Control.Monad
 import UIH.SDL2.SDLUI
 import UIH.SDL2.RenderMonad
 import UIH.UI.ManagerMonad
-import UIH.UI.Widgets
+import UIH.UI.BasicWidgets
+import UIH.UI.Handlers
 
 import qualified SDL as SDL
 
@@ -25,7 +26,7 @@ main = do
 
 program = do
   initializeAll 
-  addWidgetWithHandler testButton (EventHandler textHandler)
+  registerUIWidget $ newTextInput testButton
   renderUI
   -- SDL.startTextInput $ Rect 0 0 300 60
   -- SDL.stopTextInput

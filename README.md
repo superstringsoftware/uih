@@ -7,6 +7,21 @@ We need 3 representations for the UI:
 Layering logic needs to be handled here as well - renderer should just draw without thinking, in the right order.
 3) Low-level library specific efficient rendering primitives - this can be SDL, OpenGL, Vulkan etc...
 
+Currently being explored:
+ManagerMonad - state monad with abstract widgets that describe the UI, suitable for representing HTML, XML etc formats.
+SDLIO Monad - low level monad, SDL aware, that has low-level SDL widgets into which abstract widgets are converted. These widgets are "dumb" - don't have any event handlers, so state is handled at the ManagerMonad level. However, these widgets implement smart caching in terms of both dimensions AND textures, for fast rendering.
+
+Thus, these 2 monads somewhat "mirror" each other at different abstraction levels.
+
+Very rough high-level flow:
+
+- Setup interface in AbstractWidgets in the ManagerMonad
+- Run initial full conversion to SDLIO monad
+- Then, set dirty flags as event loop is running in ManagerMonad
+- Get *only dirty* widgets from the ManagerMonad inside SDLIO
+- update corresponding SDL widgets
+- re-render
+
 For events handling, when registering a handler with a widget / event, need to register a *region* (x,y,w,h) with a low-level lib specific event dispatcher, so that it can map primitive events and route them to a respective high-level handler
 
 ## Before building --

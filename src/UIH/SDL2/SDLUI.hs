@@ -20,7 +20,7 @@ import SDL as SDL hiding (initializeAll)
 import UIH.SDL2.RenderMonad
 import UIH.SDL2.Fonts
 
-import UIH.UI.Widgets
+import UIH.UI.BasicWidgets
 import UIH.SDL2.RenderWidgets
 
 import Color
@@ -36,7 +36,7 @@ runSDLUI :: SDLUI u a -> IO a
 runSDLUI prog = runSDLIO $ evalStateT prog (initUIState Nothing)
 
 initializeAll :: SDLUI u ()
-initializeAll = lift ((liftIO initStateIO) >>= put >> initFonts >> dumpSDLState)
+initializeAll = lift ((liftIO initStateIO) >>= put >> initFonts)
 
 -- hh
 renderUI :: SDLUI u ()    

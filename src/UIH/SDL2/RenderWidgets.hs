@@ -10,7 +10,7 @@ module UIH.SDL2.RenderWidgets where
 
 -- implementations of Renderable for Widgets in the SDLIO monad
 
-import UIH.UI.Widgets
+import UIH.UI.BasicWidgets
 import UIH.SDL2.RenderMonad
 import UIH.SDL2.Basic
 import UIH.SDL2.Fonts
@@ -35,7 +35,7 @@ instance Renderable SDLIO BasicWidget where
     render btn@Button { coll = (CollRect x y w h) } = do
         ren  <- getRenderer
         tex1 <- boxToTexture (fromIntegral w) (fromIntegral h) (bgColor (btn::BasicWidget)) ren
-        let tx1 = text btn
+        let tx1 = text (btn::BasicWidget)
         -- liftIO $ putStrLn $ "Rendering button; text: " ++ show tx
         let tx = if tx1 == "" then " " else tx1
         (Just fnt) <- getDefaultFont -- WRONG, HANDLE ERRORS!!! GET THE RIGHT FONT!!!

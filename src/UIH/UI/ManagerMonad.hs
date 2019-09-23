@@ -15,7 +15,8 @@ module UIH.UI.ManagerMonad where
 -- which handles SDL events transformation etc
 -- This one is a handy abstraction that potentially allows other rendering engines to be used.
 
-import UIH.UI.Widgets
+import UIH.UI.BasicWidgets
+import UIH.UI.AbstractWidgets
 
 import Data.Map.Strict as Map 
 
@@ -37,6 +38,13 @@ data Event = Event {
     eventType :: EventTypes,
     source :: (Int, BasicWidget)
 }
+
+-- Event handlers are actions from Event to ManagerMonadT m u 
+data EventHandler m u = EventHandler {
+    runHandler :: Event -> ManagerMonadT m u ()
+}
+
+-- data Widget = Widget 
 
 -- Monad transformer for abstract interface handling, where
 -- m: is the underlying UI monad that handles rendering, in our case SDLIO
@@ -82,11 +90,6 @@ getUserState = gets userState
 modifyUserState' :: Monad m => (Maybe u -> Maybe u) -> ManagerMonadT m u ()
 modifyUserState' f = modify' (\s-> s { userState = f $ userState s })
 
--- Event handlers are actions from Event to ManagerMonadT m  
-data EventHandler m u = EventHandler {
-    runHandler :: Event -> ManagerMonadT m u ()
-}
-
 initUIState us = UIState {
     idCounter = 0,
     widgets = Map.empty,
@@ -104,27 +107,6 @@ modifyWidget :: MonadIO m => Int -> BasicWidget -> ManagerMonadT m u ()
 modifyWidget i w = do
     ws <- gets widgets
     modify' (\s -> s { widgets = Map.insert i w ws })
-
--- handler that handles editing "text" field in a widget    
--- use it internally to create editable labels etc
-textHandler :: MonadIO m => Event -> ManagerMonadT m u ()
-textHandler ev@(Event EvKbBackspace (i,w)) = do
-    liftIO $ putStrLn $ "Backspace to widget # " ++ show i
-    let txt = text w
-    if txt /= "" then do
-        let txt' = T.init txt
-        let w' = w { text = txt' }
-        modifyWidget i w'
-        setDirty
-    else pure ()
-textHandler ev@(Event (EvTextInput tinp) (i,w)) = do
-    liftIO $ putStrLn $ "Text to widget # " ++ show i
-    let txt = (text w) <> tinp
-    let w' = w { text = txt }
-    modifyWidget i w'
-    setDirty
-textHandler _ = pure ()    
-
 
 -- returns a pair of focus widget with its index
 getFocusWidget :: Monad m => ManagerMonadT m u (Maybe (Int, BasicWidget))
@@ -146,8 +128,8 @@ registerWidget w = do
     return idc'
 
 -- add event handler to handlers list at key i
-addHandler :: Monad m => EventHandler m u -> Int -> ManagerMonadT m u ()
-addHandler h i = do
+addHandler :: Monad m => Int -> EventHandler m u -> ManagerMonadT m u ()
+addHandler i h = do
     s <- get
     let hs = handlers s
     let hs' = Map.alter fn i hs
@@ -156,8 +138,8 @@ addHandler h i = do
           fn (Just chs) = Just (h:chs)
 
 -- adds new widget and a handler          
-addWidgetWithHandler :: Monad m => BasicWidget -> EventHandler m u -> ManagerMonadT m u Int
-addWidgetWithHandler w h = registerWidget w >>= \i -> addHandler h i >> return i
+addWidgetWithHandlers :: Monad m => BasicWidget -> [EventHandler m u] -> ManagerMonadT m u Int
+addWidgetWithHandlers w hs = registerWidget w >>= \i -> mapM_ (addHandler i) hs >> return i
 
 -- firing event to all registered handlers
 fireEvent :: Monad m => Event -> ManagerMonadT m u ()
