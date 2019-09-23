@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f9edb6f3ff0e543b2286da60c2c91fc7e356ab5542ea2607780c263b374d7d5b
+-- hash: 82a8ff6ab92a1c1f4d17682a9cf3a3ab2b7813d8115474224b086117e1e2c30d
 
 name:           uih
 version:        0.1.0.0
@@ -48,7 +48,8 @@ library
   hs-source-dirs:
       src
   build-depends:
-      base >=4.7 && <5
+      StateVar
+    , base >=4.7 && <5
     , clock
     , containers
     , ghc-prim
@@ -69,7 +70,8 @@ executable uih
       app
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base
+      StateVar
+    , base
     , clock
     , containers
     , directory
@@ -94,7 +96,8 @@ test-suite math-test
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      StateVar
+    , base >=4.7 && <5
     , clock
     , containers
     , ghc-prim

@@ -31,6 +31,7 @@ dependencies:
 - containers
 - reactive-banana
 - linear
+- StateVar
 
 
 library:

@@ -1,3 +1,4 @@
+{-# LANGUAGE PostfixOperators #-}
 module UIH.SDL2.SDLUI where
 
 -- stitching high-level ManagerMonad and low-level SDLIO (RenderMonad) together to handle SDL based UI
@@ -31,6 +32,8 @@ import Data.Map.Strict as Map
 
 import Color
 
+import PreludeFixes
+
 -- stacking manager monad and SDLIO together
 -- u is the user state type that is *for the UI only*!
 -- So, users of the library will use SDLUI MyState as their UI program type
@@ -56,7 +59,7 @@ renderUI = do
     nrc <- getNeedsRecalculation
     if nrc then do
         window <- lift $ gets mainWindow
-        V2 width height <- SDL.get $ windowSize window
+        V2 width height <- (window.-windowSize?=) -- ok we are reading statevar here from a record field with operators
         -- calculate initial rectangles based on UI layout
         initUI (fromIntegral width) (fromIntegral height)
         widgets <- gets widgets
