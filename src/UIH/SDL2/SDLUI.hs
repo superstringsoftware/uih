@@ -26,16 +26,20 @@ import UIH.SDL2.RenderWidgets
 import Color
 
 -- stacking manager monad and SDLIO together
-type SDLUI = ManagerMonadT SDLIO
+-- u is the user state type that is *for the UI only*!
+-- So, users of the library will use SDLUI MyState as their UI program type
+-- and can stack another monad on top of this one should they want to
+type SDLUI u = ManagerMonadT SDLIO u
 
-runSDLUI :: SDLUI a -> IO a
-runSDLUI prog = runSDLIO $ evalStateT prog initUIState
+-- running main SDLUI program
+runSDLUI :: SDLUI u a -> IO a
+runSDLUI prog = runSDLIO $ evalStateT prog (initUIState Nothing)
 
-initializeAll :: SDLUI ()
+initializeAll :: SDLUI u ()
 initializeAll = lift ((liftIO initStateIO) >>= put >> initFonts >> dumpSDLState)
 
 -- hh
-renderUI :: SDLUI ()    
+renderUI :: SDLUI u ()    
 renderUI = do
     renderer <- lift $ gets mainRenderer
     ws <- gets widgets
@@ -45,7 +49,7 @@ renderUI = do
     lift $ mapM_ renderScreen ws
     SDL.present renderer
     
-appLoop :: SDLUI ()
+appLoop :: SDLUI u ()
 appLoop = do
     -- renderUI
     renderer <- lift $ gets mainRenderer
@@ -54,9 +58,10 @@ appLoop = do
     let quit = any (== True) results -- checking if any of the results is True
     unless quit appLoop
 
--- Main Event Loop
+-- Main Event Loop - this method plays central role in connecting underlying SDLIO monad from where
+-- SDL events originate and ManagerMonad, which handles firing transformed events to event handlers
 -- returns True if need to quit, false otherwise
-checkEvent :: SDLUI () -> SDL.Event ->  SDLUI Bool
+checkEvent :: SDLUI u () -> SDL.Event ->  SDLUI u Bool
 checkEvent renUI event = do
     --liftIO $ print $ show $ event
     renderer <- lift $ gets mainRenderer
@@ -72,12 +77,16 @@ checkEvent renUI event = do
                 let k = keysymKeycode $ keyboardEventKeysym ev
                 -- liftIO $ print $ show k
                 case k of
-                    KeycodeBackspace -> backspaceEditingText >> renUI >> return False
+                    KeycodeBackspace -> do 
+                        mevs <- getFocusWidget
+                        maybe (return False)
+                              (\evs -> fireEvent (MM.Event EvKbBackspace evs) >> renUI >> return False)
+                              mevs
                     _                -> return False
         SDL.MouseMotionEvent me -> do 
             let P (V2 x y) = SDL.mouseMotionEventPos me
             -- liftIO $ putStrLn $ "Mouse moved to: " ++ show x ++ ", " ++ show y
-            -- converting into mouse hover event if any widget is under the mouse
+            -- converting into mouse hover event if any widget is under the mouse and firing it to MM handlers
             mevs <- getEventSource (fromIntegral x) (fromIntegral y)
             maybe (return False)
                   (\evs@(i,_) -> fireEvent (MM.Event EvHover evs) >> setCurrentFocusId (Just i) >> return False)
@@ -87,7 +96,8 @@ checkEvent renUI event = do
                 return False
         SDL.TextInputEvent ev -> do
                 -- liftIO $ print $ show ev
-                addEditingText (textInputEventText ev)
-                renUI
-                return False
+                mevs <- getFocusWidget
+                maybe (return False)
+                      (\evs -> fireEvent (MM.Event (EvTextInput (textInputEventText ev)) evs) >> renUI >> return False)
+                      mevs
         _ -> return False

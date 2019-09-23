@@ -27,7 +27,7 @@ instance Renderable SDLIO BasicWidget where
         pure $ Just tex
     render (TextLabel (CollRect x y w h) clr fname text) = 
         if text /= "" then do
-            (Just fnt) <- getDefaultFont -- WRONG, HANDLE ERRORS!!!
+            (Just fnt) <- getDefaultFont -- WRONG, HANDLE ERRORS!!! GET THE RIGHT FONT!!!
             ren <- getRenderer
             tex <- textToTexture text ren clr fnt
             pure $ Just tex
@@ -38,10 +38,11 @@ instance Renderable SDLIO BasicWidget where
         let tx1 = text btn
         -- liftIO $ putStrLn $ "Rendering button; text: " ++ show tx
         let tx = if tx1 == "" then " " else tx1
-        (Just fnt) <- getDefaultFont -- WRONG, HANDLE ERRORS!!!
+        (Just fnt) <- getDefaultFont -- WRONG, HANDLE ERRORS!!! GET THE RIGHT FONT!!!
         tex2 <- textToTexture tx ren (fontColor btn) fnt
         copyTextureClip tex1 (fromIntegral $ txtX btn) (fromIntegral $ txtY btn) tex2 ren True
         pure $ Just tex1
+    
     renderScreen w = do
         texm <- render w
         maybe (pure ())

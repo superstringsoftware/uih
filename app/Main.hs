@@ -25,7 +25,7 @@ main = do
 
 program = do
   initializeAll 
-  addWidgetWithHandler testButton (EventHandler testHandler)
+  addWidgetWithHandler testButton (EventHandler textHandler)
   renderUI
   -- SDL.startTextInput $ Rect 0 0 300 60
   -- SDL.stopTextInput
@@ -33,8 +33,8 @@ program = do
 
 
 
-testHandler :: Event -> SDLUI ()
-testHandler ev@(Event EvHover (i,w)) = liftIO $ putStrLn $ "Hovering over widget # " ++ show i
+testHandler1 :: Event -> SDLUI u ()
+testHandler1 ev@(Event EvHover (i,w)) = liftIO $ putStrLn $ "Hovering over widget # " ++ show i
 
 
 
