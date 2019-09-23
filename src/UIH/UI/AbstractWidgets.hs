@@ -18,6 +18,8 @@ import Data.Text as T hiding (map)
 import Linear
 import Color
 
+import UIH.UI.SimpleTree
+
 -- what we use as index into widgets - needs to be the same for ManagerMonad and SDLIO
 type WidgetId = Int
 
@@ -34,6 +36,7 @@ data Background =
     BGColor Color
     | BGImage Text -- will be changed
     | BGGradient Text -- will be chnaged
+    | BGTransparent
 
 -- composite widget is a tree of AbstractWidgets
 -- I'd discourage nesting too deep?
@@ -45,13 +48,31 @@ data Background =
 -- This calculation needs to take place AT THE START of the program, with all RESIZE events,
 -- and with all ADD / DELETE widget events.
 
-data CompositeWidget = CompositeWidget AbstractWidget (V4 Int) [CompositeWidget]
+-- this is used as initial tree to setup the interface by converting into flat + separate event handlers
+-- event handlers are added AUTOMATICALLY when we convert Widget to Manager Monad representation
+-- data Widget = SimpleWidget AbstractWidget | CompositeWidget (MultiTree AbstractWidget)
+-- starting with FLAT STRUCTURE OF ABSTRACT WIDGETS!!!!!
+type Widget = AbstractWidget
+
+type AbstractWidgetTransformer = (AbstractWidget -> AbstractWidget)
+
+-- some pure handler helpers to manipulate abstract widgets
+-- can be turned into handlers eventually easy enough
+hndlBackspace :: AbstractWidget -> AbstractWidget
+hndlBackspace w = if (text w) /= "" then w { text = T.init (text w) } else w
+
+hndlAppendText :: Text -> AbstractWidget -> AbstractWidget
+hndlAppendText txt w = w { text = (text w) <> txt }
+
+hndlPrependText :: Text -> AbstractWidget -> AbstractWidget
+hndlPrependText txt w = w { text = txt <> (text w) }
 
 -- helper function; calculates dimensions of all children *relative to the parent* 
 -- so for top level widgets will be relative to the screen
-calculateDimsRelToParent :: Int -> Int -> AbstractWidget -> V4 Int
-calculateDimsRelToParent w h widg = layoutToRectangle (layout widg) (V4 0 0 w h)
+calculateCacheRect :: Int -> Int -> AbstractWidget -> AbstractWidget
+calculateCacheRect w h widg = widg { cacheRect = layoutToRectangle (layout widg) (V4 0 0 w h) }
 
+{-
 -- ok not sure if recursion terminates here... should be with empty list, right?
 calculateDimensions :: CompositeWidget -> CompositeWidget
 calculateDimensions (CompositeWidget parent rect@(V4 _ _ w h) children) = 
@@ -60,6 +81,7 @@ calculateDimensions (CompositeWidget parent rect@(V4 _ _ w h) children) =
             CompositeWidget widget 
                             (calculateDimsRelToParent w h widget)
                             (map calculateDimensions cchildren)
+-}
 
 -- SCREEN is used for top level, root definition of the UI tree.
 data AbstractWidget = 
@@ -69,7 +91,8 @@ data AbstractWidget =
         text :: Text,
         valign, halign :: TextAlign,
         layout :: Layout,
-        background :: Background
+        background :: Background, 
+        cacheRect :: V4 Int
     } |
     -- Text label that CAN be edited - we are separating the 2 b/c this one will need event handlers 
     -- in the implmentation level
@@ -78,11 +101,13 @@ data AbstractWidget =
         text :: Text,
         valign, halign :: TextAlign,
         layout :: Layout,
-        background :: Background
+        background :: Background,
+        cacheRect :: V4 Int
     } |
     Panel {
         layout :: Layout,
-        background :: Background
+        background :: Background,
+        cacheRect :: V4 Int
     } |
     SCREEN -- used for setting up CompositeWidget tree 
 

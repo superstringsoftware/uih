@@ -17,6 +17,7 @@ module UIH.UI.ManagerMonad where
 
 import UIH.UI.BasicWidgets
 import UIH.UI.AbstractWidgets
+import UIH.UI.SimpleTree
 
 import Data.Map.Strict as Map 
 
@@ -27,6 +28,9 @@ import Control.Monad
 
 import Data.Text as T
 
+import Linear
+
+
 data EventTypes = EvHover 
     | EvClick
     | EventGeneric
@@ -34,15 +38,24 @@ data EventTypes = EvHover
     | EvKbBackspace
     deriving (Eq, Show)
 
+-- events
 data Event = Event {
     eventType :: EventTypes,
-    source :: (Int, BasicWidget)
+    source :: (WidgetId, BasicWidget)
 }
 
 -- Event handlers are actions from Event to ManagerMonadT m u 
 data EventHandler m u = EventHandler {
     runHandler :: Event -> ManagerMonadT m u ()
 }
+
+
+-- combining all kinds together
+{-
+data Widget m u = SimpleWidget AbstractWidget 
+    | SimpleEventfulWidget (EventfulWidget m u)
+    | CompositeWidget (MultiTree (Widget m u))
+-}
 
 -- data Widget = Widget 
 
@@ -62,16 +75,19 @@ data UIState m u = UIState {
     idCounter :: !Int, 
     -- polymorphic map from Ints (ids) to Renderables
     -- Eventually we want to track colliders separately, since not every widget will be an event source
-    widgets :: Map.Map Int BasicWidget,
+    widgets :: Map.Map WidgetId BasicWidget,
     -- event handlers for widget with id = key
     handlers :: Map.Map Int [EventHandler m u],
     -- certain state in terms of current focus / hover etc widgets -- 
     -- needed to handle text events etc
-    currentHoverId :: Maybe Int,
-    currentFocusId :: Maybe Int, -- widget that has focus, used for text editing mostly
+    currentHoverId :: Maybe WidgetId,
+    currentFocusId :: Maybe WidgetId, -- widget that has focus, used for text editing mostly
     editingText :: Text, -- text currently being edited
     isDirty :: Bool, -- does the UI need to be redrawn?
-    userState   :: Maybe u
+    userState   :: Maybe u,
+
+    -- new beginnings:
+    compositeWidgets :: Map.Map WidgetId Widget
 }
 
 setDirty :: Monad m => ManagerMonadT m u ()
@@ -99,6 +115,7 @@ initUIState us = UIState {
     editingText = "",
     isDirty = True,
     userState = us
+    -- compositeWidgets = Map.empty
 }
 
 setCurrentFocusId i = modify' (\s -> s { currentFocusId = i }) 

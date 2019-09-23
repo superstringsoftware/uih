@@ -15,6 +15,8 @@ import UIH.UI.ManagerMonad
 import UIH.UI.BasicWidgets
 import UIH.UI.Handlers
 
+-- import Data.Foldable
+
 import qualified SDL as SDL
 
 import SDL.Raw.Types (Rect(..))
