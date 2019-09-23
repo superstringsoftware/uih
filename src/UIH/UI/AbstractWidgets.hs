@@ -23,20 +23,21 @@ import UIH.UI.SimpleTree
 -- what we use as index into widgets - needs to be the same for ManagerMonad and SDLIO
 type WidgetId = Int
 
-data FontStyle = Normal | Bold | Italic
-data TextAlign = CenterAlign | LeftAlign | RightAlign
+data FontStyle = Normal | Bold | Italic deriving (Show, Eq)
+data TextAlign = CenterAlign | LeftAlign | RightAlign deriving (Show, Eq)
 data FontData = FontData {
     fontName :: !Text,
     fontSize :: !Int,
     fontStyle :: FontStyle,
     fontColor :: Color
-} | FontDataDefault
+} | FontDataDefault deriving (Show, Eq)
 
 data Background = 
     BGColor Color
     | BGImage Text -- will be changed
     | BGGradient Text -- will be chnaged
     | BGTransparent
+    deriving (Show, Eq)
 
 -- composite widget is a tree of AbstractWidgets
 -- I'd discourage nesting too deep?
@@ -114,6 +115,7 @@ data AbstractWidget =
         cacheRect :: V4 Int
     } |
     SCREEN -- used for setting up CompositeWidget tree 
+    deriving (Show, Eq)
 
 -- different layout options and the rectangle conventions corresponding to them
 {-

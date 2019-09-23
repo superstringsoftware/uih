@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0801077ed23ab2424fcb77985e8afb93963773e12356b37547a966228989012a
+-- hash: f9edb6f3ff0e543b2286da60c2c91fc7e356ab5542ea2607780c263b374d7d5b
 
 name:           uih
 version:        0.1.0.0
@@ -30,19 +30,19 @@ library
       Color
       FRP.Banana
       Logger
+      PreludeFixes
       UIH.SDL2.Basic
       UIH.SDL2.Fonts
+      UIH.SDL2.RenderableAbstractWidgets
+      UIH.SDL2.RenderableSDLWidgets
       UIH.SDL2.RenderMonad
-      UIH.SDL2.RenderWidgets
       UIH.SDL2.SDLUI
       UIH.SDL2.SDLWidgets
       UIH.UI.AbstractWidgets
-      UIH.UI.BasicWidgets
       UIH.UI.Handlers
       UIH.UI.ManagerMonad
       UIH.UI.Renderable
       UIH.UI.SimpleTree
-      UIH.UI.Widgets
   other-modules:
       Paths_uih
   hs-source-dirs:

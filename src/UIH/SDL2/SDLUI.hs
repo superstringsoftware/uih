@@ -20,8 +20,14 @@ import SDL as SDL hiding (initializeAll)
 import UIH.SDL2.RenderMonad
 import UIH.SDL2.Fonts
 
-import UIH.UI.BasicWidgets
-import UIH.SDL2.RenderWidgets
+import UIH.UI.AbstractWidgets
+import UIH.UI.Renderable
+
+import UIH.SDL2.SDLWidgets
+import UIH.SDL2.RenderableSDLWidgets
+import UIH.SDL2.RenderableAbstractWidgets
+
+import Data.Map.Strict as Map
 
 import Color
 
@@ -36,18 +42,46 @@ runSDLUI :: SDLUI u a -> IO a
 runSDLUI prog = runSDLIO $ evalStateT prog (initUIState Nothing)
 
 initializeAll :: SDLUI u ()
-initializeAll = lift ((liftIO initStateIO) >>= put >> initFonts)
+initializeAll = do 
+    -- initializing SDL
+    liftIO $ putStr "Initializing SDL..."
+    lift ((liftIO initStateIO) >>= put >> initFonts)
+    liftIO $ putStrLn " done."
+    -- initializing ManagerMonad
+    pure ()
 
 -- hh
 renderUI :: SDLUI u ()    
 renderUI = do
+    nrc <- getNeedsRecalculation
+    if nrc then do
+        window <- lift $ gets mainWindow
+        V2 width height <- SDL.get $ windowSize window
+        -- calculate initial rectangles based on UI layout
+        initUI (fromIntegral width) (fromIntegral height)
+        widgets <- gets widgets
+        liftIO $ mapM_ print widgets
+        setNeedsRecalculation False
+    else pure ()
     renderer <- lift $ gets mainRenderer
-    ws <- gets widgets
+    -- request only dirty widgets map from ManagerMonad
+    ws <- getDirtyWidgets
+    -- get cached SDLWidgets
+    sdlws <- lift $ gets cachedWidgets    
+    -- mapWithKey :: (k -> a -> b) -> Map k a -> Map k b
+    -- let sdlws' :: SDLIO (Map.Map WidgetId SDLWidget)
+    -- "render" them to SDLWidgets
+    sdlws' <- lift $ mapM render ws
+    -- combine old map and a new map - how to fuse these two operations???
+    -- foldrWithKey' :: (k -> a -> Map k b -> Map k b) -> Map k b -> Map k a -> Map k b
+    let sdlws'' = Map.foldrWithKey' fn sdlws sdlws'
     SDL.rendererRenderTarget renderer $= Nothing -- rendering to Screen
     rendererDrawColor renderer $= V4 255 255 255 0
     SDL.clear renderer
-    lift $ mapM_ renderScreen ws
+    lift $ mapM_ renderScreen sdlws''
     SDL.present renderer
+    lift $ modify' (\s -> s { cachedWidgets = sdlws'' } )
+    where fn k wdg wmap = Map.insert k [wdg] wmap
     
 appLoop :: SDLUI u ()
 appLoop = do

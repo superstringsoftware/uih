@@ -12,14 +12,14 @@ import Control.Monad
 import UIH.SDL2.SDLUI
 import UIH.SDL2.RenderMonad
 import UIH.UI.ManagerMonad
-import UIH.UI.BasicWidgets
+import UIH.UI.AbstractWidgets
 import UIH.UI.Handlers
 
 -- import Data.Foldable
 
-import qualified SDL as SDL
+import SDL as SDL hiding (initializeAll)
 
-import SDL.Raw.Types (Rect(..))
+-- import SDL.Raw.Types (Rect(..))
 
 main :: IO ()
 main = do
@@ -31,20 +31,17 @@ program = do
   registerWidget InputText {
       fontData = FontDataDefault,
       text = "input",
-      valign = Center, halign = Left,
-      layout defaultCenterLayout,
-      background = BGColor $ mdGrey 700,
+      valign = CenterAlign, halign = LeftAlign,
+      layout = defaultCenterLayout,
+      background = BGColor $ rgbaToV4Color $ mdGrey 700,
       cacheRect = V4 0 0 0 0
   }
+  
   renderUI
   -- SDL.startTextInput $ Rect 0 0 300 60
   -- SDL.stopTextInput
   appLoop
 
-
-
-testHandler1 :: Event -> SDLUI u ()
-testHandler1 ev@(Event EvHover (i,w)) = liftIO $ putStrLn $ "Hovering over widget # " ++ show i
 
 
 

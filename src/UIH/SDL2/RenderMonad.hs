@@ -16,6 +16,8 @@ import qualified Data.Map.Strict as Map
 import UIH.UI.AbstractWidgets
 import UIH.SDL2.SDLWidgets
 
+import Color
+
 
 -- record to store current position etc of the cursor
 data CursorStatus = CursorStatus {
@@ -84,64 +86,4 @@ initStateIO = do
     either (\e -> print (e::SDLException) >> fail "Could not initialize SDL")
            (\st -> return st) r
                  
--- asfasf
-widget2SDLWidget :: Widget -> SDLIO SDLComplexWidget
-widget2SDLWidget w@Label{..} = do
-    maybeFont <- fontData2Font fontData
-    maybe (throw (NoMethodError "Couldn't load default font, aborting!"))
-          (\fnt -> return [SDLTextBox { -- text with box as a background
-                text = text,
-                font = fnt, 
-                color = (fontColor (fontData :: FontData)), 
-                cachedRect = rect2CInt cacheRect, -- cached bounding box dimensions
-                bgColor = background2Color background, -- background color for the box
-                paddingRect = V4 8 4 8 4, -- padding for the text texture relative to the bounding box
-                tex = Nothing
-            }]) maybeFont
-widget2SDLWidget w@InputText{..} = do
-    maybeFont <- fontData2Font fontData
-    maybe (throw (NoMethodError "Couldn't load default font, aborting!"))
-          (\fnt -> return [SDLTextBox { -- text with box as a background
-                text = text,
-                font = fnt, 
-                color = (fontColor (fontData :: FontData)), 
-                cachedRect = rect2CInt cacheRect, -- cached bounding box dimensions
-                bgColor = background2Color background, -- background color for the box
-                paddingRect = V4 8 4 8 4, -- padding for the text texture relative to the bounding box
-                tex = Nothing
-            }]) maybeFont
 
-
--- asfsaf
--- convert font data to cached font
-fontData2Font :: FontData -> SDLIO (Maybe Font)
-fontData2Font FontDataDefault = get >>= \st -> return $ Map.lookup "__DEFAULT__" (loadedFonts st)
-fontData2Font FontData{..} = return Nothing
-
-{-
-data FontData = FontData {
-    fontName :: !Text,
-    fontSize :: !Int,
-    fontStyle :: FontStyle,
-    fontColor :: Color
-} | FontDataDefault
--}
-
-
-{- 
--- Text label that CAN be edited - we are separating the 2 b/c this one will need event handlers 
--- in the implmentation level
-InputText {
-fontData :: FontData,
-text :: Text,
-valign, halign :: TextAlign,
-layout :: Layout,
-background :: Background,
-cacheRect :: V4 Int
-} |
-Panel {
-layout :: Layout,
-background :: Background,
-cacheRect :: V4 Int
-} |        
--}   

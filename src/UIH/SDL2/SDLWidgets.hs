@@ -48,10 +48,6 @@ data SDLWidget = SDLBox { -- simply a colored box (eventually need to add with a
     tex :: Maybe Texture -- cached texture
 } 
 
-rect2CInt (V4 x y w h) = V4 (fromIntegral x) (fromIntegral y) (fromIntegral w) (fromIntegral h)
-
-background2Color (BGColor clr) = clr
-background2Color _ = rgbaToV4Color $ mdRed 500
 
 
 

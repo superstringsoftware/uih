@@ -84,11 +84,21 @@ data UIState m u = UIState {
     currentFocusId :: Maybe WidgetId, -- widget that has focus, used for text editing mostly
     editingText :: Text, -- text currently being edited
     isDirty :: Bool, -- does the UI need to be redrawn?
+    needsRecalculation :: Bool, -- dimensions changed so need to recalculate!
     userState   :: Maybe u    
 }
 
+-- eventually this method will return only widgets that require redrawing
+-- now returns all
+getDirtyWidgets :: Monad m => ManagerMonadT m u (Map.Map WidgetId Widget)
+getDirtyWidgets = gets widgets
+
 setDirty :: Monad m => ManagerMonadT m u ()
 setDirty = modify' (\s -> s { isDirty = True })
+setNeedsRecalculation :: Monad m => Bool -> ManagerMonadT m u ()
+setNeedsRecalculation b = modify' (\s -> s { needsRecalculation = b })
+getNeedsRecalculation :: Monad m => ManagerMonadT m u Bool
+getNeedsRecalculation = gets needsRecalculation 
 setClean :: Monad m => ManagerMonadT m u ()
 setClean = modify' (\s -> s { isDirty = False })
 getDirty :: Monad m => ManagerMonadT m u Bool
@@ -111,6 +121,7 @@ initUIState us = UIState {
     currentFocusId = Nothing,
     editingText = "",
     isDirty = True,
+    needsRecalculation = True,
     userState = us
     -- compositeWidgets = Map.empty
 }
