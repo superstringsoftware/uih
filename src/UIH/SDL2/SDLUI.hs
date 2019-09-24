@@ -59,8 +59,11 @@ initializeAll = do
     V2 realw realh  <- window.-glGetDrawableSize   --vkGetDrawableSize
     liftIO $ putStrLn $ "Logical size: " ++ show width ++ "x" ++ show height
     liftIO $ putStrLn $ "Physical size: " ++ show realw ++ "x" ++ show realh
-    let scale = V2 (realw `div` width) (realh `div` height)
+    let scale = V2 ( (fromIntegral realw) / (fromIntegral width)) ( (fromIntegral realh) / (fromIntegral height))
     lift $ modify' (\s-> s { scaleXY = scale })
+    ren <- lift getRenderer
+    -- scales automatically for high-dpi, but font rendering is not good in this case, might need a workaround
+    rendererScale ren $= scale 
     pure ()
 
 -- hh
@@ -124,15 +127,30 @@ checkEvent event = do
             return False
         SDL.QuitEvent -> return True
         SDL.KeyboardEvent ev -> do
-                --liftIO $ print $ show ev
+                -- liftIO $ print $ show ev
                 let k = keysymKeycode $ keyboardEventKeysym ev
-                -- liftIO $ print $ show k
+                --liftIO $ print $ show k
                 case k of
-                    KeycodeBackspace -> do 
-                        mevs <- getFocusWidget
-                        maybe (return False)
-                              (\evs -> fireEvent (MM.Event EvKbBackspace evs) >> return False)
-                              mevs
+                    KeycodeBackspace -> 
+                        if (keyboardEventKeyMotion ev) == Pressed 
+                        then do 
+                            mevs <- getFocusWidget
+                            maybe (return False)
+                                (\evs -> fireEvent (MM.Event EvKbBackspace evs) >> return False)
+                                mevs
+                        else return False
+                    KeycodeRight -> 
+                        if (keyboardEventKeyMotion ev) == Pressed
+                        then do 
+                            liftIO $ putStrLn "Right!"
+                            return False
+                        else return False
+                    KeycodeLeft -> 
+                        if (keyboardEventKeyMotion ev) == Pressed
+                        then do 
+                            liftIO $ putStrLn "Left!"
+                            return False
+                        else return False
                     _                -> return False
         SDL.MouseMotionEvent me -> do 
             let P (V2 x y) = SDL.mouseMotionEventPos me

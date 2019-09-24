@@ -9,7 +9,7 @@ import Control.Exception
 import SDL as SDL hiding (get)
 import SDL.Font
 import Data.Text
-import Foreign.C.Types (CInt)
+import Foreign.C.Types (CInt, CFloat)
 import Data.Word
 import qualified Data.Map.Strict as Map
 
@@ -36,7 +36,7 @@ data SDLState = SDLState {
   , cursor        :: CursorStatus
   , bgColor       :: V4 Word8
   , cachedWidgets :: Map.Map WidgetId SDLComplexWidget -- cache of the low level widgets
-  , scaleXY       :: V2 CInt -- in case we use highDPI, this will be the scale
+  , scaleXY       :: V2 CFloat -- in case we use highDPI, this will be the scale
 } | SDLEmptyState 
 
 runSDLIO :: SDLIO a -> IO a
@@ -56,10 +56,11 @@ mainWindowSettings = defaultWindow
   { windowBorder       = True
   -- There are issues with high DPI windows b/c we need to recalculate all coordinates when drawing / checking event
   -- coordinates, so its support is pending
+  -- OpenGLContext defaultOpenGL
   , windowHighDPI      = True 
   , windowInputGrabbed = False
   , windowMode         = Windowed
-  --, windowOpenGL       = Nothing
+  , windowGraphicsContext = OpenGLContext defaultOpenGL
   , windowPosition     = Wherever
   , windowResizable    = True
   , windowInitialSize  = V2 1200 800

@@ -34,6 +34,7 @@ program = do
       valign = CenterAlign, halign = LeftAlign,
       layout = l_TL 40 40 300 50,
       background = BGColor $ rgbaToV4Color $ mdGrey 700,
+      cursorPos = 0,
       cacheRect = V4 0 0 0 0
   }
   registerWidget InputText {
@@ -42,6 +43,7 @@ program = do
       valign = CenterAlign, halign = LeftAlign,
       layout = l_TL 40 140 300 30,
       background = BGColor $ rgbaToV4Color $ mdGrey 900,
+      cursorPos = 0,
       cacheRect = V4 0 0 0 0
   }
   

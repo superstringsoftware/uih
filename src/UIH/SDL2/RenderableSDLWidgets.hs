@@ -17,33 +17,46 @@ import UIH.SDL2.Fonts
 import UIH.SDL2.SDLWidgets
 
 import Control.Monad.IO.Class (liftIO)
+import Control.Monad
 
 import SDL
+import SDL.Font
 
 import PreludeFixes
 
 {-
--- low level SDL widgets used for caching
-data SDLWidget = SDLBox { -- simply a colored box (eventually need to add with an image)
-    bgColor :: V4 Word8,
-    cachedRect :: V4 CInt, -- cached bounding box dimensions
-    tex :: Maybe Texture -- cached texture
-} | SDLText { -- text without any background
-    text :: Text,
-    font :: Font, -- SDL font object to render with
-    color :: V4 Word8, -- color to render text with
-    cachedRect :: V4 CInt, -- cached bounding box dimensions
-    tex :: Maybe Texture -- cached texture
-} | SDLTextBox { -- text with box as a background
-    text :: Text,
-    font :: Font, -- SDL font object to render with
-    color :: V4 Word8, -- color to render text with
-    cachedRect :: V4 CInt, -- cached bounding box dimensions
-    bgColor :: V4 Word8, -- background color for the box
-    paddingRect :: V4 CInt, -- padding for the text texture relative to the bounding box
-    tex :: Maybe Texture -- cached texture
-} 
+data SDLStyledText = SDLStyledText {
+    text :: !Text,
+    color :: V4 Word8,
+    styles :: [Style],
+    -- if not empty, we use the "shaded" rendering method to produce backround box in one go
+    -- can be used to highlight the text etc
+    bgColor :: Maybe (V4 Word8) 
+}
+
 -}
+-- helper conversion functions
+-- no check for empty string, but it MUSTNT BE EMPTY STRING!!!
+styledText2Texture :: Font -> SDLStyledText -> SDLIO Texture
+styledText2Texture font SDLStyledText{..} = do
+    ren <- getRenderer
+    -- rendering shaded or not depending on whether bgcolor is set
+    tex <- maybe (textToTexture text ren color font)
+                 (\bgClr -> textToTextureShaded text ren color bgClr font) bgColor
+    return tex
+
+styledText2SurfaceWDims font st = do
+    surf <- styledText2Surface font st
+    dims <- surfaceDimensions surf
+    return (surf,dims)
+
+styledText2Surface :: Font -> SDLStyledText -> SDLIO Surface
+styledText2Surface font SDLStyledText{..} = do
+    maybe (blended font color text)
+          (\bgClr -> shaded font color bgClr text) bgColor
+    >>= pure
+    
+
 instance Renderable SDLIO [SDLWidget] where
     type Res SDLIO [SDLWidget] = Maybe Texture
     render [] = return Nothing
@@ -76,6 +89,18 @@ instance Renderable SDLIO SDLWidget where
         let (V4 x1 y1 x2 y2) = paddingRect
         copyTextureClip tex1 x1 y1 tex2 ren True
         pure $ Just tex1
+
+    
+                    
+
+{-
+SDLTextLine { -- text line with different styles but the same font and size
+    font :: Font,
+    cachedRect :: V4 CInt, -- cached bounding box dimensions
+    tex :: Maybe Texture,
+    texts :: [SDLStyledText]
+}
+-}
 
     renderScreen w = do
         texm <- render w

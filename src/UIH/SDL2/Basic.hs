@@ -5,12 +5,14 @@
 
 module UIH.SDL2.Basic where
 
-import SDL.Font (Font, solid, blended)
+import SDL.Font (Font, solid, blended, shaded)
 import Foreign.C.Types (CInt)
 import SDL
 import Data.Text (Text)
 import Control.Monad.IO.Class
 import Data.Word
+
+emptyTexture size ren = createTexture ren RGBA8888 TextureAccessTarget size
 
 boxToTexture :: MonadIO m => CInt -> CInt -> V4 Word8 -> Renderer -> m Texture
 boxToTexture width height color ren = do
@@ -20,14 +22,21 @@ boxToTexture width height color ren = do
     rendererDrawColor ren $= color
     fillRect ren Nothing
     return $ tex
-  
+
+-- shaded :: MonadIO m => Font -> Color -> Color -> Text -> m Surface
+textToTextureShaded :: MonadIO m => Text -> Renderer -> V4 Word8 -> V4 Word8 -> Font -> m Texture
+textToTextureShaded txt ren color bgColor font = do
+    tsurf <- shaded font color bgColor txt 
+    tex   <- createTextureFromSurface ren tsurf
+    freeSurface tsurf >> return tex
+
+
 -- rendering given text to texture with a given font
 textToTexture :: MonadIO m => Text -> Renderer -> V4 Word8 -> Font -> m Texture
 textToTexture txt ren color font = do
     tsurf <- blended font color txt
     tex   <- createTextureFromSurface ren tsurf
-    freeSurface tsurf
-    return tex
+    freeSurface tsurf >> return tex
 
 -- render a given texture at x y coordinates ON SCREEN
 renderTexture :: MonadIO m => CInt -> CInt -> Texture -> Renderer -> m ()

@@ -7,6 +7,7 @@
     , FlexibleContexts
     , RankNTypes
     , BlockArguments
+    , DisambiguateRecordFields
      #-}
 
 module UIH.UI.AbstractWidgets where
@@ -23,7 +24,7 @@ import UIH.UI.SimpleTree
 -- what we use as index into widgets - needs to be the same for ManagerMonad and SDLIO
 type WidgetId = Int
 
-data FontStyle = Normal | Bold | Italic deriving (Show, Eq)
+data FontStyle = Normal | Bold | Italic | Strikethrough | Underline deriving (Show, Eq)
 data TextAlign = CenterAlign | LeftAlign | RightAlign deriving (Show, Eq)
 data FontData = FontData {
     fontName :: !Text,
@@ -31,6 +32,14 @@ data FontData = FontData {
     fontStyle :: FontStyle,
     fontColor :: Color
 } | FontDataDefault deriving (Show, Eq)
+
+-- if we have one line of text with 1 font of 1 size, but different styles inside 
+-- (useful e.g. for syntax highlighting in the code editors)
+data StyledText = StyledText {
+    text :: !Text,
+    styles :: [FontStyle],
+    color :: !Color
+}
 
 data Background = 
     BGColor Color
@@ -60,13 +69,13 @@ type AbstractWidgetTransformer = (AbstractWidget -> AbstractWidget)
 -- some pure handler helpers to manipulate abstract widgets
 -- can be turned into handlers eventually easy enough
 hndlBackspace :: AbstractWidget -> (AbstractWidget, Bool)
-hndlBackspace w = if (text w) /= "" then (w { text = T.init (text w) }, True) else (w, False)
+hndlBackspace w = if (text (w :: AbstractWidget )) /= "" then (w { text = T.init (text (w :: AbstractWidget)) }, True) else (w, False)
 
 hndlAppendText :: Text -> AbstractWidget -> AbstractWidget
-hndlAppendText txt w = w { text = (text w) <> txt }
+hndlAppendText txt w = w { text = (text (w :: AbstractWidget)) <> txt }
 
 hndlPrependText :: Text -> AbstractWidget -> AbstractWidget
-hndlPrependText txt w = w { text = txt <> (text w) }
+hndlPrependText txt w = w { text = txt <> (text (w :: AbstractWidget)) }
 
 -- helper function; calculates dimensions of all children *relative to the parent* 
 -- so for top level widgets will be relative to the screen
@@ -107,6 +116,7 @@ data AbstractWidget =
         valign, halign :: TextAlign,
         layout :: Layout,
         background :: Background,
+        cursorPos :: !Int, -- cursor position in terms of symbols
         cacheRect :: V4 Int
     } |
     Panel {
