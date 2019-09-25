@@ -23,7 +23,7 @@ import Color
 
 import UI.PicoUI.Raw.Widgets
 import UI.PicoUI.Raw.Rendering
-import UI.PicoUI.Raw.SDLIO
+import UI.PicoUI.PicoUIMonad
 import UI.PicoUI.Raw.PureHandlers
 
 import PreludeFixes
@@ -121,9 +121,9 @@ checkEvent event = do
                                                   ++ ": " ++ show button ++ show clicks
                             hm <- getPureHandler i
                             maybe (pure ())
-                                  (\h -> do 
-                                            let w' = handleEventPure event w h
-                                            updateWidget i w'
+                                  (\h -> pure () 
+                                            -- let w' = handleEventPure event w h
+                                            -- updateWidget i w'
                                   ) hm
                             ) ws
             return False

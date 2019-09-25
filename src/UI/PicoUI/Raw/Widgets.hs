@@ -13,6 +13,7 @@ import Data.IORef
 
 import Color
 
+type WidgetId = Int
 
 -- represents styled piece of text
 -- font data is provided separately

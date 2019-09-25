@@ -9,7 +9,7 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.State.Strict
 import Control.Monad
 
-import UI.PicoUI.Raw.SDLIO
+import UI.PicoUI.PicoUIMonad
 import UI.PicoUI.Raw.EventLoop
 import UI.PicoUI.Raw.PureHandlers
 
@@ -21,7 +21,7 @@ import qualified SDL as SDL
 testProgram :: SDLIO ()
 testProgram = do
     btn <- testButton
-    registerWidgetWHandler btn compositeHandler
+    -- registerWidgetWHandler btn compositeHandler
     appLoop
 
 main :: IO ()

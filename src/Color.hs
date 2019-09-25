@@ -13,6 +13,27 @@ data RGBA = RGBA {r :: !Word8, g :: !Word8, b :: !Word8, a :: !Word8} deriving (
 --rgbaToSDLColor :: RGBA -> Raw.Color
 rgbaToV4Color c = V4 (r c) (g c) (b c) (a c)
 
+mBlack = V4 0 0 0 255
+mWhite = V4 255 255 255 255
+
+-- mGrey :: Int -> RGBA
+mGrey 500 = V4 0x9E 0x9E 0x9E 255
+mGrey 50  = V4 0xFA 0xFA 0xFA 255
+mGrey 100 = V4 0xF5 0xF5 0xF5 255
+mGrey 300 = V4 0xE0 0xE0 0xE0 255
+mGrey 700 = V4 0x61 0x61 0x61 255
+mGrey 900 = V4 0x21 0x21 0x21 255
+mGrey _   = V4 0x9E 0x9E 0x9E 255
+
+-- mBlue :: Int -> RGBA
+mBlue 500 = V4 0x21 0x96 0xF3 255
+mBlue _   = V4 0x21 0x96 0xF3 255
+
+-- mRed :: Int -> RGBA
+mRed 500  = V4 0xF4 0x43 0x36 255
+mRed  _   = V4 0xF4 0x43 0x36 255
+
+
 
 mdBlack = RGBA 0 0 0 255
 mdWhite = RGBA 255 255 255 255
