@@ -67,8 +67,9 @@ data SDLState = SDLState {
   , loadedFonts   :: Map.Map Text Font -- map from font names to actual fonts
   , cursor        :: CursorStatus
   , bgColor       :: V4 Word8
-  , widgets       :: Map.Map WidgetId Widget -- cache of the low level widgets
-  , pureHandlers  :: Map.Map WidgetId PureHandler -- lowest level handlers that work in concert with widgets
+  , widgets       :: Map.Map WidgetId ActiveWidget -- cache of the low level widgets, DO NOT manipulate it directly
+  -- , widgets       :: Map.Map WidgetId 
+  -- , pureHandlers  :: Map.Map WidgetId PureHandler -- lowest level handlers that work in concert with widgets
   , idCounter     :: !WidgetId
   , curFocusId    :: !WidgetId
   , scaleXY       :: V2 CFloat -- in case we use highDPI, this will be the scale
@@ -80,9 +81,16 @@ data SDLState = SDLState {
 -- non-pure event handler running in SDLIO
 -- can (and will) encompass pure event handlers
 type EventHandler = Event -> SDLIO ()
--- type PureHandler = AbstractWidget -> Reader Event AbstractWidget 
-pureToEventHandler :: PureHandler -> EventHandler
-pureToEventHandler = undefined
+
+instance Show EventHandler where show _ = "[EventHandler]"
+
+data ActiveWidget = ActiveWidget {
+    widget :: Mid.Widget, -- original high-level widget
+    compiledWidget :: Widget, -- "compiled" low-level cache for the widget
+    handler :: EventHandler -- composed event handler function for the Event originating from this widget
+} deriving Show
+
+isInActiveWidget x y ActiveWidget{..} = Mid.isInWidget x y widget
 
 {-
 mkPureToEventHandler handlerPure event = do
@@ -90,45 +98,29 @@ mkPureToEventHandler handlerPure event = do
 -}
 
 
--- runSDLIO :: SDLIO a -> SDLState -> IO (a, SDLState)
-runSDLIO program = runStateT 
-    (do
-        (liftIO initStateIO) >>= put
-        initFonts
-        window <- gets mainWindow
-        V2 width height <- (window.-windowSize?=)
-        V2 realw realh  <- window.-glGetDrawableSize   --vkGetDrawableSize
-        liftIO $ putStrLn $ "Logical size: " ++ show width ++ "x" ++ show height
-        liftIO $ putStrLn $ "Physical size: " ++ show realw ++ "x" ++ show realh
-        let scale = V2 ( (fromIntegral realw) / (fromIntegral width)) ( (fromIntegral realh) / (fromIntegral height))
-        modify' (\s-> s { scaleXY = scale })
-        autos <- gets autoScale
-        ren <- getRenderer
-        if autos then rendererScale ren $= scale else pure ()
-        program
-    ) 
-    SDLEmptyState
 
 -- 
 -- set renderer to scale according to scale factor - it messes up fonts, so need to render them differently
 -- scaleRendere
 -- finds a pure handler for widget with id
+{-
 getPureHandler :: WidgetId -> SDLIO (Maybe PureHandler)
 getPureHandler i = (Map.lookup i) <$> gets pureHandlers
-
+-}
+{-
 -- finds id and widgets in which given coordinates are, empty list if nothing
 getCollidingWidgets :: CInt -> CInt -> SDLIO [(WidgetId, Widget)]
 getCollidingWidgets x y = do 
     ws <- widgets <$> get
     return $ Map.assocs $ Map.filter (isInWidget x y) ws
-    
+-}  
 getRenderer :: SDLIO Renderer
 getRenderer = mainRenderer <$> get
 
 setCurFocusId i = modify' (\s -> s { curFocusId = i })
 
 -- register new widget and increment the counter
-registerWidget :: Widget -> SDLIO Int
+registerWidget :: ActiveWidget -> SDLIO Int
 registerWidget w = do
     ws <- gets widgets
     i  <- fmap (+1) (gets idCounter)
@@ -138,19 +130,44 @@ registerWidget w = do
     return i
 
 -- update widget at a given id
-updateWidget :: WidgetId -> Widget -> SDLIO ()
+updateWidget :: WidgetId -> ActiveWidget -> SDLIO ()
 updateWidget i w = 
     (Map.insert i w) <$> (gets widgets) >>= 
         \ws -> modify' (\s-> s{widgets = ws})
 
+getWidget :: WidgetId -> SDLIO (Maybe ActiveWidget)
+getWidget i = Map.lookup i <$> gets widgets
+
 -- since handlers are composable, we ALWAYS accept only ONE handler for each widget
+{-
 registerWidgetWHandler :: Widget -> PureHandler -> SDLIO () 
 registerWidgetWHandler w h = do
     hs <- gets pureHandlers
     i  <- registerWidget w
     let nh = Map.insert i h hs 
     modify' (\s-> s { pureHandlers = nh })
+-}
 
+-- given x,y coordinates finds a widget that contains them and returns it (if any)
+-- this is ALL CRAZY INEFFICIENT
+findEventSources :: V2 Int -> SDLIO [(WidgetId, ActiveWidget)]
+findEventSources (V2 x y) = do
+    ws <- widgets <$> get
+    pure $ Map.assocs $ Map.filter (isInActiveWidget x y) ws
+    
+
+calculateCacheRect w h wid@ActiveWidget{..} = wid { widget = Mid.calculateCacheRect w h widget  }
+-- recalculates sizes of all top level widgets after a resize as needed        
+-- w h - new size of the screen
+recalculateRectangles :: Int -> Int -> SDLIO ()
+recalculateRectangles w h = do 
+    ws <- widgets <$> get
+    let ws' = Map.map (calculateCacheRect w h) ws
+    modify' (\s -> s { widgets = ws'} )
+
+
+
+initUI w h = recalculateRectangles w h
 
 instance Show Timer where
   show _ = "Timer present"
@@ -191,7 +208,7 @@ initStateIO = do
                 cursor = CursorStatus 0 0 (V4 255 255 255 0) 0 Nothing,
                 bgColor = V4 210 210 210 0,
                 widgets = Map.empty,
-                pureHandlers = Map.empty,
+                -- pureHandlers = Map.empty,
                 scaleXY = V2 1 1,
                 autoScale = True,
                 idCounter = 0,
@@ -201,40 +218,18 @@ initStateIO = do
     either (\e -> print (e::SDLException) >> fail "Could not initialize SDL")
            (\st -> putStrLn "Initialized SDL" >> return st) r
                  
--- 
--- some test widgets
-testButton :: SDLIO Widget
-testButton = do
-    Just font <- getDefaultFont
-    return Widget {
-                isVisible = True,
-                collider = V4 50 50 400 50,
-                elements = [
-                    WidgetElement {
-                        offset = V2 0 0,
-                        el = SDLBox (rgbaToV4Color $ mdGrey 700)
-                    },
-                    WidgetElement {
-                        offset = V2 8 8,
-                        el = SDLText {
-                            text = "Hello!",
-                            font = font,
-                            color = rgbaToV4Color $ mdRed 500,
-                            cursorPos = 0
-                        }
-                    }
-                ]
-            }
 
 
 
+----------------------------------------------------------------------------------------------------
 -- font stuff
+----------------------------------------------------------------------------------------------------
 defaultFontPath = "./Roboto-Light.ttf"
 
 defaultFont :: Int -> IO Font
 defaultFont size = load defaultFontPath size
 
-safeLoadFont path size = 
+safeLoadFont path size = liftIO $
     do r <- try $ load path size
        either (\e -> print (e::SDLException) >> return Nothing)
               (\fnt -> return $ Just fnt) r
@@ -246,8 +241,25 @@ data SDLFontData = SDLFontData {
     fntLineSkip :: !Int
 } deriving (Eq, Show)
 
-getDefaultFont :: SDLIO (Maybe Font)
-getDefaultFont = get >>= \st -> return $ Map.lookup "__DEFAULT__" (loadedFonts st)
+getDefaultFont :: SDLIO Font
+getDefaultFont = do 
+    st <- get 
+    let fntm = Map.lookup "__DEFAULT__" (loadedFonts st)
+    maybe (fail "Could not find default font, impossible to continue!")
+          (\fnt -> pure fnt) fntm
+
+getFont :: Text -> SDLIO (Maybe Font)
+getFont txt = do
+    st <- get 
+    pure $ Map.lookup txt (loadedFonts st)
+          
+
+getFontOrDefault :: Text -> SDLIO Font
+getFontOrDefault txt = do
+    st <- get 
+    let fntm = Map.lookup txt (loadedFonts st)
+    maybe getDefaultFont
+          (\fnt -> pure fnt) fntm
 
 initFonts :: SDLIO ()
 initFonts = do

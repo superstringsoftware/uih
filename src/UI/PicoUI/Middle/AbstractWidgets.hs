@@ -24,7 +24,7 @@ import UI.PicoUI.Raw.Widgets (WidgetId)
 data FontStyle = Normal | Bold | Italic | Strikethrough | Underline deriving (Show, Eq)
 data TextAlign = CenterAlign | LeftAlign | RightAlign deriving (Show, Eq)
 data FontData = FontData {
-    fontName :: !Text,
+    fontName :: !Text, -- has to be full path to the font, so we need to convert it if there are settings etc
     fontSize :: !Int,
     fontStyle :: FontStyle,
     fontColor :: Color

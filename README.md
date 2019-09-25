@@ -1,5 +1,9 @@
 ## Some conceptual ideas:
 
+"Fourth Idea"
+
+Have mid-level widgets that have a cached "compiled" representation which is used when rendering for speed. Downside is - we are coupling mid-level with low-level SDL representation too much. On the other hand, we are simplifying things quite a bit implementation wise in terms of events, Maps etc. Also, to decouple, can simply store a Pair of Widget and low-level compiled representation together.
+
 We need 3 representations for the UI:
 
 1) Declarative set up

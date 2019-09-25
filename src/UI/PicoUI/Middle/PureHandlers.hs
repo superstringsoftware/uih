@@ -68,7 +68,7 @@ filteredHandlerM filt pureHandlerM widget = do
 -- EXAMPLES FIRST
 -- change background on single click and double click
 redOn2Click = filteredHandler (isLeftClick 2) (changeBackground $ BGColor $ mRed 500)
-blueOnClick = filteredHandler (isLeftClick 1) (changeBackground $ BGColor $ mRed 500)
+blueOnClick = filteredHandler (isLeftClick 1) (changeBackground $ BGColor $ mBlue 500)
 -- composite handler combining the 2
 compositeHandler w = redOn2Click w >>= blueOnClick
 

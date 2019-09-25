@@ -10,8 +10,9 @@ import Control.Monad.Trans.State.Strict
 import Control.Monad
 
 import UI.PicoUI.PicoUIMonad
-import UI.PicoUI.Raw.EventLoop
-import UI.PicoUI.Raw.PureHandlers
+import UI.PicoUI.EventLoop
+import UI.PicoUI.Middle.PureHandlers
+import UI.PicoUI.Middle.AbstractWidgets
 
 -- import Data.Foldable
 
@@ -19,22 +20,20 @@ import qualified SDL as SDL
 
 -- import SDL.Raw.Types (Rect(..))
 testProgram :: SDLIO ()
-testProgram = do
-    btn <- testButton
-    -- registerWidgetWHandler btn compositeHandler
-    appLoop
+testProgram = registerWidgetWithHandler testLabel compositeHandler >> pure ()
+    
 
 main :: IO ()
 main = runSDLIO testProgram >>= putStrLn . show
 
-{-
-main :: IO ()
-main = do
-  putStrLn "Starting main..."
-  runSDLUI program
--}
-
-
+testLabel = Label {
+  fontData = FontDataDefault,
+  text = "Hello",
+  valign = CenterAlign, halign = CenterAlign,
+  layout = defaultCenterLayout,
+  background = BGColor $ mGrey 700, 
+  cacheRect = V4 0 0 0 0
+}
 
 
 
