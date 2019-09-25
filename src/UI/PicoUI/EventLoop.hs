@@ -163,9 +163,8 @@ sdlEvent2Event event =
                     src = EventSource [] pos' (SDL.eventTimestamp event)
                     evt    = cons src clicks
                     -- firing event to all widgets right away, updating source and returning the event
-                in  do --fireEventToWidgets pos' evt >>= \ids -> pure $ evt { source = src { widgetIds = ids } } 
-                        srcs <- findEventSources pos'
-                        pure evt
+                in  fireEventToWidgets pos' evt >>= \ids -> pure $ evt { source = src { widgetIds = ids } } 
+                        
             p -> pure $ RawSDLEvent (EventSource [] (V2 0 0) (SDL.eventTimestamp event)) p
     
 
