@@ -35,12 +35,6 @@ data Widget = Widget {
 renderWidgetToScreen :: Widget -> Renderer -> IO ()
 renderWidgetToScreen Widget{..} ren = if not isVisible then pure () else do
     let (V4 x y w h) = collider
-    let (V2 xo yo) = (offset element)
-    tex <- sdlElement2Texture (V2 w h) (el element) ren
-    renderTexture (x+xo) (y+yo) tex ren
-    destroyTexture tex
-renderWidgetToScreen WidgetVec{..} ren = if not isVisible then pure () else do
-    let (V4 x y w h) = collider
     mapM_ (fn1 x y w h ren) elements
     where 
         fn1 :: CInt -> CInt -> CInt -> CInt -> Renderer -> WidgetElement -> IO ()

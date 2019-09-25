@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 73752888603361d3f5c8464ab6de9fd8a0a6ebfba845866a460eeb50dbb9ca13
+-- hash: a87b6c9db8080d6b1573ca30f7097103e3a4f7fcea9eb928fe6b84c15718eb9b
 
 name:           uih
 version:        0.1.0.0
@@ -32,6 +32,7 @@ library
       Logger
       PreludeFixes
       UI.PicoUI.Raw.EventLoop
+      UI.PicoUI.Raw.PureHandlers
       UI.PicoUI.Raw.Reactive.BananaMappings
       UI.PicoUI.Raw.Rendering
       UI.PicoUI.Raw.SDLIO
@@ -59,6 +60,7 @@ library
     , containers
     , ghc-prim
     , linear
+    , mtl
     , random
     , reactive-banana
     , sdl2
@@ -83,6 +85,7 @@ executable uih
     , directory
     , ghc-prim
     , linear
+    , mtl
     , random
     , reactive-banana
     , sdl2
@@ -109,6 +112,7 @@ test-suite math-test
     , containers
     , ghc-prim
     , linear
+    , mtl
     , random
     , reactive-banana
     , sdl2

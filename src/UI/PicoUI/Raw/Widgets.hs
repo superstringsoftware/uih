@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, DuplicateRecordFields, OverloadedLists #-}
+{-# LANGUAGE OverloadedStrings, DuplicateRecordFields, OverloadedLists, RecordWildCards #-}
 module UI.PicoUI.Raw.Widgets where
 
 -- 
@@ -23,7 +23,7 @@ data SDLStyledText = SDLStyledText {
     -- if not empty, we use the "shaded" rendering method to produce backround box in one go
     -- can be used to highlight the text etc
     bgColor :: Maybe (V4 Word8) 
-}
+} deriving Show
 
 -- low level SDL widgets used for caching
 data SDLElement = SDLBox { -- simply a colored box (eventually need to add with an image)
@@ -37,38 +37,30 @@ data SDLElement = SDLBox { -- simply a colored box (eventually need to add with 
     font :: Font,
     texts :: Vector SDLStyledText,
     cursorPos :: !Int
-}
+} deriving Show
+
+isSDLBox SDLBox{..} = True
+isSDLBox _ = False
+isSDLText SDLText{..} = True
+isSDLText _ = False
+isSDLTextLine SDLTextLine{..} = True
+isSDLTextLine _ = False
 
 -- elements to render in turn + shift from the parent in terms of position
 data WidgetElement = WidgetElement {
     el :: !SDLElement,
     offset :: V2 CInt
-}
+} deriving Show
 
-data Widget = WidgetVec {
+data Widget = Widget {
     isVisible :: Bool,
     collider :: V4 CInt, -- bounding box
     elements :: Vector WidgetElement -- list of elements
-} | Widget {
-    isVisible :: Bool,
-    collider :: V4 CInt, -- bounding box
-    element :: WidgetElement -- 1 element
-}
+} deriving Show
 
 isInWidget x y widg = 
     let (V4 a b w h) = collider widg
     in  if ( (x>a) && (x < a + w) && (y>b) && (y<b+h) ) then True else False
-
-
-type Handler a = a -> IO ()
-type EventHandler = Handler Event
-
--- takes initial SDLElement, pure transformation function and returns stateful computation
-mkStatefulElement :: SDLElement -> (Event -> SDLElement -> SDLElement) -> IO EventHandler
-mkStatefulElement tl f = do
-    elementState <- newIORef tl
-    let resfunc evt = modifyIORef' elementState (f evt)
-    return resfunc
 
 
 

@@ -6,6 +6,7 @@ module UI.PicoUI.Raw.EventLoop where
 -- this is a huge state monad taking care of low-level SDL interactions
 
 import Control.Monad.Trans.State.Strict
+import Control.Monad.Reader
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad (unless)
 import Control.Exception
@@ -23,9 +24,13 @@ import Color
 import UI.PicoUI.Raw.Widgets
 import UI.PicoUI.Raw.Rendering
 import UI.PicoUI.Raw.SDLIO
+import UI.PicoUI.Raw.PureHandlers
 
 import PreludeFixes
 
+-- to process an event, we have to simply runReader with an event!
+handleEventPure :: Event -> Widget -> PureHandler -> Widget
+handleEventPure e w handler = runReader (handler w) e
 
 renderUI :: SDLIO ()
 renderUI = do
@@ -49,9 +54,14 @@ appLoop = do
     let quit = any (== True) results -- checking if any of the results is True
     unless quit appLoop
 
--- Main Event Loop - this method plays central role in connecting underlying SDLIO monad from where
--- SDL events originate and ManagerMonad, which handles firing transformed events to event handlers
--- returns True if need to quit, false otherwise
+-- EVENT HANDLING is tricky
+-- There are no ready design decisions (yes, FRP, but banana forces you to IO which we don't want)
+-- Looks like it makes sense to defer event handling to actual handlers, since we need to keep track of 
+-- any modifier keys that are down when the new event occurs etc - so, some way to track the state
+-- of the keyboard and mouse and pass it with an event
+
+-- So, additional state of the input devices which is passed with each event and updated by the main cycle
+-- as events are proceeding?
 checkEvent :: SDL.Event ->  SDLIO Bool
 checkEvent event = do
     --liftIO $ print $ show $ event
@@ -93,6 +103,30 @@ checkEvent event = do
                             return False
                         else return False -}
                     _                -> return False
+        SDL.MouseButtonEvent mb -> do
+            -- liftIO $ print mb
+            -- MouseButtonEventData {mouseButtonEventWindow = Just (Window 0x00007f9500c38fb0), 
+            --    mouseButtonEventMotion = Released, mouseButtonEventWhich = Mouse 0, mouseButtonEventButton = ButtonLeft, 
+            --    mouseButtonEventClicks = 1, mouseButtonEventPos = P (V2 407 170)}
+            -- Pressed or Released. Analogous to key presses we will only think about Released as "clicks"
+            -- SDL helpfully reports # of clicks = 0 in case the mouse was moved after pressing.
+            -- This way, we can handle proper clicks as well as "press a button, drag, release" type of thing eventually
+            let motion = SDL.mouseButtonEventMotion mb 
+            let button = SDL.mouseButtonEventButton mb
+            let clicks = SDL.mouseButtonEventClicks mb
+            let P (V2 x y) = SDL.mouseButtonEventPos mb
+            ws <- getCollidingWidgets (fromIntegral x) (fromIntegral y)
+            mapM_ (\(i,w) -> do
+                            liftIO $ putStrLn $ "Clicked widget #" ++ show i 
+                                                  ++ ": " ++ show button ++ show clicks
+                            hm <- getPureHandler i
+                            maybe (pure ())
+                                  (\h -> do 
+                                            let w' = handleEventPure event w h
+                                            updateWidget i w'
+                                  ) hm
+                            ) ws
+            return False
         SDL.MouseMotionEvent me -> do 
             let P (V2 x y) = SDL.mouseMotionEventPos me
             -- liftIO $ putStrLn $ "Mouse moved to: " ++ show x ++ ", " ++ show y

@@ -1,11 +1,11 @@
 {-# LANGUAGE OverloadedStrings, DuplicateRecordFields, 
-RecordWildCards, OverloadedLists, PostfixOperators #-}
+RecordWildCards, OverloadedLists, PostfixOperators, TypeSynonymInstances, FlexibleInstances #-}
 module UI.PicoUI.Raw.SDLIO where
 
 -- this is a huge state monad taking care of low-level SDL interactions
 
 import Control.Monad.Trans.State.Strict
-import Control.Monad.IO.Class (liftIO)
+import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Exception
 import SDL as SDL hiding (get)
 import SDL.Font
@@ -18,6 +18,7 @@ import Color
 
 import UI.PicoUI.Raw.Widgets
 import UI.PicoUI.Raw.Rendering
+import UI.PicoUI.Raw.PureHandlers
 
 import PreludeFixes
 
@@ -32,6 +33,16 @@ data CursorStatus = CursorStatus {
     , cursorTimer :: Maybe Timer
 } deriving Show
 
+-- record to keep the current input devices state - it gets passed with Events!!
+-- the issue is:
+-- SDL reports mouse buttons held down while we are dragging the mouse
+-- and some modifier keys when there's a keyboard event
+-- But what about if we want to track if a user is dragging the mouse with the shift key pressed?
+-- TBD
+data InputDevicesState = InputDevicesState {
+
+} deriving Show
+
 -- record to keep our current SDL subsystem state
 data SDLState = SDLState {
     mainWindow    :: Window
@@ -40,11 +51,12 @@ data SDLState = SDLState {
   , cursor        :: CursorStatus
   , bgColor       :: V4 Word8
   , widgets       :: Map.Map WidgetId Widget -- cache of the low level widgets
+  , pureHandlers  :: Map.Map WidgetId PureHandler -- lowest level handlers that work in concert with widgets
   , idCounter     :: !WidgetId
   , curFocusId    :: !WidgetId
   , scaleXY       :: V2 CFloat -- in case we use highDPI, this will be the scale
   , autoScale     :: Bool -- apply scaling automatically so that same logical size is used on high dpi displays
-} | SDLEmptyState 
+} | SDLEmptyState deriving Show
 
 -- runSDLIO :: SDLIO a -> SDLState -> IO (a, SDLState)
 runSDLIO program = runStateT 
@@ -68,6 +80,9 @@ runSDLIO program = runStateT
 -- 
 -- set renderer to scale according to scale factor - it messes up fonts, so need to render them differently
 -- scaleRendere
+-- finds a pure handler for widget with id
+getPureHandler :: WidgetId -> SDLIO (Maybe PureHandler)
+getPureHandler i = (Map.lookup i) <$> gets pureHandlers
 
 -- finds id and widgets in which given coordinates are, empty list if nothing
 getCollidingWidgets :: CInt -> CInt -> SDLIO [(WidgetId, Widget)]
@@ -80,6 +95,7 @@ getRenderer = mainRenderer <$> get
 
 setCurFocusId i = modify' (\s -> s { curFocusId = i })
 
+-- register new widget and increment the counter
 registerWidget :: Widget -> SDLIO Int
 registerWidget w = do
     ws <- gets widgets
@@ -88,6 +104,20 @@ registerWidget w = do
     let ws' = Map.insert i w ws
     modify' (\s-> s{idCounter = i, widgets = ws'})
     return i
+
+-- update widget at a given id
+updateWidget :: WidgetId -> Widget -> SDLIO ()
+updateWidget i w = 
+    (Map.insert i w) <$> (gets widgets) >>= 
+        \ws -> modify' (\s-> s{widgets = ws})
+
+-- since handlers are composable, we ALWAYS accept only ONE handler for each widget
+registerWidgetWHandler :: Widget -> PureHandler -> SDLIO () 
+registerWidgetWHandler w h = do
+    hs <- gets pureHandlers
+    i  <- registerWidget w
+    let nh = Map.insert i h hs 
+    modify' (\s-> s { pureHandlers = nh })
 
 
 instance Show Timer where
@@ -129,6 +159,7 @@ initStateIO = do
                 cursor = CursorStatus 0 0 (V4 255 255 255 0) 0 Nothing,
                 bgColor = V4 210 210 210 0,
                 widgets = Map.empty,
+                pureHandlers = Map.empty,
                 scaleXY = V2 1 1,
                 autoScale = True,
                 idCounter = 0,
@@ -142,7 +173,7 @@ initStateIO = do
 testButton :: SDLIO Widget
 testButton = do
     Just font <- getDefaultFont
-    return WidgetVec {
+    return Widget {
                 isVisible = True,
                 collider = V4 50 50 400 50,
                 elements = [

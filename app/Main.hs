@@ -11,6 +11,7 @@ import Control.Monad
 
 import UI.PicoUI.Raw.SDLIO
 import UI.PicoUI.Raw.EventLoop
+import UI.PicoUI.Raw.PureHandlers
 
 -- import Data.Foldable
 
@@ -20,11 +21,11 @@ import qualified SDL as SDL
 testProgram :: SDLIO ()
 testProgram = do
     btn <- testButton
-    registerWidget btn
+    registerWidgetWHandler btn compositeHandler
     appLoop
 
 main :: IO ()
-main = runSDLIO testProgram >> pure ()
+main = runSDLIO testProgram >>= putStrLn . show
 
 {-
 main :: IO ()
