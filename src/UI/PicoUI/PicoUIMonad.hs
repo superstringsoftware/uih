@@ -79,7 +79,7 @@ data SDLState = SDLState {
 } | SDLEmptyState deriving Show
 
 -- non-pure event handler running in SDLIO
--- can (and will) encompass pure event handlers
+-- can (and will) encompass pure event handlers (see EventLoop)
 type EventHandler = Event -> SDLIO ()
 
 instance Show EventHandler where show _ = "[EventHandler]"
@@ -119,16 +119,6 @@ getRenderer = mainRenderer <$> get
 
 setCurFocusId i = modify' (\s -> s { curFocusId = i })
 
--- register new widget and increment the counter
-registerWidget :: ActiveWidget -> SDLIO Int
-registerWidget w = do
-    ws <- gets widgets
-    i  <- fmap (+1) (gets idCounter)
-    -- liftIO $ putStrLn $ "Registering Widget #" ++ show i
-    let ws' = Map.insert i w ws
-    modify' (\s-> s{idCounter = i, widgets = ws'})
-    return i
-
 -- update widget at a given id
 updateWidget :: WidgetId -> ActiveWidget -> SDLIO ()
 updateWidget i w = 
@@ -137,16 +127,6 @@ updateWidget i w =
 
 getWidget :: WidgetId -> SDLIO (Maybe ActiveWidget)
 getWidget i = Map.lookup i <$> gets widgets
-
--- since handlers are composable, we ALWAYS accept only ONE handler for each widget
-{-
-registerWidgetWHandler :: Widget -> PureHandler -> SDLIO () 
-registerWidgetWHandler w h = do
-    hs <- gets pureHandlers
-    i  <- registerWidget w
-    let nh = Map.insert i h hs 
-    modify' (\s-> s { pureHandlers = nh })
--}
 
 -- given x,y coordinates finds a widget that contains them and returns it (if any)
 -- this is ALL CRAZY INEFFICIENT
@@ -164,7 +144,6 @@ recalculateRectangles w h = do
     ws <- widgets <$> get
     let ws' = Map.map (calculateCacheRect w h) ws
     modify' (\s -> s { widgets = ws'} )
-
 
 
 initUI w h = recalculateRectangles w h

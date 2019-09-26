@@ -12,6 +12,7 @@ import Control.Monad
 import UI.PicoUI.PicoUIMonad
 import UI.PicoUI.EventLoop
 import UI.PicoUI.Middle.PureHandlers
+import UI.PicoUI.Middle.Handlers
 import UI.PicoUI.Middle.AbstractWidgets
 
 -- import Data.Foldable
@@ -20,17 +21,22 @@ import qualified SDL as SDL
 
 -- import SDL.Raw.Types (Rect(..))
 testProgram :: SDLIO ()
-testProgram = registerWidgetWithHandler testLabel compositeHandler >> pure ()
+testProgram = 
+  registerWidgetWithHandlers 
+    testLabel 
+    compositeHandler -- pure handler
+    [filteredHandlerSDLIO isHover (\e -> liftIO $ print e) ] -- IO handler for hover
+  >> pure ()
     
 
 main :: IO ()
-main = runSDLIO testProgram >>= putStrLn . show
+main = runSDLIO testProgram >> pure ()
 
 testLabel = Label {
   fontData = FontDataDefault,
   text = "Hello",
   valign = CenterAlign, halign = CenterAlign,
-  layout = defaultCenterLayout,
+  layout = l_TL 40 40 200 60,
   background = BGColor $ mGrey 700, 
   cacheRect = V4 0 0 0 0
 }

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b0079e9d88a6298055468d6982775730f9e748c41b2e19e164716a6c4ce9b5c4
+-- hash: 0ef4e8fce342ddc49320064a6f94cc5316f1d5f8e79b5bc433bcad7781b1694f
 
 name:           uih
 version:        0.1.0.0
@@ -28,7 +28,6 @@ source-repository head
 library
   exposed-modules:
       Color
-      FRP.Banana
       Logger
       PreludeFixes
       UI.PicoUI.EventLoop
@@ -37,7 +36,6 @@ library
       UI.PicoUI.Middle.PureHandlers
       UI.PicoUI.PicoUIMonad
       UI.PicoUI.Raw.Events
-      UI.PicoUI.Raw.PureHandlers
       UI.PicoUI.Raw.Reactive.BananaMappings
       UI.PicoUI.Raw.Rendering
       UI.PicoUI.Raw.WidgetCompiler

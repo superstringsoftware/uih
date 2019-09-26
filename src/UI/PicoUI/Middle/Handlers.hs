@@ -21,6 +21,7 @@ import Data.Foldable as Map (length)
 import Color
 
 import UI.PicoUI.Middle.AbstractWidgets
+import UI.PicoUI.Middle.PureHandlers
 import UI.PicoUI.Raw.Events
 
 import UI.PicoUI.PicoUIMonad
@@ -31,3 +32,6 @@ import PreludeFixes
 
 -- type PureHandler e = AbstractWidget -> Reader Event AbstractWidget 
 
+-- simply runs an SDLIO action if a filter is ok
+filteredHandlerSDLIO :: (Event -> Bool) -> EventHandler -> Event -> SDLIO ()
+filteredHandlerSDLIO filt handler event = if filt event then handler event else pure ()

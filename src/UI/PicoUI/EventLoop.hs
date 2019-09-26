@@ -76,7 +76,9 @@ appLoop = do
     events <- SDL.pollEvents -- get the events queue from SDL
     results <- mapM fireEvent events -- gather results
     let quit = any (== True) results -- checking if any of the results is True
-    unless quit appLoop
+    if quit 
+    then get >>= liftIO . putStrLn . show >> liftIO (putStrLn "Good-bye.")
+    else appLoop
 
 -- takes an SDL event, converts it into our event, and runs all registered event handlers - 
 -- for now, only inside widgets, eventually all others as well.
@@ -85,7 +87,7 @@ fireEvent ev = do
     -- this fires an event to all widgets automatically, so we only need to fire to the other handlers
     event <- sdlEvent2Event ev
     -- ... but since now we don't have any other handlers, there's nothign to do
-    return False
+    if event == Quit then return True else return False
 
 -- fire specific event to a handler in an ActiveWidget
 fireEventInWidget :: P.Event -> ActiveWidget -> SDLIO ()
@@ -126,10 +128,14 @@ pureToEventHandler handler i event = do
                      updateWidget i wid { widget = w', compiledWidget = cw }
           ) widm
 
---
+composeManyHandlers :: [EventHandler] -> P.Event -> SDLIO ()
+composeManyHandlers hs evt = mapM_ (fn evt) hs where fn evt h = h evt
+
+----------------------------------------------------------------------------------------
 -- So overall idea is: take a PureHandler, AbstractWidget and then call some function 
 -- that sets up ActiveWidget with correct id, handler function etc.
 -- THIS IS THE MAIN EXTERNAL FUNCTION TO REGISTER HANDLERS WITH WIDGETS!!!
+----------------------------------------------------------------------------------------
 registerWidgetWithHandler :: AbstractWidget -> PureHandler -> SDLIO Int
 registerWidgetWithHandler w h = do
     ws <- gets widgets
@@ -140,10 +146,25 @@ registerWidgetWithHandler w h = do
     let ws' = Map.insert i (ActiveWidget { widget = w, compiledWidget = cw, handler = handler })  ws
     modify' (\s-> s{idCounter = i, widgets = ws'})
     return i
+
+-- register widget with already composed in reader monad pure handler and optional
+-- monadic in SDLIO handlers; same as above but adds monadic
+registerWidgetWithHandlers :: AbstractWidget -> PureHandler -> [EventHandler] -> SDLIO Int
+registerWidgetWithHandlers w h hs = do
+    ws <- gets widgets
+    i  <- fmap (+1) (gets idCounter)
+    -- creating a monadic handler from pure
+    let h' = pureToEventHandler h i
+    let handler = composeManyHandlers (h':hs)
+    cw <- compile2Widget w
+    let ws' = Map.insert i (ActiveWidget { widget = w, compiledWidget = cw, handler = handler })  ws
+    modify' (\s-> s{idCounter = i, widgets = ws'})
+    return i
     
 
 -- converting SDL event to our event inside a monad - to be able to 
--- retrieve widgets right away    
+-- retrieve widgets right away and fire events to them inside here as needed, too
+-- main function connecting SDL with our world
 sdlEvent2Event :: SDL.Event -> SDLIO P.Event
 sdlEvent2Event event = 
     case SDL.eventPayload event of
@@ -164,7 +185,14 @@ sdlEvent2Event event =
                     evt    = cons src clicks
                     -- firing event to all widgets right away, updating source and returning the event
                 in  fireEventToWidgets pos' evt >>= \ids -> pure $ evt { source = src { widgetIds = ids } } 
-                        
+            SDL.MouseMotionEvent me ->  
+                let SDL.P pos = SDL.mouseMotionEventPos me
+                    pos'  = castV2 pos
+                    src   = EventSource [] pos' (SDL.eventTimestamp event)
+                    evt   = MouseHover src
+                in  fireEventToWidgets pos' evt >>= \ids -> pure $ evt { source = src { widgetIds = ids } } 
+                
+            SDL.QuitEvent -> pure Quit
             p -> pure $ RawSDLEvent (EventSource [] (V2 0 0) (SDL.eventTimestamp event)) p
     
 
@@ -217,32 +245,7 @@ checkEventOLD event = do
                             return False
                         else return False -}
                     _                -> return False
-        SDL.MouseButtonEvent mb -> do
-            -- liftIO $ print mb
-            -- MouseButtonEventData {mouseButtonEventWindow = Just (Window 0x00007f9500c38fb0), 
-            --    mouseButtonEventMotion = Released, mouseButtonEventWhich = Mouse 0, mouseButtonEventButton = ButtonLeft, 
-            --    mouseButtonEventClicks = 1, mouseButtonEventPos = P (V2 407 170)}
-            -- Pressed or Released. Analogous to key presses we will only think about Released as "clicks"
-            -- SDL helpfully reports # of clicks = 0 in case the mouse was moved after pressing.
-            -- This way, we can handle proper clicks as well as "press a button, drag, release" type of thing eventually
-            let motion = SDL.mouseButtonEventMotion mb 
-            let button = SDL.mouseButtonEventButton mb
-            let clicks = SDL.mouseButtonEventClicks mb
-            let P (V2 x y) = SDL.mouseButtonEventPos mb
-            -- ws <- getCollidingWidgets (fromIntegral x) (fromIntegral y)
-            return False
-        SDL.MouseMotionEvent me -> do 
-            let P (V2 x y) = SDL.mouseMotionEventPos me
-            -- liftIO $ putStrLn $ "Mouse moved to: " ++ show x ++ ", " ++ show y
-            -- converting into mouse hover event if any widget is under the mouse and firing it to MM handlers
-            -- ws <- getCollidingWidgets (fromIntegral x) (fromIntegral y)
-            -- mapM_ (\(i,_) -> setCurFocusId i) ws
-            return False
-            {-
-            mevs <- getEventSource (fromIntegral x) (fromIntegral y)
-            maybe (return False)
-                  (\evs@(i,_) -> fireEvent (MM.Event EvHover evs) >> setCurrentFocusId (Just i) >> return False)
-                  mevs -}
+        
         SDL.TextEditingEvent ev -> do
                 liftIO $ print $ show ev
                 return False

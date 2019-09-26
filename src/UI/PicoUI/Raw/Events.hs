@@ -22,12 +22,13 @@ data EventSource = EventSource {
     widgetIds :: [WidgetId], 
     pos :: V2 Int, 
     timestamp :: SDL.Timestamp
-} deriving Show
+} deriving (Show, Eq)
 data Event = RawSDLEvent { source :: EventSource, sdlPayload :: SDL.EventPayload }
     | MouseHover { source :: EventSource }
     | LeftClick { source :: EventSource, times :: Word8} -- how many times clicked
     | RightClick { source :: EventSource, times :: Word8} -- how many times clicked
-    deriving Show
+    | Quit
+    deriving (Show, Eq)
 
 castV2 (V2 x y) = V2 (fromIntegral x) (fromIntegral y)
 
