@@ -35,3 +35,12 @@ import PreludeFixes
 -- simply runs an SDLIO action if a filter is ok
 filteredHandlerSDLIO :: (Event -> Bool) -> EventHandler -> Event -> SDLIO ()
 filteredHandlerSDLIO filt handler event = if filt event then handler event else pure ()
+
+-- sets focus id to the first element in source ids list if a filter is true
+setFocusOn :: (Event -> Bool) -> Event -> SDLIO ()
+setFocusOn filt = 
+    filteredHandlerSDLIO filt 
+        (\evt -> let EventSource{..} = source evt in setCurFocusId (Prelude.head widgetIds) )
+
+-- shortcut
+setFocusOnClick = setFocusOn (isLeftClick 1)   

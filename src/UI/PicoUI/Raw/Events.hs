@@ -23,12 +23,18 @@ data EventSource = EventSource {
     pos :: V2 Int, 
     timestamp :: SDL.Timestamp
 } deriving (Show, Eq)
+
 data Event = RawSDLEvent { source :: EventSource, sdlPayload :: SDL.EventPayload }
-    | MouseHover { source :: EventSource }
-    | LeftClick { source :: EventSource, times :: Word8} -- how many times clicked
-    | RightClick { source :: EventSource, times :: Word8} -- how many times clicked
-    | Quit
+    | EMouseHover { source :: EventSource }
+    | ELeftClick { source :: EventSource, times :: Word8} -- how many times clicked
+    | ERightClick { source :: EventSource, times :: Word8} -- how many times clicked
+    | EWindowResized { source :: EventSource, size :: V2 Int }
+    | EBackspace { source :: EventSource }
+    | ETextInput { source :: EventSource, txt :: Text }
+    | EQuit
     deriving (Show, Eq)
 
 castV2 (V2 x y) = V2 (fromIntegral x) (fromIntegral y)
+
+setSrcId i evt = evt { source = (source evt) { widgetIds = [i] } }
 

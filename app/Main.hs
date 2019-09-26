@@ -26,6 +26,7 @@ testProgram =
     testLabel 
     compositeHandler -- pure handler
     [filteredHandlerSDLIO isHover (\e -> liftIO $ print e) ] -- IO handler for hover
+  >> registerWidgetWithHandlers testLabel2 hndlEditText [setFocusOnClick]
   >> pure ()
     
 
@@ -38,6 +39,15 @@ testLabel = Label {
   valign = CenterAlign, halign = CenterAlign,
   layout = l_TL 40 40 200 60,
   background = BGColor $ mGrey 700, 
+  cacheRect = V4 0 0 0 0
+}
+
+testLabel2 = Label {
+  fontData = FontDataDefault,
+  text = "Stretch horizontal stick to bottom",
+  valign = CenterAlign, halign = CenterAlign,
+  layout = l_SHB 20 60 20 50,
+  background = BGColor $ mGrey 900, 
   cacheRect = V4 0 0 0 0
 }
 

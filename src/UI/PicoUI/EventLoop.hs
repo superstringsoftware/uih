@@ -86,12 +86,19 @@ fireEvent :: SDL.Event -> SDLIO Bool
 fireEvent ev = do
     -- this fires an event to all widgets automatically, so we only need to fire to the other handlers
     event <- sdlEvent2Event ev
-    -- ... but since now we don't have any other handlers, there's nothign to do
-    if event == Quit then return True else return False
+    -- ... but since now we don't yet have any other handlers, there's nothign to do
+    if event == EQuit then return True else return False
 
 -- fire specific event to a handler in an ActiveWidget
-fireEventInWidget :: P.Event -> ActiveWidget -> SDLIO ()
-fireEventInWidget event ActiveWidget{..} = handler event
+fireEventToWidget :: P.Event -> ActiveWidget -> SDLIO ()
+fireEventToWidget event ActiveWidget{..} = handler event
+
+-- fire event to focus widget if one exists and return the possibly modified with id as a source event
+fireEventToFocusWidget :: P.Event -> SDLIO P.Event
+fireEventToFocusWidget ee = do
+    mw <- getFocusWidget
+    maybe (pure ee) -- return original event if there's no widget in focus
+          (\w -> let e = setSrcId (widgetId w) ee in fireEventToWidget e w >> pure e) mw
 
 -- fires an event to all widgets that catch given position, collect WidgetIds of all relevant widgets    
 fireEventToWidgets :: V2 Int -> P.Event -> SDLIO [WidgetId]
@@ -102,7 +109,10 @@ fireEventToWidgets (V2 x y) event = do
         fn1 acc i val = if val then (i:acc) else acc
         fn w = 
             if isInActiveWidget x y w 
-            then (handler w) event >> pure True 
+            then 
+                -- since we don't have sources here yet, setting the source to the current widget for proper handling
+                let event' = event { source = (source event) { widgetIds = [widgetId w] } }
+                in  (handler w) event' >> pure True 
             else pure False
 
 --
@@ -143,7 +153,7 @@ registerWidgetWithHandler w h = do
     -- creating a monadic handler from pure
     let handler = pureToEventHandler h i
     cw <- compile2Widget w
-    let ws' = Map.insert i (ActiveWidget { widget = w, compiledWidget = cw, handler = handler })  ws
+    let ws' = Map.insert i (ActiveWidget { widgetId = i, widget = w, compiledWidget = cw, handler = handler })  ws
     modify' (\s-> s{idCounter = i, widgets = ws'})
     return i
 
@@ -157,10 +167,15 @@ registerWidgetWithHandlers w h hs = do
     let h' = pureToEventHandler h i
     let handler = composeManyHandlers (h':hs)
     cw <- compile2Widget w
-    let ws' = Map.insert i (ActiveWidget { widget = w, compiledWidget = cw, handler = handler })  ws
+    let ws' = Map.insert i (ActiveWidget { widgetId = i, widget = w, compiledWidget = cw, handler = handler })  ws
     modify' (\s-> s{idCounter = i, widgets = ws'})
     return i
     
+emptySource :: SDL.Event -> EventSource
+emptySource evt = EventSource []  (V2 0 0) (SDL.eventTimestamp evt)
+sourceId i  evt = EventSource [i] (V2 0 0) (SDL.eventTimestamp evt)
+
+
 
 -- converting SDL event to our event inside a monad - to be able to 
 -- retrieve widgets right away and fire events to them inside here as needed, too
@@ -179,7 +194,7 @@ sdlEvent2Event event =
                     button = SDL.mouseButtonEventButton mb
                     clicks = SDL.mouseButtonEventClicks mb
                     SDL.P pos  = SDL.mouseButtonEventPos mb
-                    cons   = if button == SDL.ButtonLeft then LeftClick else RightClick
+                    cons   = if button == SDL.ButtonLeft then ELeftClick else ERightClick
                     pos'   = castV2 pos
                     src = EventSource [] pos' (SDL.eventTimestamp event)
                     evt    = cons src clicks
@@ -189,11 +204,33 @@ sdlEvent2Event event =
                 let SDL.P pos = SDL.mouseMotionEventPos me
                     pos'  = castV2 pos
                     src   = EventSource [] pos' (SDL.eventTimestamp event)
-                    evt   = MouseHover src
+                    evt   = EMouseHover src
                 in  fireEventToWidgets pos' evt >>= \ids -> pure $ evt { source = src { widgetIds = ids } } 
-                
-            SDL.QuitEvent -> pure Quit
-            p -> pure $ RawSDLEvent (EventSource [] (V2 0 0) (SDL.eventTimestamp event)) p
+            SDL.WindowResizedEvent dt -> 
+                let src           = emptySource event
+                    size@(V2 w h) = castV2 $ SDL.windowResizedEventSize dt
+                in  handleResize w h >> pure (EWindowResized src size)
+            SDL.QuitEvent -> pure EQuit
+            -- keyboard events are a bit tricky
+            -- need to add checks whether TEXT INPUT is on, otherwise process keypresses differently potentially
+            -- also, may be easier to move this to filters and here simply send an event further
+            SDL.TextInputEvent ev -> do
+                -- liftIO $ print $ show ev
+                let ee = ETextInput (emptySource event) (textInputEventText ev)
+                fireEventToFocusWidget ee
+            p@(SDL.KeyboardEvent ev) -> do
+                -- liftIO $ print $ show ev
+                let k = keysymKeycode $ keyboardEventKeysym ev
+                --liftIO $ print $ show k
+                case k of
+                    KeycodeBackspace -> 
+                        -- checking press only 
+                        if (keyboardEventKeyMotion ev) == Pressed 
+                        then let ee = EBackspace (emptySource event) in fireEventToFocusWidget ee
+                        else pure $ RawSDLEvent (emptySource event) p
+                    _ -> pure $ RawSDLEvent (emptySource event) p
+        
+            p -> pure $ RawSDLEvent (emptySource event) p
     
 
 -- EVENT HANDLING is tricky

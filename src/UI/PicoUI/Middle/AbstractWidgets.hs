@@ -65,6 +65,7 @@ type AbstractWidgetTransformer = (AbstractWidget -> AbstractWidget)
 
 -- some pure handler helpers to manipulate abstract widgets
 -- can be turned into handlers eventually easy enough
+{-
 hndlBackspace :: AbstractWidget -> (AbstractWidget, Bool)
 hndlBackspace w = if (text (w :: AbstractWidget )) /= "" then (w { text = T.init (text (w :: AbstractWidget)) }, True) else (w, False)
 
@@ -73,6 +74,7 @@ hndlAppendText txt w = w { text = (text (w :: AbstractWidget)) <> txt }
 
 hndlPrependText :: Text -> AbstractWidget -> AbstractWidget
 hndlPrependText txt w = w { text = txt <> (text (w :: AbstractWidget)) }
+-}
 
 -- helper function; calculates dimensions of all children *relative to the parent* 
 -- so for top level widgets will be relative to the screen

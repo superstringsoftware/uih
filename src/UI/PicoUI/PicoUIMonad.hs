@@ -85,6 +85,7 @@ type EventHandler = Event -> SDLIO ()
 instance Show EventHandler where show _ = "[EventHandler]"
 
 data ActiveWidget = ActiveWidget {
+    widgetId :: WidgetId, -- needed for event handling etc
     widget :: Mid.Widget, -- original high-level widget
     compiledWidget :: Widget, -- "compiled" low-level cache for the widget
     handler :: EventHandler -- composed event handler function for the Event originating from this widget
@@ -117,8 +118,11 @@ getCollidingWidgets x y = do
 getRenderer :: SDLIO Renderer
 getRenderer = mainRenderer <$> get
 
-setCurFocusId i = modify' (\s -> s { curFocusId = i })
+setCurFocusId i = modify' (\s -> s { curFocusId = i }) >> liftIO (putStrLn $ "Set focus to: " ++ show i)
 
+getFocusWidget :: SDLIO (Maybe ActiveWidget)
+getFocusWidget = Map.lookup <$> (gets curFocusId) <*> (gets widgets)
+    
 -- update widget at a given id
 updateWidget :: WidgetId -> ActiveWidget -> SDLIO ()
 updateWidget i w = 
@@ -160,7 +164,7 @@ mainWindowSettings = defaultWindow
   -- There are issues with high DPI windows b/c we need to recalculate all coordinates when drawing / checking event
   -- coordinates, so its support is pending
   -- OpenGLContext defaultOpenGL
-  , windowHighDPI      = True 
+  , windowHighDPI      = False 
   , windowInputGrabbed = False
   , windowMode         = Windowed
   , windowGraphicsContext = OpenGLContext defaultOpenGL
