@@ -32,7 +32,7 @@ import qualified Data.Map.Strict as Map
 import Color
 
 import UI.PicoUI.Raw.Widgets
-import UI.PicoUI.Raw.Rendering
+-- import UI.PicoUI.Raw.Rendering
 -- import UI.PicoUI.Raw.PureHandlers
 import UI.PicoUI.Raw.Events
 
@@ -168,7 +168,7 @@ mainWindowSettings = defaultWindow
   -- There are issues with high DPI windows b/c we need to recalculate all coordinates when drawing / checking event
   -- coordinates, so its support is pending
   -- OpenGLContext defaultOpenGL
-  , windowHighDPI      = False 
+  , windowHighDPI      = True 
   , windowInputGrabbed = False
   , windowMode         = Windowed
   , windowGraphicsContext = OpenGLContext defaultOpenGL
@@ -214,14 +214,34 @@ initStateIO = do
 ----------------------------------------------------------------------------------------------------
 defaultFontPath = "./Roboto-Light.ttf"
 
+{-
 defaultFont :: Int -> IO Font
 defaultFont size = load defaultFontPath size
+-}
 
-safeLoadFont path size = liftIO $
-    do r <- try $ load path size
-       either (\e -> print (e::SDLException) >> return Nothing)
-              (\fnt -> return $ Just fnt) r
-                      
+-- ALL FONT LOADING NEEDS TO BE DONE VIA THIS FUNCTION
+-- it handles scaling for dpi etc
+-- The logic is:
+-- We make font size SCALE UP in high-dpi environments
+-- when we render font related textures, we scale back to 0 so that they are rendered correctly
+safeLoadFont :: String -> Int -> SDLIO (Maybe Font)
+safeLoadFont path size = do
+    autos <- gets autoScale
+    V2 x y <- gets scaleXY
+    let size' = if autos then round ( (fromIntegral size) * (x + y) / 2) else size
+    r <- liftIO $ try $ load path size'
+    either (\e -> liftIO $ print (e::SDLException) >> return Nothing)
+                (\fnt -> return $ Just fnt) r
+
+-- handles scaling of font related sizes used in rendering etc - need this for high dpi stuff
+scaleFontSizeDown :: Int -> SDLIO Int
+scaleFontSizeDown size = do
+    V2 x y <- gets scaleXY
+    autos <- gets autoScale
+    let size' = if autos then round ( (fromIntegral size) / ((x + y) / 2)) else size
+    return size'
+
+                
 data SDLFontData = SDLFontData {
     fntIsMonospace :: Bool,
     fntFamilyName :: Maybe Text,
@@ -251,7 +271,7 @@ getFontOrDefault txt = do
 
 initFonts :: SDLIO ()
 initFonts = do
-    fnt <- liftIO initDefaultFont
+    fnt <- initDefaultFont
     st <- get
     let fonts = Map.insert "__DEFAULT__" fnt (loadedFonts st)
     fd_mns <- isMonospace fnt
@@ -262,6 +282,7 @@ initFonts = do
     liftIO $ putStrLn $ "Loaded font:\n" ++ show fd
     put st {loadedFonts = fonts}
     where initDefaultFont = do   
-            r <- try $ (SDL.Font.initialize >> defaultFont 16)
-            either (\e -> print (e::SDLException) >> fail "Could not initialize TTF fonts!")
-                   (\font -> return font) r
+            mfont <- (SDL.Font.initialize >> safeLoadFont defaultFontPath 16)
+            maybe (fail "Could not initialize TTF fonts!")
+                  (\font -> return $ font
+                   ) mfont

@@ -5,6 +5,7 @@ module UI.PicoUI.Raw.Rendering where
 
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad
+import Control.Monad.Trans.State.Strict
 
 import SDL hiding (el)
 import SDL.Font
@@ -15,6 +16,11 @@ import UI.PicoUI.Raw.Widgets
 import Foreign.C.Types (CInt)
 
 import Data.Vector (foldM')
+
+-- need our monad to handle correct scaling of fonts in case of high-dpi unfortunately
+-- this has to be handled differently - e.g., choose specific rendering functions
+-- in the beginning of the program depending on whether it's high dpi or not and then call them all the time
+import UI.PicoUI.PicoUIMonad
 
 {-
 data WidgetElement = WidgetElement {
@@ -32,21 +38,34 @@ data Widget = Widget {
 -- this method DOES NOT check any bounds and DOES NOT set renderer target
 -- to the screen, it has to be done elsewhere
 -- NO CACHING now, everything is very straightforward and naive
-renderWidgetToScreen :: Widget -> Renderer -> IO ()
+renderWidgetToScreen :: Widget -> Renderer -> SDLIO ()
 renderWidgetToScreen Widget{..} ren = if not isVisible then pure () else do
     let (V4 x y w h) = collider
     mapM_ (fn1 x y w h ren) elements
     where 
-        fn1 :: CInt -> CInt -> CInt -> CInt -> Renderer -> WidgetElement -> IO ()
+        fn1 :: CInt -> CInt -> CInt -> CInt -> Renderer -> WidgetElement -> SDLIO ()
         fn1 x y w h ren WidgetElement{..} = do
                 let (V2 xo yo) = offset
                 tex <- sdlElement2Texture (V2 w h) el ren
-                renderTexture (x+xo) (y+yo) tex ren
+                -- unfortunately need to check between constructors here to correctly handle text rendering
+                case el of
+                    SDLText{..}     -> renderTextureUnscaled (x+xo) (y+yo) tex ren
+                    SDLTextLine{..} -> renderTextureUnscaled (x+xo) (y+yo) tex ren
+                    _               -> renderTexture (x+xo) (y+yo) tex ren
                 destroyTexture tex
 
 
+runUnscaled func ren = do  
+    autos <- gets autoScale
+    scale <- gets scaleXY
+    if autos then rendererScale ren $= (V2 1 1) else pure ()
+    rs <- SDL.get $ rendererScale ren
+    liftIO $ putStrLn $ "Renderer scale is: " ++ show rs
+    ret  <- func ren
+    if autos then rendererScale ren $= scale else pure ()              
+    return ret
 
-sdlElement2Texture :: MonadIO m => V2 CInt -> SDLElement -> Renderer -> m Texture
+sdlElement2Texture :: V2 CInt -> SDLElement -> Renderer -> SDLIO Texture
 sdlElement2Texture size SDLBox{..} ren = do
     tex <- emptyTexture size ren
     rendererRenderTarget ren $= Just tex
@@ -57,7 +76,9 @@ sdlElement2Texture size SDLBox{..} ren = do
 sdlElement2Texture size SDLText{..} ren = do
     setStyle font []
     surf <- blended font color text
+    -- handling dpi scaling for fonts
     tex  <- createTextureFromSurface ren surf
+    -- tex <- runUnscaled (flip createTextureFromSurface surf) ren
     freeSurface surf >> return tex
 -- folding textures from each styledtext into base sized texture
 -- TODO: MAKE IT MORE EFFICIENT, no need to check sizes at each step etc!!!
@@ -85,15 +106,16 @@ sdlElement2Texture size SDLTextLine{..} renderer = do
             return (x+recW)
 
 --
-styledText2Surface :: MonadIO m => SDLStyledText -> Font -> m Surface
+styledText2Surface :: SDLStyledText -> Font -> SDLIO Surface
 styledText2Surface SDLStyledText{..} font = do
     setStyle font styles
     maybe (blended font color text)
           (\bgClr -> shaded font color bgClr text ) bgColor
     
-styledText2Texture :: MonadIO m => SDLStyledText -> Font -> Renderer -> m Texture
+styledText2Texture :: SDLStyledText -> Font -> Renderer -> SDLIO Texture
 styledText2Texture st font ren = do
     surf <- styledText2Surface st font
+    -- tex <- runUnscaled (flip createTextureFromSurface surf) ren
     tex  <- createTextureFromSurface ren surf
     freeSurface surf >> return tex
 
@@ -101,7 +123,7 @@ styledText2Texture st font ren = do
 emptyTexture size ren = createTexture ren RGBA8888 TextureAccessTarget size
 
 -- render a given texture at x y coordinates ON SCREEN
-renderTexture :: MonadIO m => CInt -> CInt -> Texture -> Renderer -> m ()
+renderTexture :: CInt -> CInt -> Texture -> Renderer -> SDLIO ()
 renderTexture x y texture renderer = do
     ti <- queryTexture texture
     -- liftIO $ putStrLn $ "Size is " ++ (show ti) ++ " x,y: " ++ show x ++ ", " ++ show y
@@ -109,3 +131,19 @@ renderTexture x y texture renderer = do
     let h = textureHeight ti
     let dest = Rectangle (P (V2 x y)) (V2 w h)
     copy renderer texture Nothing (Just dest)
+
+renderTextureUnscaled :: CInt -> CInt -> Texture -> Renderer -> SDLIO ()
+renderTextureUnscaled x y texture renderer = do
+    autos <- gets autoScale
+    scale@(V2 sx sy) <- gets scaleXY
+    if autos then rendererScale renderer $= (V2 1 1) else pure ()
+    ti <- queryTexture texture
+    -- liftIO $ putStrLn $ "Size is " ++ (show ti) ++ " x,y: " ++ show x ++ ", " ++ show y
+    let w = textureWidth ti
+    let h = textureHeight ti
+    let x' = if autos then round ( fromIntegral x * sx) else x
+    let y' = if autos then round ( fromIntegral y * sy) else y
+    let dest = Rectangle (P (V2 x' y')) (V2 w h)
+    copy renderer texture Nothing (Just dest)
+    if autos then rendererScale renderer $= scale else pure ()
+    

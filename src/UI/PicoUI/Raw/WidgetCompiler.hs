@@ -140,7 +140,7 @@ compile2Widget Mid.SimpleMultilineText{..} = do
             el = SDLBox (backgroundToColor background),
             offset = V2 0 0
         }
-    vsize <- lineSkip fnt
+    vsize <- lineSkip fnt >>= scaleFontSizeDown
     let lineEls = V.imap (fn fnt clr vsize) textLines
     pure $ Widget {
                 isVisible = True,

@@ -37,10 +37,10 @@ import PreludeFixes
 handleResize w h = recalculateRectangles w h >> compileAllWidgets
 
 -- runSDLIO :: SDLIO a -> SDLState -> IO (a, SDLState)
+-- MAIN WRAPPER THAT HANDLES INITIALIZATION ETC
 runSDLIO program = runStateT 
     (do
         (liftIO initStateIO) >>= put
-        initFonts
         window <- gets mainWindow
         V2 width height <- (window.-windowSize?=)
         V2 realw realh  <- window.-glGetDrawableSize   --vkGetDrawableSize
@@ -50,7 +50,11 @@ runSDLIO program = runStateT
         modify' (\s-> s { scaleXY = scale })
         autos <- gets autoScale
         ren <- getRenderer
+        -- setting renderer scale in case we are in high-dpi
         if autos then rendererScale ren $= scale else pure ()
+        -- need to init fonts after the scale has been set
+        initFonts
+        -- running the program
         program
         handleResize (fromIntegral width) (fromIntegral height)
         appLoop
@@ -66,7 +70,7 @@ renderUI = do
     SDL.clear renderer
     ws <- gets widgets
     -- liftIO $ putStrLn $ "Got widgets: " ++ show (Map.length ws)
-    liftIO $ mapM_ (fn renderer) ws
+    mapM_ (fn renderer) ws
     SDL.present renderer
     where fn ren ActiveWidget{..} = renderWidgetToScreen compiledWidget ren
     
