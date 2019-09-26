@@ -104,6 +104,13 @@ fireEventToFocusWidget ee = do
     maybe (pure ee) -- return original event if there's no widget in focus
           (\w -> let e = setSrcId (widgetId w) ee in fireEventToWidget e w >> pure e) mw
 
+-- fire event to currently hovered widget - primarily internally used for sending "stop hovering" events          
+fireEventToHoverWidget :: P.Event -> SDLIO P.Event
+fireEventToHoverWidget ee = do
+    mw <- getHoverWidget
+    maybe (pure ee) -- return original event if there's no widget in focus
+        (\w -> let e = setSrcId (widgetId w) ee in fireEventToWidget e w >> pure e) mw
+          
 -- fires an event to all widgets that catch given position, collect WidgetIds of all relevant widgets    
 fireEventToWidgets :: V2 Int -> P.Event -> SDLIO [WidgetId]
 fireEventToWidgets (V2 x y) event = do
@@ -209,7 +216,21 @@ sdlEvent2Event event =
                     pos'  = castV2 pos
                     src   = EventSource [] pos' (SDL.eventTimestamp event)
                     evt   = EMouseHover src
-                in  fireEventToWidgets pos' evt >>= \ids -> pure $ evt { source = src { widgetIds = ids } } 
+                in  fireEventToWidgets pos' evt >>= 
+                        \ids ->
+                            -- this has to do with hovering so need to process currently hovering id correctly right here
+                            if ids == []
+                            then 
+                                -- need to send "stopped hovering" event to currently being hovered widget
+                                fireEventToHoverWidget (EMouseStoppedHover src)
+                                -- setting current hover id to -1 which is mainwindow
+                                >> setCurHoverId (-1)
+                                >> pure (evt { source = src { widgetIds = ids } })
+                            else
+                                -- setting current hover id to the first item in the fired events list
+                                -- TODO: FIX THIS, has to be handled differently
+                                setCurHoverId (Prelude.head ids) 
+                                >> pure (evt { source = src { widgetIds = ids } })
             SDL.WindowResizedEvent dt -> 
                 let src           = emptySource event
                     size@(V2 w h) = castV2 $ SDL.windowResizedEventSize dt

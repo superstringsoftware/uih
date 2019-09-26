@@ -72,6 +72,7 @@ data SDLState = SDLState {
   -- , pureHandlers  :: Map.Map WidgetId PureHandler -- lowest level handlers that work in concert with widgets
   , idCounter     :: !WidgetId
   , curFocusId    :: !WidgetId
+  , curHoverId    :: !WidgetId
   , scaleXY       :: V2 CFloat -- in case we use highDPI, this will be the scale
   , autoScale     :: Bool -- apply scaling automatically so that same logical size is used on high dpi displays
 
@@ -118,10 +119,13 @@ getCollidingWidgets x y = do
 getRenderer :: SDLIO Renderer
 getRenderer = mainRenderer <$> get
 
-setCurFocusId i = modify' (\s -> s { curFocusId = i }) >> liftIO (putStrLn $ "Set focus to: " ++ show i)
-
+setCurFocusId i = modify' (\s -> s { curFocusId = i })
 getFocusWidget :: SDLIO (Maybe ActiveWidget)
 getFocusWidget = Map.lookup <$> (gets curFocusId) <*> (gets widgets)
+
+setCurHoverId i = modify' (\s -> s { curHoverId = i }) >> liftIO (putStrLn $ "Set hover to: " ++ show i)
+getHoverWidget :: SDLIO (Maybe ActiveWidget)
+getHoverWidget = Map.lookup <$> (gets curHoverId) <*> (gets widgets)
     
 -- update widget at a given id
 updateWidget :: WidgetId -> ActiveWidget -> SDLIO ()
@@ -195,7 +199,8 @@ initStateIO = do
                 scaleXY = V2 1 1,
                 autoScale = True,
                 idCounter = 0,
-                curFocusId = -1
+                curFocusId = -1,
+                curHoverId = -1
                 -- readerEvent = NonEvent
                 }
     either (\e -> print (e::SDLException) >> fail "Could not initialize SDL")

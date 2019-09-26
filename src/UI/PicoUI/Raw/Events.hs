@@ -26,6 +26,7 @@ data EventSource = EventSource {
 
 data Event = RawSDLEvent { source :: EventSource, sdlPayload :: SDL.EventPayload }
     | EMouseHover { source :: EventSource }
+    | EMouseStoppedHover { source :: EventSource }
     | ELeftClick { source :: EventSource, times :: Word8} -- how many times clicked
     | ERightClick { source :: EventSource, times :: Word8} -- how many times clicked
     | EWindowResized { source :: EventSource, size :: V2 Int }

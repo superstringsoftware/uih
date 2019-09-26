@@ -25,7 +25,7 @@ testProgram =
   registerWidgetWithHandlers 
     testLabel 
     compositeHandler -- pure handler that changes bg colors
-    [filteredHandlerSDLIO isHover (\e -> liftIO $ print e), setFocusOnClick ] -- IO handler for hover
+    [filteredHandlerSDLIO isStoppedHover (\e -> liftIO $ putStrLn $ "Stopped hovering on: " ++ show e), setFocusOnClick ] -- IO handler for hover
   >> registerWidgetWithHandlers testLabel2 hndlEditText [setFocusOnClick] -- editable widget
   >> registerWidgetWithHandler testML pure  -- multiline widget
   >> pure ()
