@@ -156,7 +156,8 @@ pureToEventHandler handler i event = do
                      let w' = runReader (handler (widget wid)) event
                      -- then, compiling new abstract widget to low level widget
                      -- TODO: be smarter here about the updates etc
-                     cw <- compile2Widget w'
+                     cf <- gets curFocusId
+                     cw <- if (widgetId wid) == cf then compile2Widget True w' else compile2Widget False w'
                      -- now, update the ActiveWidget in the monad
                      updateWidget i wid { widget = w', compiledWidget = cw }
           ) widm
@@ -175,7 +176,9 @@ registerWidgetWithHandler w h = do
     i  <- fmap (+1) (gets idCounter)
     -- creating a monadic handler from pure
     let handler = pureToEventHandler h i
-    cw <- compile2Widget w
+    cf <- gets curFocusId
+    cw <- if i == cf then compile2Widget True w else compile2Widget False w
+    -- cw <- compile2Widget w
     let ws' = Map.insert i (ActiveWidget { widgetId = i, widget = w, compiledWidget = cw, handler = handler })  ws
     modify' (\s-> s{idCounter = i, widgets = ws'})
     return i
@@ -189,7 +192,9 @@ registerWidgetWithHandlers w h hs = do
     -- creating a monadic handler from pure
     let h' = pureToEventHandler h i
     let handler = composeManyHandlers (h':hs)
-    cw <- compile2Widget w
+    cf <- gets curFocusId
+    cw <- if i == cf then compile2Widget True w else compile2Widget False w
+    -- cw <- compile2Widget w
     let ws' = Map.insert i (ActiveWidget { widgetId = i, widget = w, compiledWidget = cw, handler = handler })  ws
     modify' (\s-> s{idCounter = i, widgets = ws'})
     return i

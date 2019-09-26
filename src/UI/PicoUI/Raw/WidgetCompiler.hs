@@ -2,7 +2,7 @@
 module UI.PicoUI.Raw.WidgetCompiler where
 
 -- 
-import Data.Text
+import Data.Text as T
 import Foreign.C.Types (CInt)
 import Data.Word
 import SDL hiding (Vector, get)
@@ -15,7 +15,7 @@ import Data.IORef
 import UI.PicoUI.Raw.Widgets
 import qualified UI.PicoUI.Middle.AbstractWidgets as Mid
 
-import UI.PicoUI.PicoUIMonad
+import UI.PicoUI.PicoUIMonad as P
 
 import Color
 
@@ -66,7 +66,9 @@ compileAllWidgets = do
     ws' <- mapM fn ws
     modify' (\s -> s { widgets = ws'} )
     where fn w@ActiveWidget{..} = do
-                cw <- compile2Widget widget 
+                cf <- gets curFocusId
+                -- calling with True when a widget is in focus - to handle cursor correctly!!!
+                cw <- if (widgetId == cf) then compile2Widget True widget else compile2Widget False widget 
                 pure $ w { compiledWidget = cw }
 
 
@@ -91,9 +93,18 @@ fontData2Font Mid.FontData{..} = do
 fontData2Color Mid.FontDataDefault = mWhite
 fontData2Color fd = Mid.fontColor fd
 
-compile2Widget :: Mid.AbstractWidget -> SDLIO Widget
+-- calculates screen position for cursor drawing based on the font, text string *up to cursor position*, x / y offset
+updateCursorPosition :: Font -> Text -> CInt -> CInt -> SDLIO ()
+updateCursorPosition fnt txt x' y' = do
+    (w', h') <- size fnt txt
+    w <- fromIntegral <$> scaleFontSizeDown w'
+    h <- fromIntegral <$> scaleFontSizeDown h'
+    cur <- gets cursor
+    modify' (\s-> s { cursor = cur { x = x' + w, y = y', P.height = h } })
+
+compile2Widget :: Bool -> Mid.AbstractWidget -> SDLIO Widget
 -- simple box with background
-compile2Widget Mid.Panel{..} = pure $ Widget {
+compile2Widget focus Mid.Panel{..} = pure $ Widget {
     isVisible = True,
     collider = castV4 cacheRect,
     elements = [
@@ -109,11 +120,13 @@ compile2Widget Mid.Panel{..} = pure $ Widget {
 -- Also, need flatter and simpler low level widget format since we are using this compiler approach, too much nesting now
 
 -- simple label
-compile2Widget Mid.Label {..} = do
+compile2Widget focus Mid.Label {..} = do
     fnt <- fontData2Font fontData
+    let coll@(V4 x y w h) = castV4 cacheRect
+    if focus then updateCursorPosition fnt text (x + 8) (y + 4) else pure ()
     pure $ Widget {
                 isVisible = True,
-                collider = castV4 cacheRect,
+                collider = coll,
                 elements = [
                     WidgetElement {
                         el = SDLBox (backgroundToColor background),
@@ -123,7 +136,7 @@ compile2Widget Mid.Label {..} = do
                         el = SDLText {
                             text = text,
                             font = fnt,
-                            cursorPos = 0,
+                            cursorPos = (T.length text),
                             color = fontData2Color fontData
                         },
                         offset = V2 8 4
@@ -133,7 +146,7 @@ compile2Widget Mid.Label {..} = do
 
 -- ok, this approach for now proves quite flexible as we DON'T need to add basic widgets to handle a new 
 -- more complex AbstractWidget
-compile2Widget Mid.SimpleMultilineText{..} = do
+compile2Widget focus Mid.SimpleMultilineText{..} = do
     fnt <- fontData2Font fontData
     let clr = fontData2Color fontData
     let boxEl = WidgetElement {
