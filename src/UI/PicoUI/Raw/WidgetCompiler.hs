@@ -140,7 +140,7 @@ compile2Widget Mid.SimpleMultilineText{..} = do
             el = SDLBox (backgroundToColor background),
             offset = V2 0 0
         }
-    let vsize = 20 -- need to calculate actual line height
+    vsize <- lineSkip fnt
     let lineEls = V.imap (fn fnt clr vsize) textLines
     pure $ Widget {
                 isVisible = True,
@@ -154,7 +154,7 @@ compile2Widget Mid.SimpleMultilineText{..} = do
             cursorPos = 0,
             color = clr'
         },
-        offset = V2 8 (fromIntegral (i * vs))
+        offset = V2 8 (fromIntegral (i * vs + 4) )
     }
     
     

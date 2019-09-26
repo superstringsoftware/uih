@@ -123,7 +123,7 @@ setCurFocusId i = modify' (\s -> s { curFocusId = i })
 getFocusWidget :: SDLIO (Maybe ActiveWidget)
 getFocusWidget = Map.lookup <$> (gets curFocusId) <*> (gets widgets)
 
-setCurHoverId i = modify' (\s -> s { curHoverId = i }) >> liftIO (putStrLn $ "Set hover to: " ++ show i)
+setCurHoverId i = modify' (\s -> s { curHoverId = i }) -- >> liftIO (putStrLn $ "Set hover to: " ++ show i)
 getHoverWidget :: SDLIO (Maybe ActiveWidget)
 getHoverWidget = Map.lookup <$> (gets curHoverId) <*> (gets widgets)
     
