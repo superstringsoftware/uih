@@ -68,6 +68,11 @@ renderUI = do
     SDL.rendererRenderTarget renderer $= Nothing -- rendering to Screen
     rendererDrawColor renderer $= V4 255 255 255 0
     SDL.clear renderer
+    -- THIS RECALCULATES EVERYTHING EVERY CYCLE
+    -- window <- gets mainWindow
+    -- V2 width height <- (window.-windowSize?=)
+    -- handleResize (fromIntegral width) (fromIntegral height)
+    -- END OF RECALCULATION
     ws <- gets widgets
     -- liftIO $ putStrLn $ "Got widgets: " ++ show (Map.length ws)
     mapM_ (fn renderer) ws

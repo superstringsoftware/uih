@@ -48,6 +48,7 @@ renderWidgetToScreen Widget{..} ren = if not isVisible then pure () else do
                 let (V2 xo yo) = offset
                 tex <- sdlElement2Texture (V2 w h) el ren
                 -- unfortunately need to check between constructors here to correctly handle text rendering
+                -- for high-dpi autoscaling environments
                 case el of
                     SDLText{..}     -> renderTextureUnscaled (x+xo) (y+yo) tex ren
                     SDLTextLine{..} -> renderTextureUnscaled (x+xo) (y+yo) tex ren
@@ -75,7 +76,8 @@ sdlElement2Texture size SDLBox{..} ren = do
     return $ tex
 sdlElement2Texture size SDLText{..} ren = do
     setStyle font []
-    surf <- blended font color text
+    let text' = if text == "" then " " else text
+    surf <- blended font color text'
     -- handling dpi scaling for fonts
     tex  <- createTextureFromSurface ren surf
     -- tex <- runUnscaled (flip createTextureFromSurface surf) ren
@@ -109,8 +111,9 @@ sdlElement2Texture size SDLTextLine{..} renderer = do
 styledText2Surface :: SDLStyledText -> Font -> SDLIO Surface
 styledText2Surface SDLStyledText{..} font = do
     setStyle font styles
-    maybe (blended font color text)
-          (\bgClr -> shaded font color bgClr text ) bgColor
+    let text' = if text == "" then " " else text
+    maybe (blended font color text')
+          (\bgClr -> shaded font color bgClr text' ) bgColor
     
 styledText2Texture :: SDLStyledText -> Font -> Renderer -> SDLIO Texture
 styledText2Texture st font ren = do
