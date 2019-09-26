@@ -23,15 +23,17 @@ import Control.Monad.Trans.State.Strict
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Exception
 import SDL as SDL hiding (get, Event)
-import SDL.Font
+import SDL.Font hiding (height)
 import Data.Text
 import Foreign.C.Types (CInt, CFloat)
 import Data.Word
 import qualified Data.Map.Strict as Map
 
+import Control.Concurrent (threadDelay)
+
 import Color
 
-import UI.PicoUI.Raw.Widgets
+import UI.PicoUI.Raw.Widgets (WidgetId, Widget)
 -- import UI.PicoUI.Raw.Rendering
 -- import UI.PicoUI.Raw.PureHandlers
 import UI.PicoUI.Raw.Events
@@ -48,6 +50,8 @@ data CursorStatus = CursorStatus {
     , color  :: V4 Word8
     , height :: CInt
     , cursorTimer :: Maybe Timer
+    , blink  :: Bool -- for checking status for redraw timer
+    , prevTick :: Word32
 } deriving Show
 
 -- record to keep the current input devices state - it gets passed with Events!!
@@ -161,7 +165,7 @@ instance Show Timer where
 
 -- Stacking State and IO into a monad
 type SDLIO = StateT SDLState IO
-
+    
 -- needs to be read from config!
 mainWindowSettings = defaultWindow
   { windowBorder       = True
@@ -192,7 +196,7 @@ initStateIO = do
                 mainWindow = window,
                 mainRenderer = renderer,
                 loadedFonts = Map.empty,
-                cursor = CursorStatus 0 0 (V4 255 255 255 0) 0 Nothing,
+                cursor = CursorStatus 50 50 (mRed 500) 20 Nothing False 0,
                 bgColor = V4 210 210 210 0,
                 widgets = Map.empty,
                 -- pureHandlers = Map.empty,

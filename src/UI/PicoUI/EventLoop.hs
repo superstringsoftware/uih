@@ -25,7 +25,7 @@ import UI.PicoUI.Raw.Widgets
 import UI.PicoUI.Raw.Rendering
 import UI.PicoUI.Raw.WidgetCompiler
 import UI.PicoUI.Raw.Events as P
-import UI.PicoUI.PicoUIMonad
+import UI.PicoUI.PicoUIMonad as Pico
 
 import UI.PicoUI.Middle.PureHandlers
 import UI.PicoUI.Middle.Handlers
@@ -66,7 +66,8 @@ renderUI :: SDLIO ()
 renderUI = do
     renderer <- getRenderer
     SDL.rendererRenderTarget renderer $= Nothing -- rendering to Screen
-    rendererDrawColor renderer $= V4 255 255 255 0
+    bgClr <- gets Pico.bgColor
+    rendererDrawColor renderer $= bgClr
     SDL.clear renderer
     -- THIS RECALCULATES EVERYTHING EVERY CYCLE
     -- window <- gets mainWindow
@@ -76,6 +77,8 @@ renderUI = do
     ws <- gets widgets
     -- liftIO $ putStrLn $ "Got widgets: " ++ show (Map.length ws)
     mapM_ (fn renderer) ws
+    SDL.rendererRenderTarget renderer $= Nothing
+    renderCursor renderer
     SDL.present renderer
     where fn ren ActiveWidget{..} = renderWidgetToScreen compiledWidget ren
     

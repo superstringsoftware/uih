@@ -20,7 +20,7 @@ import Data.Vector (foldM')
 -- need our monad to handle correct scaling of fonts in case of high-dpi unfortunately
 -- this has to be handled differently - e.g., choose specific rendering functions
 -- in the beginning of the program depending on whether it's high dpi or not and then call them all the time
-import UI.PicoUI.PicoUIMonad
+import UI.PicoUI.PicoUIMonad as P
 
 {-
 data WidgetElement = WidgetElement {
@@ -34,6 +34,20 @@ data Widget = Widget {
     elements :: Vector WidgetElement -- list of elements
 }
 -}
+-- cursor with timer: 
+renderCursor ren = do
+    cur <- gets cursor
+    curTick <- ticks
+    if (curTick - (prevTick cur)) < 700 then pure () 
+    else modify' (\s -> s { cursor = cur { blink = not (blink cur), prevTick = curTick } })
+    if (blink cur) then pure () else do
+        let rect = Just $ Rectangle (P $ V2 (x cur) (y cur)) (V2 2 (P.height cur))
+        rendererDrawColor ren $= P.color cur
+        fillRect ren rect
+        
+
+    
+
 
 -- this method DOES NOT check any bounds and DOES NOT set renderer target
 -- to the screen, it has to be done elsewhere
