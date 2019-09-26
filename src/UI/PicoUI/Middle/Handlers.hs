@@ -44,3 +44,9 @@ setFocusOn filt =
 
 -- shortcut
 setFocusOnClick = setFocusOn (isLeftClick 1)   
+
+-- MAIN WINDOW HANDLER - gets called on all events that do not originate in widgets, e.g. for resetting focus
+mHndlMainWindow = filteredHandlerSDLIO isSourceMainWindow 
+    (filteredHandlerSDLIO (isLeftClick 1) (\e -> setCurFocusId (-1)))
+    
+    

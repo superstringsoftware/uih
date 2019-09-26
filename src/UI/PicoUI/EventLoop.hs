@@ -24,10 +24,13 @@ import Color
 import UI.PicoUI.Raw.Widgets
 import UI.PicoUI.Raw.Rendering
 import UI.PicoUI.Raw.WidgetCompiler
-import UI.PicoUI.PicoUIMonad
-import UI.PicoUI.Middle.PureHandlers
-import UI.PicoUI.Middle.AbstractWidgets as P
 import UI.PicoUI.Raw.Events as P
+import UI.PicoUI.PicoUIMonad
+
+import UI.PicoUI.Middle.PureHandlers
+import UI.PicoUI.Middle.Handlers
+import UI.PicoUI.Middle.AbstractWidgets as P
+
 
 import PreludeFixes
 
@@ -86,7 +89,8 @@ fireEvent :: SDL.Event -> SDLIO Bool
 fireEvent ev = do
     -- this fires an event to all widgets automatically, so we only need to fire to the other handlers
     event <- sdlEvent2Event ev
-    -- ... but since now we don't yet have any other handlers, there's nothign to do
+    -- handling event with main window default handlers
+    mHndlMainWindow event
     if event == EQuit then return True else return False
 
 -- fire specific event to a handler in an ActiveWidget
