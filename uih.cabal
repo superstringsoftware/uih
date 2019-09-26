@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 39c894874ea0b46d6a3049fbba83ad91fb6c90f167788e15463b5293f6732f90
+-- hash: 60a76508fdb908c5b92f346c859ffa55699e52ec0149cf5a283beccb0f12259d
 
 name:           uih
 version:        0.1.0.0
@@ -40,18 +40,6 @@ library
       UI.PicoUI.Raw.Rendering
       UI.PicoUI.Raw.WidgetCompiler
       UI.PicoUI.Raw.Widgets
-      UIH.SDL2.Basic
-      UIH.SDL2.Fonts
-      UIH.SDL2.RenderableAbstractWidgets
-      UIH.SDL2.RenderableSDLWidgets
-      UIH.SDL2.RenderMonad
-      UIH.SDL2.SDLUI
-      UIH.SDL2.SDLWidgets
-      UIH.UI.AbstractWidgets
-      UIH.UI.Handlers
-      UIH.UI.ManagerMonad
-      UIH.UI.Renderable
-      UIH.UI.SimpleTree
   other-modules:
       Paths_uih
   hs-source-dirs:
