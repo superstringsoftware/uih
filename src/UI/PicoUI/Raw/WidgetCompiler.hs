@@ -9,7 +9,7 @@ import SDL hiding (Vector, get)
 import SDL.Font
 import Control.Monad.Trans.State.Strict
 
-import Data.Vector hiding (mapM)
+import Data.Vector as V hiding (mapM)
 import Data.IORef
 
 import UI.PicoUI.Raw.Widgets
@@ -92,6 +92,7 @@ fontData2Color Mid.FontDataDefault = mWhite
 fontData2Color fd = Mid.fontColor fd
 
 compile2Widget :: Mid.AbstractWidget -> SDLIO Widget
+-- simple box with background
 compile2Widget Mid.Panel{..} = pure $ Widget {
     isVisible = True,
     collider = castV4 cacheRect,
@@ -106,6 +107,8 @@ compile2Widget Mid.Panel{..} = pure $ Widget {
 -- operation, since we are reading from disk. Need to cache the font somehow - e.g., use recompile operation
 -- that is much less expensive and does updates surgically?
 -- Also, need flatter and simpler low level widget format since we are using this compiler approach, too much nesting now
+
+-- simple label
 compile2Widget Mid.Label {..} = do
     fnt <- fontData2Font fontData
     pure $ Widget {
@@ -128,8 +131,30 @@ compile2Widget Mid.Label {..} = do
                 ]
             }
 
-
-    
-    
+-- ok, this approach for now proves quite flexible as we DON'T need to add basic widgets to handle a new 
+-- more complex AbstractWidget
+compile2Widget Mid.SimpleMultilineText{..} = do
+    fnt <- fontData2Font fontData
+    let clr = fontData2Color fontData
+    let boxEl = WidgetElement {
+            el = SDLBox (backgroundToColor background),
+            offset = V2 0 0
+        }
+    let vsize = 20 -- need to calculate actual line height
+    let lineEls = V.imap (fn fnt clr vsize) textLines
+    pure $ Widget {
+                isVisible = True,
+                collider = castV4 cacheRect,
+                elements = V.cons boxEl lineEls
+            }
+    where fn fnt' clr' vs i line = WidgetElement {
+        el = SDLText {
+            text = line,
+            font = fnt',
+            cursorPos = 0,
+            color = clr'
+        },
+        offset = V2 8 (fromIntegral (i * vs))
+    }
     
     

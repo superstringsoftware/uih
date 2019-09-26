@@ -19,6 +19,8 @@ import Data.Text as T hiding (map)
 import Linear
 import Color
 
+import Data.Vector hiding ((++))
+
 import UI.PicoUI.Raw.Widgets (WidgetId)
 
 data FontStyle = Normal | Bold | Italic | Strikethrough | Underline deriving (Show, Eq)
@@ -121,6 +123,15 @@ data AbstractWidget =
     Panel {
         layout :: Layout,
         background :: Background,
+        cacheRect :: V4 Int
+    } |
+    SimpleMultilineText { -- very basic multiline text, all in one style
+        fontData :: FontData,
+        textLines :: Vector Text,
+        halign :: TextAlign,
+        layout :: Layout,
+        background :: Background,
+        cursorCol, cursorLine :: !Int, -- cursor position in terms of symbols
         cacheRect :: V4 Int
     } |
     SCREEN -- used for setting up CompositeWidget tree 

@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, DuplicateRecordFields #-}
+{-# LANGUAGE OverloadedStrings, DuplicateRecordFields, OverloadedLists #-}
 module Main where
 
 import Color
@@ -24,14 +24,29 @@ testProgram :: SDLIO ()
 testProgram = 
   registerWidgetWithHandlers 
     testLabel 
-    compositeHandler -- pure handler
-    [filteredHandlerSDLIO isHover (\e -> liftIO $ print e) ] -- IO handler for hover
-  >> registerWidgetWithHandlers testLabel2 hndlEditText [setFocusOnClick]
+    compositeHandler -- pure handler that changes bg colors
+    [filteredHandlerSDLIO isHover (\e -> liftIO $ print e), setFocusOnClick ] -- IO handler for hover
+  >> registerWidgetWithHandlers testLabel2 hndlEditText [setFocusOnClick] -- editable widget
+  >> registerWidgetWithHandler testML pure  -- multiline widget
   >> pure ()
     
 
 main :: IO ()
 main = runSDLIO testProgram >> pure ()
+
+testML = SimpleMultilineText { -- very basic multiline text, all in one style
+  fontData = FontDataDefault,
+  halign = CenterAlign,
+  layout = l_SHT 20 120 20 400,
+  background = BGColor $ mGrey 900, 
+  cursorCol = 0, cursorLine = 0,
+  cacheRect = V4 0 0 0 0,
+  textLines = [
+    "Line 1",
+    "Line 2 that is a little bit longer"
+  ]
+        
+} 
 
 testLabel = Label {
   fontData = FontDataDefault,
