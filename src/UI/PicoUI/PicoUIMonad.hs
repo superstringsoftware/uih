@@ -172,7 +172,7 @@ mainWindowSettings = defaultWindow
   -- There are issues with high DPI windows b/c we need to recalculate all coordinates when drawing / checking event
   -- coordinates, so its support is pending
   -- OpenGLContext defaultOpenGL
-  , windowHighDPI      = True 
+  , windowHighDPI      = True
   , windowInputGrabbed = False
   , windowMode         = Windowed
   , windowGraphicsContext = OpenGLContext defaultOpenGL

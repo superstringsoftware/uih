@@ -78,7 +78,8 @@ renderUI = do
     -- liftIO $ putStrLn $ "Got widgets: " ++ show (Map.length ws)
     mapM_ (fn renderer) ws
     SDL.rendererRenderTarget renderer $= Nothing
-    renderCursor renderer
+    cf <- gets curFocusId
+    if cf >= 0 then renderCursor renderer else pure ()
     SDL.present renderer
     where fn ren ActiveWidget{..} = renderWidgetToScreen compiledWidget ren
     
