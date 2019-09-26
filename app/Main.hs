@@ -30,6 +30,15 @@ testProgram =
   >> registerWidgetWithHandler testML pure  -- multiline widget
   >> pure ()
     
+redOn2Click = filteredHandler (isLeftClick 2) (changeBackground $ BGColor $ mRed 500)
+blueOnClick = filteredHandler (isLeftClick 1) (changeBackground $ BGColor $ mBlue 500)
+-- composite handler combining the 2
+-- compositeHandler w = redOn2Click w >>= blueOnClick
+
+-- This is a typical button that highlights when hovered upon
+greyOnStopHover = filteredHandler isStoppedHover (changeBackground $ BGColor $ mGrey 700)
+blueOnHover     = filteredHandler isHover        (changeBackground $ BGColor $ mBlue 500)
+compositeHandler w = greyOnStopHover w >>= blueOnHover
 
 main :: IO ()
 main = runSDLIO testProgram >> pure ()

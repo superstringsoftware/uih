@@ -83,12 +83,13 @@ hndlAlterText w = do
 -- They can be used as a basis to build handlers
 
 -- EXAMPLES FIRST
--- change background on single click and double click
+-- change background on single click and double click 
+{-
 redOn2Click = filteredHandler (isLeftClick 2) (changeBackground $ BGColor $ mRed 500)
 blueOnClick = filteredHandler (isLeftClick 1) (changeBackground $ BGColor $ mBlue 500)
 -- composite handler combining the 2
 compositeHandler w = redOn2Click w >>= blueOnClick
-
+-}
 -- NOW ACTUAL TRANSFORMERS
 -- change background to the new one
 changeBackground :: Background -> AbstractWidget -> AbstractWidget
