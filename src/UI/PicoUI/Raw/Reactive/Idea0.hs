@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings, DuplicateRecordFields, 
-RecordWildCards, OverloadedLists, PostfixOperators, TypeSynonymInstances, FlexibleInstances #-}
+RecordWildCards, OverloadedLists, PostfixOperators, TypeSynonymInstances, 
+FlexibleInstances, FlexibleContexts, ScopedTypeVariables, TypeFamilies #-}
 
 -- VERY EASY TO USE REACTIVE VAR IN THE MONAD TYPE
 -- it is immutable now, may want to add a mutable version with the same interface
@@ -9,7 +10,9 @@ module UI.PicoUI.Raw.Reactive.Idea0
 
 where
 
-import Data.Map.Strict as Map
+import Data.Map.Strict as Map hiding (unions)
+import Control.Monad.IO.Class (liftIO, MonadIO)
+import Control.Monad (when)
 
 import Data.IORef
 
@@ -24,8 +27,87 @@ data Signal m a = Signal {
     curId :: !Id
 }
 
+type StatefulSignal m a = (m a, -- read value
+    (a -> a) -> m (), -- modify value
+    Listener m a -> m ()) -- add listener
+
 newSignal a = Signal {value = a, listeners = Map.empty, curId = 0}
 
+-- Well, since the below works we might as well create an explicit object with IORef-d state,
+-- since then we can share functions code.
+{-
+data StatefulSignal m a = StatefulSignal {
+    signal    :: IORef (Signal m a),
+    readVal   :: StatefulSignal m a -> a,
+    modifyVal :: StatefulSignal m a -> a -> m (StatefulSignal m a),
+    addListen :: StatefulSignal m a -> Listener m a -> m (StatefulSignal m a)
+}
+-}
+
+-- trying typical reactive interface
+
+-- never :: m (StatefulSignal m a)
+-- never = createStatefulSignal Nothing
+
+-- Functor (which might not be really a functor due to fmap id law being probably broken...)
+-- Also, because we have to be in the monad...
+fmapM :: MonadIO m => (a -> b) -> StatefulSignal m a -> m (StatefulSignal m b)
+fmapM f sig = do
+    initVal <- readVal sig
+    ret <- createStatefulSignal (f initVal)
+    let conn = (\x -> (modifyVal ret) (const (f x)) )
+    (addListener sig) conn
+    return ret
+
+filterE :: MonadIO m => (a -> Bool) -> StatefulSignal m a -> m (StatefulSignal m a)
+filterE filt sig = do
+    (initVal :: a) <- readVal sig
+    ret <- createStatefulSignal initVal
+    let conn = (\x -> when (filt x) $ (modifyVal ret) id )
+    (addListener sig) conn
+    return ret
+
+-- we don't really have simultaneous events in our model, do we???
+-- so this function is like combine
+unionWith :: MonadIO m => (a -> a -> a) -> StatefulSignal m a -> StatefulSignal m a -> m (StatefulSignal m a)
+unionWith f sig1 sig2 = do
+    iv1 <- readVal sig1
+    iv2 <- readVal sig2
+    ret <- createStatefulSignal (f iv1 iv2)
+    let conn = (\x -> (modifyVal ret) (const x) )
+    (addListener sig1) conn
+    (addListener sig2) conn
+    return ret 
+
+-- analog of Semigroup <>    
+combine :: (MonadIO m, Semigroup a) => StatefulSignal m a -> StatefulSignal m a -> m (StatefulSignal m a)
+combine sig1 sig2 = do
+    iv1 <- readVal sig1
+    iv2 <- readVal sig2
+    ret <- createStatefulSignal (iv1 <> iv2)
+    let conn = (\x -> (modifyVal ret) (const x) )
+    (addListener sig1) conn
+    (addListener sig2) conn
+    return ret
+
+unions :: MonadIO m => [StatefulSignal m (a -> a)] -> m (StatefulSignal m (a -> a))
+-- unions [] = never
+-- unions xs = foldr1 (unionWith (.)) xs
+unions signals = do
+    iv <- readVal (head signals)
+    ret <- createStatefulSignal iv
+    let conn = (\x -> (modifyVal ret) (const x) )
+    mapM_ (\sig -> (addListener sig) conn) signals
+    return ret
+
+-- accumE :: MonadMoment m => a -> Event (a -> a) -> m (Event a)
+-- accumB :: MonadMoment m => a -> Event (a -> a) -> m (Behavior a)
+accum :: MonadIO m => a -> StatefulSignal m (a->a) -> m (StatefulSignal m a)
+accum initVal sig = do
+    ret <- createStatefulSignal initVal
+    let conn = (\f -> (modifyVal ret) f )
+    (addListener sig) conn
+    return ret
 
 -- We want to create a Signal, stateful, that ALSO can hookup into other
 -- Signal via listeners. For this, we need to create a generic listener function:
@@ -35,37 +117,44 @@ newSignal a = Signal {value = a, listeners = Map.empty, curId = 0}
 -- type. 
 -- Is this an issue?
 -- createStatefulSignal :: a -> ...
+createStatefulSignal
+  :: MonadIO m => a
+     -> m
+          (m a, -- read value
+          (a -> a) -> m (), -- modify value
+          Listener m a -> m ()) -- add listener          
 createStatefulSignal initVal = do
-    cache <- newIORef (newSignal initVal)
-    let read = readIORef cache
+    cache <- liftIO $ newIORef (newSignal initVal)
+    let read = value <$> liftIO (readIORef cache)
     let mod f = do
-            v <- readIORef cache
+            v <- liftIO $ readIORef cache
             let val = f (value v)
             let ls = listeners v
-            writeIORef cache v { value = val }
+            liftIO $ writeIORef cache v { value = val }
             -- run listeners:
             mapM_ (\l -> l val ) ls
-    let addListener l = do
-            v <- readIORef cache
-            writeIORef cache (addListenerPure v l)
-    -- connectors are the most important:
-    -- they take a function g :: b -> a -> a
-    -- it takes OLD value, incoming b value, and produces new a value.
-    let conn g bval = do
-            v <- readIORef cache
-            let val = g bval (value v)
-            let ls = listeners v
-            writeIORef cache v { value = val }
-            -- run listeners:
-            mapM_ (\l -> l val ) ls
-    pure (read, mod, addListener, conn)
+    let addL l = liftIO $ modifyIORef' cache (addListenerPure l)
+    pure (read, mod, addL)
 
-addListenerPure :: Signal m a -> Listener m a -> Signal m a
-addListenerPure r l = 
+addListenerPure :: Listener m a -> Signal m a -> Signal m a
+addListenerPure l r = 
     let ls  = listeners r
         ci  = curId r
         ls' = Map.insert ci l ls
     in  r { listeners = ls', curId = ci + 1 }
+
+--
+readVal (x,_,_) = x
+modifyVal (_,x,_) = x
+addListener (_,_,x) = x
+-- connectors are the most important:
+-- they take a function g :: b -> a -> a
+-- it takes OLD value, incoming b value, and produces new a value.
+-- they are used as a listener from "this" object to any Singal m b
+connector s g bval = (modifyVal s) (g bval)
+
+plusOne :: Int -> Int
+plusOne x = x + 1
 
 {-
 Ok let's try this again.
@@ -78,13 +167,28 @@ edown <- event0 bdown command
         ]
 sink output [text :== show <$> counter] 
 -}
-read (x,_,_,_) = x
-modify (_,x,_,_) = x
-addListener (_,_,x,_) = x
-connector   (_,_,_,x) = x
 
-plusOne :: Int -> Int
-plusOne x = x + 1
+_test_signals1 = do
+    eup   <- createStatefulSignal "Up"
+    edown <- createStatefulSignal "Down"
+    f1 <- fmapM (const (+1) ) eup
+    f2 <- fmapM (const (subtract 1) ) edown
+    u  <- unions [f1,f2]
+    counter <- accum 0 u
+
+    let sink i = putStrLn $ "Counter is: " ++ show i
+    (addListener counter) sink
+
+    let inp = do
+            l <- getLine 
+            if l == "-" 
+            then (modifyVal edown) (const "Down") 
+            else (modifyVal eup)   (const "Up") 
+            inp
+
+    putStrLn "Running network"
+    inp
+
 
 _test_signals = do
     eup <- createStatefulSignal "Click"
@@ -101,7 +205,7 @@ _test_signals = do
 
     let inp = do
             getLine 
-            (modify eup) (const "Click") 
+            (modifyVal eup) (const "Click") -- firing "click" events
             inp
     
     putStrLn "Running network"
@@ -109,34 +213,3 @@ _test_signals = do
 
 
 
-{-
--- create new reactive var
-newVar :: Monad m => a -> ReactiveVar m a
-newVar v = ReactiveVar {value = v, listeners = Map.empty, curId = 0}
-
--- getter
-getValue :: Monad m => ReactiveVar m a -> a
-getValue r = value r
-
--- setter: set the new value and run all listeners
-setValue :: Monad m => ReactiveVar m a -> a -> m (ReactiveVar m a)
-setValue r v = do
-    let ls = listeners r
-    let oldVal = value r
-    mapM_ (\l -> l oldVal v) ls
-    pure $ r { value = v }
-
--- add listener and return an updated ReactiveVar and a function that removes a listener!
-addListener :: Monad m => ReactiveVar m a -> Listener m a -> (ReactiveVar m a, ReactiveVar m a -> ReactiveVar m a)
-addListener r l = 
-    let ls  = listeners r
-        ci  = curId r
-        ls' = Map.insert ci l ls
-        r'  = r { listeners = ls', curId = ci + 1 }
-        removeListener rv = 
-            let ls1  = listeners rv
-                ls1' = Map.delete ci ls1
-            in  rv { listeners = ls1' }
-    in  (r', removeListener)
-
--}
