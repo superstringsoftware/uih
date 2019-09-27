@@ -212,7 +212,7 @@ sourceId i  evt = EventSource [i] (V2 0 0) (SDL.eventTimestamp evt)
 sdlEvent2Event :: SDL.Event -> SDLIO P.Event
 sdlEvent2Event event = 
     case SDL.eventPayload event of
-            SDL.MouseButtonEvent mb -> 
+            p@(SDL.MouseButtonEvent mb) -> 
                 -- MouseButtonEventData {mouseButtonEventWindow = Just (Window 0x00007f9500c38fb0), 
                 --    mouseButtonEventMotion = Released, mouseButtonEventWhich = Mouse 0, mouseButtonEventButton = ButtonLeft, 
                 --    mouseButtonEventClicks = 1, mouseButtonEventPos = P (V2 407 170)}
@@ -228,7 +228,9 @@ sdlEvent2Event event =
                     src = EventSource [] pos' (SDL.eventTimestamp event)
                     evt    = cons src clicks
                     -- firing event to all widgets right away, updating source and returning the event
-                in  fireEventToWidgets pos' evt >>= \ids -> pure $ evt { source = src { widgetIds = ids } } 
+                in  if motion == Released 
+                    then fireEventToWidgets pos' evt >>= \ids -> pure $ evt { source = src { widgetIds = ids } } 
+                    else pure $ RawSDLEvent (emptySource event) p
             SDL.MouseMotionEvent me ->  
                 let SDL.P pos = SDL.mouseMotionEventPos me
                     pos'  = castV2 pos
@@ -259,9 +261,11 @@ sdlEvent2Event event =
             -- also, may be easier to move this to filters and here simply send an event further
             SDL.TextInputEvent ev -> do
                 -- liftIO $ print $ show ev
+                prolongCursor
                 let ee = ETextInput (emptySource event) (textInputEventText ev)
                 fireEventToFocusWidget ee
             p@(SDL.KeyboardEvent ev) -> do
+                prolongCursor
                 -- liftIO $ print $ show ev
                 let k = keysymKeycode $ keyboardEventKeysym ev
                 --liftIO $ print $ show k

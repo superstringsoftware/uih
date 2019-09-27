@@ -26,8 +26,8 @@ testProgram =
     testLabel 
     compositeHandler -- pure handler that changes bg colors
     [filteredHandlerSDLIO isStoppedHover (\e -> liftIO $ putStrLn $ "Stopped hovering on: " ++ show e), setFocusOnClick ] -- IO handler for hover
-  >> registerWidgetWithHandlers testLabel2 hndlEditText [setFocusOnClick] -- editable widget
   >> registerWidgetWithHandler testML pure  -- multiline widget
+  >> registerWidgetWithHandlers testLabel2 hndlEditText [setFocusOnClick] -- editable widget
   >> pure ()
     
 redOn2Click = filteredHandler (isLeftClick 2) (changeBackground $ BGColor $ mRed 500)
@@ -71,7 +71,7 @@ testLabel2 = Label {
   text = "Stretch horizontal stick to bottom",
   valign = CenterAlign, halign = CenterAlign,
   layout = l_SHB 20 60 20 50,
-  background = BGColor $ mGrey 900, 
+  background = BGColor $ mGrey 700, 
   cacheRect = V4 0 0 0 0
 }
 

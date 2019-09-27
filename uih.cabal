@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 60a76508fdb908c5b92f346c859ffa55699e52ec0149cf5a283beccb0f12259d
+-- hash: 3bfb3f691e2385dc58b4cb08825d6858b0b3210672c31512737edcd655dfeaf5
 
 name:           uih
 version:        0.1.0.0
@@ -37,6 +37,8 @@ library
       UI.PicoUI.PicoUIMonad
       UI.PicoUI.Raw.Events
       UI.PicoUI.Raw.Reactive.BananaMappings
+      UI.PicoUI.Raw.Reactive.Idea0
+      UI.PicoUI.Raw.Reactive.ReactiveVar
       UI.PicoUI.Raw.Rendering
       UI.PicoUI.Raw.WidgetCompiler
       UI.PicoUI.Raw.Widgets
@@ -59,6 +61,32 @@ library
     , sdl2-ttf
     , text
     , transformers
+    , vector
+  default-language: Haskell2010
+
+executable t01
+  main-is: 01Test.hs
+  other-modules:
+      Paths_uih
+  hs-source-dirs:
+      examples
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      StateVar
+    , base
+    , bytestring
+    , clock
+    , containers
+    , ghc-prim
+    , linear
+    , mtl
+    , random
+    , reactive-banana
+    , sdl2
+    , sdl2-ttf
+    , text
+    , transformers
+    , uih
     , vector
   default-language: Haskell2010
 

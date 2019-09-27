@@ -54,6 +54,12 @@ data CursorStatus = CursorStatus {
     , prevTick :: Word32
 } deriving Show
 
+prolongCursor :: SDLIO ()
+prolongCursor = do
+    curTick <- ticks
+    cur <- gets cursor
+    modify' (\s -> s { cursor = cur { blink = True, prevTick = curTick } })
+
 -- record to keep the current input devices state - it gets passed with Events!!
 -- the issue is:
 -- SDL reports mouse buttons held down while we are dragging the mouse

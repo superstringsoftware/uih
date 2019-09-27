@@ -26,7 +26,9 @@ import UI.PicoUI.Raw.Widgets (WidgetId)
 data FontStyle = Normal | Bold | Italic | Strikethrough | Underline deriving (Show, Eq)
 data TextAlign = CenterAlign | LeftAlign | RightAlign deriving (Show, Eq)
 data FontData = FontData {
-    fontName :: !Text, -- has to be full path to the font, so we need to convert it if there are settings etc
+    -- has to be full path to the font, so we need to convert it if there are settings etc
+    -- TODO: change it to configuration with human readable names
+    fontName :: !Text, 
     fontSize :: !Int,
     fontStyle :: FontStyle,
     fontColor :: Color
@@ -149,6 +151,11 @@ data Layout =
     | StretchH_Bot (V4 Int)   -- (delta left) (delta bottom) (delta right) h
     | StretchV_Left (V4 Int)  -- (delta left) (delta top) w (delta bottom)
     | StretchV_Right (V4 Int) -- (delta right) (delta top) w (delta bottom)
+    | CenterAll (V4 Int)      -- shift_x shift_y w h - shifts are relative to the calculated position!
+    | CenterH_Top (V4 Int)    -- shift_x (delta top) w h
+    | CenterH_Bot (V4 Int)    -- shift_x (delta bottom) w h
+    | CenterV_Left (V4 Int)   -- (delta left) shift_y w h
+    | CenterV_Right (V4 Int)  -- (delta right) shift_y w h
     deriving (Show, Eq)
 
 -- helper functions to create layouts so that conventions do not mess up peoples brains

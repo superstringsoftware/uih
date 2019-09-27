@@ -38,9 +38,9 @@ data Widget = Widget {
 renderCursor ren = do
     cur <- gets cursor
     curTick <- ticks
-    if (curTick - (prevTick cur)) < 700 then pure () 
+    if (curTick - (prevTick cur)) < 500 then pure () 
     else modify' (\s -> s { cursor = cur { blink = not (blink cur), prevTick = curTick } })
-    if (blink cur) then pure () else do
+    if not (blink cur) then pure () else do
         let rect = Just $ Rectangle (P $ V2 (x cur) (y cur)) (V2 2 (P.height cur))
         rendererDrawColor ren $= P.color cur
         fillRect ren rect

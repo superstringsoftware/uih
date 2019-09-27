@@ -123,6 +123,7 @@ compile2Widget focus Mid.Panel{..} = pure $ Widget {
 compile2Widget focus Mid.Label {..} = do
     fnt <- fontData2Font fontData
     let coll@(V4 x y w h) = castV4 cacheRect
+    -- updating cursor position!!!
     if focus then updateCursorPosition fnt text (x + 8) (y + 4) else pure ()
     pure $ Widget {
                 isVisible = True,
@@ -153,6 +154,7 @@ compile2Widget focus Mid.SimpleMultilineText{..} = do
             el = SDLBox (backgroundToColor background),
             offset = V2 0 0
         }
+    -- check what the size of the line should be
     vsize <- lineSkip fnt >>= scaleFontSizeDown
     let lineEls = V.imap (fn fnt clr vsize) textLines
     pure $ Widget {
