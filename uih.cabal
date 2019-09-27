@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3bfb3f691e2385dc58b4cb08825d6858b0b3210672c31512737edcd655dfeaf5
+-- hash: 5ff96564ff22a11d025414463e01103bd1b8aeed2176d8928347ecd4a203befe
 
 name:           uih
 version:        0.1.0.0
@@ -36,9 +36,7 @@ library
       UI.PicoUI.Middle.PureHandlers
       UI.PicoUI.PicoUIMonad
       UI.PicoUI.Raw.Events
-      UI.PicoUI.Raw.Reactive.BananaMappings
-      UI.PicoUI.Raw.Reactive.Idea0
-      UI.PicoUI.Raw.Reactive.ReactiveVar
+      UI.PicoUI.Raw.Reactive.StatefulSignals
       UI.PicoUI.Raw.Rendering
       UI.PicoUI.Raw.WidgetCompiler
       UI.PicoUI.Raw.Widgets
@@ -56,7 +54,6 @@ library
     , linear
     , mtl
     , random
-    , reactive-banana
     , sdl2
     , sdl2-ttf
     , text
@@ -81,7 +78,6 @@ executable t01
     , linear
     , mtl
     , random
-    , reactive-banana
     , sdl2
     , sdl2-ttf
     , text
@@ -108,7 +104,6 @@ executable uih
     , linear
     , mtl
     , random
-    , reactive-banana
     , sdl2
     , sdl2-gfx
     , sdl2-ttf
@@ -136,7 +131,6 @@ test-suite math-test
     , linear
     , mtl
     , random
-    , reactive-banana
     , sdl2
     , sdl2-ttf
     , text

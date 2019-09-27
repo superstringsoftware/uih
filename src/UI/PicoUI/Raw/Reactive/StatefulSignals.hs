@@ -6,11 +6,24 @@ FlexibleInstances, FlexibleContexts, ScopedTypeVariables, TypeFamilies #-}
 -- it is immutable now, may want to add a mutable version with the same interface
 -- via type families
 
-module UI.PicoUI.Raw.Reactive.Idea0
+module UI.PicoUI.Raw.Reactive.StatefulSignals
+(
+    Listener,
+    StatefulSignal,
+
+    fmapM,
+    filterE,
+    unionWith,
+    combine,
+    unions,
+    accum,
+    
+    createStatefulSignal
+)
 
 where
 
-import Data.Map.Strict as Map hiding (unions)
+import Data.Map.Strict as Map hiding (unions, unionWith)
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad (when)
 

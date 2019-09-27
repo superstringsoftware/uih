@@ -30,7 +30,6 @@ dependencies:
 - transformers
 - mtl
 - containers
-- reactive-banana
 - linear
 - StateVar
 - random
