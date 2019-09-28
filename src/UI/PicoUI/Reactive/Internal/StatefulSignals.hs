@@ -6,7 +6,7 @@ FlexibleInstances, FlexibleContexts, ScopedTypeVariables, TypeFamilies #-}
 -- it is immutable now, may want to add a mutable version with the same interface
 -- via type families
 
-module UI.PicoUI.Raw.Reactive.StatefulSignals
+module UI.PicoUI.Reactive.Internal.StatefulSignals
 (
     Listener,
     StatefulSignal,
@@ -17,8 +17,12 @@ module UI.PicoUI.Raw.Reactive.StatefulSignals
     combine,
     unions,
     accum,
-    
-    createStatefulSignal
+
+    fire,
+    createStatefulSignal,
+    readVal,
+    modifyVal,
+    addListener
 )
 
 where
@@ -35,7 +39,7 @@ type Id = Int
 type Listener m a = a -> m ()
 
 data Signal m a = Signal {
-    value :: a,
+    value :: !a,
     listeners :: Map.Map Id (Listener m a),
     curId :: !Id
 }
@@ -44,18 +48,21 @@ type StatefulSignal m a = (m a, -- read value
     (a -> a) -> m (), -- modify value
     Listener m a -> m ()) -- add listener
 
-newSignal a = Signal {value = a, listeners = Map.empty, curId = 0}
+-- Getters for specific functions for our stateful object
+readVal :: MonadIO m => StatefulSignal m a -> m a
+readVal (x,_,_) = x
+modifyVal :: MonadIO m => StatefulSignal m a -> ((a -> a) -> m ())
+modifyVal (_,x,_) = x
+addListener :: MonadIO m => StatefulSignal m a -> (Listener m a -> m ())
+addListener (_,_,x) = x
+-- "fire signal eventValue" simply sets the value to eventValue and then fires it to all subscribers
+fire sig val = (modifyVal sig) (const val)
 
--- Well, since the below works we might as well create an explicit object with IORef-d state,
--- since then we can share functions code.
-{-
-data StatefulSignal m a = StatefulSignal {
-    signal    :: IORef (Signal m a),
-    readVal   :: StatefulSignal m a -> a,
-    modifyVal :: StatefulSignal m a -> a -> m (StatefulSignal m a),
-    addListen :: StatefulSignal m a -> Listener m a -> m (StatefulSignal m a)
-}
--}
+
+
+newtype StatefulSignalM m a = SS { unSS :: StatefulSignal m a }
+
+newSignal a = Signal {value = a, listeners = Map.empty, curId = 0}
 
 -- trying typical reactive interface
 
@@ -71,6 +78,12 @@ fmapM f sig = do
     let conn = (\x -> (modifyVal ret) (const (f x)) )
     (addListener sig) conn
     return ret
+
+-- what if we try this trick for functor?? 
+{-
+instance MonadIO m => Functor (StatefulSignalM m) where
+    fmap f siga = (SS <$> fmapM f (unSS siga))
+-}
 
 filterE :: MonadIO m => (a -> Bool) -> StatefulSignal m a -> m (StatefulSignal m a)
 filterE filt sig = do
@@ -112,6 +125,19 @@ unions signals = do
     let conn = (\x -> (modifyVal ret) (const x) )
     mapM_ (\sig -> (addListener sig) conn) signals
     return ret
+
+-- just a convenience function to make code look better    
+unionsM :: MonadIO m => [m (StatefulSignal m (a -> a)) ] -> m (StatefulSignal m (a -> a))
+-- unions [] = never
+-- unions xs = foldr1 (unionWith (.)) xs
+unionsM signals = do
+    s  <- (head signals)
+    iv <- readVal s
+    ret <- createStatefulSignal iv
+    let conn = (\x -> (modifyVal ret) (const x) )
+    mapM_ (\sig -> sig >>= \s -> (addListener s) conn) signals
+    return ret
+    
 
 -- accumE :: MonadMoment m => a -> Event (a -> a) -> m (Event a)
 -- accumB :: MonadMoment m => a -> Event (a -> a) -> m (Behavior a)
@@ -156,21 +182,16 @@ addListenerPure l r =
         ls' = Map.insert ci l ls
     in  r { listeners = ls', curId = ci + 1 }
 
---
-readVal (x,_,_) = x
-modifyVal (_,x,_) = x
-addListener (_,_,x) = x
--- connectors are the most important:
--- they take a function g :: b -> a -> a
--- it takes OLD value, incoming b value, and produces new a value.
--- they are used as a listener from "this" object to any Singal m b
-connector s g bval = (modifyVal s) (g bval)
-
 plusOne :: Int -> Int
 plusOne x = x + 1
 
+------------------------------------------------------------------------------------------
+-- REACTIVE BANANA EXAMPLES RECREATED
+------------------------------------------------------------------------------------------
+
 {-
-Ok let's try this again.
+Ok let's try this again, example from banana:
+
 eup   <- event0 bup   command
 edown <- event0 bdown command
 (counter :: Behavior Int)
@@ -181,13 +202,13 @@ edown <- event0 bdown command
 sink output [text :== show <$> counter] 
 -}
 
-_test_signals1 = do
+_test_signals = do
     eup   <- createStatefulSignal "Up"
     edown <- createStatefulSignal "Down"
-    f1 <- fmapM (const (+1) ) eup
-    f2 <- fmapM (const (subtract 1) ) edown
-    u  <- unions [f1,f2]
-    counter <- accum 0 u
+
+    counter <- unionsM [  fmapM (const (+1) ) eup
+                        , fmapM (const (subtract 1) ) edown
+                       ] >>= accum 0
 
     let sink i = putStrLn $ "Counter is: " ++ show i
     (addListener counter) sink
@@ -203,26 +224,6 @@ _test_signals1 = do
     inp
 
 
-_test_signals = do
-    eup <- createStatefulSignal "Click"
-    pl1 <- createStatefulSignal plusOne
-    let conn1 = (connector pl1) (\g -> const plusOne)
-    (addListener eup) conn1
-    
-    ac0 <- createStatefulSignal (0 :: Int)
-    let conn2 = (connector ac0) ($)
-    (addListener pl1) conn2
-
-    let sink i = putStrLn $ "Counter is: " ++ show i
-    (addListener ac0) sink
-
-    let inp = do
-            getLine 
-            (modifyVal eup) (const "Click") -- firing "click" events
-            inp
-    
-    putStrLn "Running network"
-    inp
 
 
 

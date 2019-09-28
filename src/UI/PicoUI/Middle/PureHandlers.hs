@@ -124,9 +124,13 @@ isBackspace :: Event -> Bool
 isBackspace (EBackspace _) = True
 isBackspace _ = False
 
+isQuit :: Event -> Bool
+isQuit (EQuit _) = True
+isQuit _ = False
+
 -- checks whether x,y coords didn't hit any widgets - so it's a main window as a source
 -- needed to process e.g. resetting focus etc
 isSourceMainWindow :: Event -> Bool
-isSourceMainWindow EQuit = True
+isSourceMainWindow (EQuit _) = True
 isSourceMainWindow evt = if (widgetIds $ source evt) == [] then True else False
 

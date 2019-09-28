@@ -9,3 +9,5 @@ record.-field = field record
 
 infix 8 ?=
 (?=) sv = get sv
+
+(•) = (.)

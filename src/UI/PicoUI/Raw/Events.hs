@@ -32,10 +32,19 @@ data Event = RawSDLEvent { source :: EventSource, sdlPayload :: SDL.EventPayload
     | EWindowResized { source :: EventSource, size :: V2 Int }
     | EBackspace { source :: EventSource }
     | ETextInput { source :: EventSource, txt :: Text }
-    | EQuit
+    | EQuit { source :: EventSource }
+    | ENonEvent { source :: EventSource }
     deriving (Show, Eq)
 
 castV2 (V2 x y) = V2 (fromIntegral x) (fromIntegral y)
 
 setSrcId i evt = evt { source = (source evt) { widgetIds = [i] } }
+
+emptySource :: SDL.Event -> EventSource
+emptySource (SDL.Event ts SDL.QuitEvent) = EventSource []  (V2 0 0) ts
+emptySource evt = EventSource []  (V2 0 0) (SDL.eventTimestamp evt)
+
+zeroSource = EventSource [] (V2 0 0) 0
+
+sourceId i  evt = EventSource [i] (V2 0 0) (SDL.eventTimestamp evt)
 

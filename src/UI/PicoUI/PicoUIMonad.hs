@@ -41,6 +41,10 @@ import UI.PicoUI.Raw.Events
 import UI.PicoUI.Middle.PureHandlers
 import qualified UI.PicoUI.Middle.AbstractWidgets as Mid
 
+import UI.PicoUI.Reactive.Internal.StatefulSignals
+
+import System.IO.Unsafe (unsafePerformIO)
+
 import PreludeFixes
 
 -- record to store current position etc of the cursor
@@ -87,11 +91,24 @@ data SDLState = SDLState {
   , autoScale     :: Bool -- apply scaling automatically so that same logical size is used on high dpi displays
 
   --, readerEvent   :: Event -- currently handling event value for event hadlers and Reader monad instance
+  , eventSource   :: StatefulSignal SDLIO Event
 } | SDLEmptyState deriving Show
 
+-- Stacking State and IO into a monad
+type SDLIO = StateT SDLState IO
 -- non-pure event handler running in SDLIO
 -- can (and will) encompass pure event handlers (see EventLoop)
 type EventHandler = Event -> SDLIO ()
+
+
+quickEvalSDLIO :: SDLIO a -> IO a
+quickEvalSDLIO act = evalStateT act SDLEmptyState
+
+unsafePerformSDLIO :: SDLIO a -> a
+unsafePerformSDLIO = unsafePerformIO • quickEvalSDLIO 
+
+instance {-# OVERLAPPING #-} Show a => Show (StatefulSignal SDLIO a) where
+    show = show • unsafePerformSDLIO • readVal
 
 instance Show EventHandler where show _ = "[EventHandler]"
 
@@ -169,9 +186,6 @@ initUI w h = recalculateRectangles w h
 instance Show Timer where
   show _ = "Timer present"
 
--- Stacking State and IO into a monad
-type SDLIO = StateT SDLState IO
-    
 -- needs to be read from config!
 mainWindowSettings = defaultWindow
   { windowBorder       = True
@@ -192,6 +206,12 @@ mainWindowSettings = defaultWindow
 -- dumpSDLState = get >>= liftIO . print . show
 
 -- main initialization functions
+initState :: SDLIO ()
+initState = do
+    es <- createStatefulSignal $ ENonEvent zeroSource
+    s  <- liftIO initStateIO
+    put $ s { eventSource = es } 
+
 initStateIO :: IO SDLState
 initStateIO = do 
     r <- try $ do
@@ -211,7 +231,7 @@ initStateIO = do
                 idCounter = 0,
                 curFocusId = -1,
                 curHoverId = -1
-                -- readerEvent = NonEvent
+                -- readerEvent = NonEvent                
                 }
     either (\e -> print (e::SDLException) >> fail "Could not initialize SDL")
            (\st -> putStrLn "Initialized SDL" >> return st) r

@@ -31,6 +31,7 @@ import UI.PicoUI.Middle.PureHandlers
 import UI.PicoUI.Middle.Handlers
 import UI.PicoUI.Middle.AbstractWidgets as P
 
+import UI.PicoUI.Reactive.Internal.StatefulSignals
 
 import PreludeFixes
 
@@ -40,7 +41,7 @@ handleResize w h = recalculateRectangles w h >> compileAllWidgets
 -- MAIN WRAPPER THAT HANDLES INITIALIZATION ETC
 runSDLIO program = runStateT 
     (do
-        (liftIO initStateIO) >>= put
+        initState
         window <- gets mainWindow
         V2 width height <- (window.-windowSize?=)
         V2 realw realh  <- window.-glGetDrawableSize   --vkGetDrawableSize
@@ -104,7 +105,7 @@ fireEvent ev = do
     event <- sdlEvent2Event ev
     -- handling event with main window default handlers
     mHndlMainWindow event
-    if event == EQuit then return True else return False
+    return $ isQuit event
 
 -- fire specific event to a handler in an ActiveWidget
 fireEventToWidget :: P.Event -> ActiveWidget -> SDLIO ()
@@ -200,12 +201,6 @@ registerWidgetWithHandlers w h hs = do
     modify' (\s-> s{idCounter = i, widgets = ws'})
     return i
     
-emptySource :: SDL.Event -> EventSource
-emptySource evt = EventSource []  (V2 0 0) (SDL.eventTimestamp evt)
-sourceId i  evt = EventSource [i] (V2 0 0) (SDL.eventTimestamp evt)
-
-
-
 -- converting SDL event to our event inside a monad - to be able to 
 -- retrieve widgets right away and fire events to them inside here as needed, too
 -- main function connecting SDL with our world
@@ -255,7 +250,7 @@ sdlEvent2Event event =
                 let src           = emptySource event
                     size@(V2 w h) = castV2 $ SDL.windowResizedEventSize dt
                 in  handleResize w h >> pure (EWindowResized src size)
-            SDL.QuitEvent -> pure EQuit
+            SDL.QuitEvent -> pure $ EQuit $ emptySource event
             -- keyboard events are a bit tricky
             -- need to add checks whether TEXT INPUT is on, otherwise process keypresses differently potentially
             -- also, may be easier to move this to filters and here simply send an event further
