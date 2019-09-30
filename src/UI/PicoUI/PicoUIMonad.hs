@@ -208,6 +208,7 @@ mainWindowSettings = defaultWindow
 -- main initialization functions
 initState :: SDLIO ()
 initState = do
+    -- main SDL events to our events transforming Signal Source!
     es <- createStatefulSignal $ ENonEvent zeroSource
     s  <- liftIO initStateIO
     put $ s { eventSource = es } 

@@ -128,6 +128,10 @@ isQuit :: Event -> Bool
 isQuit (EQuit _) = True
 isQuit _ = False
 
+isRawSDL :: Event -> Bool
+isRawSDL (RawSDLEvent _ _) = True
+isRawSDL _ = False
+
 -- checks whether x,y coords didn't hit any widgets - so it's a main window as a source
 -- needed to process e.g. resetting focus etc
 isSourceMainWindow :: Event -> Bool

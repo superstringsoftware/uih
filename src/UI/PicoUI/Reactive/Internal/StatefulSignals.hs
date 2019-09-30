@@ -12,7 +12,7 @@ module UI.PicoUI.Reactive.Internal.StatefulSignals
     StatefulSignal,
 
     fmapM,
-    filterE,
+    filterS,
     unionWith,
     combine,
     unions,
@@ -85,11 +85,11 @@ instance MonadIO m => Functor (StatefulSignalM m) where
     fmap f siga = (SS <$> fmapM f (unSS siga))
 -}
 
-filterE :: MonadIO m => (a -> Bool) -> StatefulSignal m a -> m (StatefulSignal m a)
-filterE filt sig = do
+filterS :: MonadIO m => (a -> Bool) -> StatefulSignal m a -> m (StatefulSignal m a)
+filterS filt sig = do
     (initVal :: a) <- readVal sig
     ret <- createStatefulSignal initVal
-    let conn = (\x -> when (filt x) $ (modifyVal ret) id )
+    let conn = (\x -> when (filt x) $ (modifyVal ret) (const x) )
     (addListener sig) conn
     return ret
 
@@ -126,7 +126,7 @@ unions signals = do
     mapM_ (\sig -> (addListener sig) conn) signals
     return ret
 
--- just a convenience function to make code look better    
+-- just a convenience function to make code look better - sort of a lifted unions
 unionsM :: MonadIO m => [m (StatefulSignal m (a -> a)) ] -> m (StatefulSignal m (a -> a))
 -- unions [] = never
 -- unions xs = foldr1 (unionWith (.)) xs
@@ -141,6 +141,7 @@ unionsM signals = do
 
 -- accumE :: MonadMoment m => a -> Event (a -> a) -> m (Event a)
 -- accumB :: MonadMoment m => a -> Event (a -> a) -> m (Behavior a)
+-- takes initial value and a signal of functions and applies it with each change
 accum :: MonadIO m => a -> StatefulSignal m (a->a) -> m (StatefulSignal m a)
 accum initVal sig = do
     ret <- createStatefulSignal initVal
@@ -163,12 +164,14 @@ createStatefulSignal
           (a -> a) -> m (), -- modify value
           Listener m a -> m ()) -- add listener          
 createStatefulSignal initVal = do
+    -- liftIO $ putStrLn "Creating stateful signal"
     cache <- liftIO $ newIORef (newSignal initVal)
     let read = value <$> liftIO (readIORef cache)
     let mod f = do
             v <- liftIO $ readIORef cache
             let val = f (value v)
             let ls = listeners v
+            -- liftIO (putStrLn $ "Calling modify with " ++ show (length ls) ++ " listeners")
             liftIO $ writeIORef cache v { value = val }
             -- run listeners:
             mapM_ (\l -> l val ) ls
@@ -210,8 +213,14 @@ _test_signals = do
                         , fmapM (const (subtract 1) ) edown
                        ] >>= accum 0
 
-    let sink i = putStrLn $ "Counter is: " ++ show i
+    list    <- unionsM [  fmapM (:) eup
+                        , fmapM (const tail) edown
+                       ] >>= accum []
+
+    let sink  i = putStrLn $ "Counter is: " ++ show i
+    let sink1 i = putStrLn $ "List is: " ++ show i
     (addListener counter) sink
+    (addListener list) sink1
 
     let inp = do
             l <- getLine 

@@ -55,6 +55,12 @@ runSDLIO program = runStateT
         if autos then rendererScale ren $= scale else pure ()
         -- need to init fonts after the scale has been set
         initFonts
+        -- setup the initial FRP network
+        let logSink e = liftIO (putStrLn ("[EVENT][" ++ show (timestamp $ source e) ++ "]") >> putStrLn (show e))
+        sdlSource <- gets eventSource
+        sdlS' <- filterS (not • isRawSDL) sdlSource
+        (addListener sdlS') logSink
+        -- (addListener sdlSource) logSink
         -- running the program
         program
         handleResize (fromIntegral width) (fromIntegral height)
@@ -103,6 +109,12 @@ fireEvent :: SDL.Event -> SDLIO Bool
 fireEvent ev = do
     -- this fires an event to all widgets automatically, so we only need to fire to the other handlers
     event <- sdlEvent2Event ev
+    -- firing in the reactive sdl source - eventually all logic needs to move here!!!
+    sdlSource <- gets eventSource
+    -- (modifyVal sdlSource) (const event)
+    fire sdlSource event
+    -- liftIO $ putStrLn $ "Firing event: " ++ show event
+    -- fire <$> (gets eventSource) <*> pure event
     -- handling event with main window default handlers
     mHndlMainWindow event
     return $ isQuit event
@@ -205,7 +217,7 @@ registerWidgetWithHandlers w h hs = do
 -- retrieve widgets right away and fire events to them inside here as needed, too
 -- main function connecting SDL with our world
 sdlEvent2Event :: SDL.Event -> SDLIO P.Event
-sdlEvent2Event event = 
+sdlEvent2Event event =
     case SDL.eventPayload event of
             p@(SDL.MouseButtonEvent mb) -> 
                 -- MouseButtonEventData {mouseButtonEventWindow = Just (Window 0x00007f9500c38fb0), 
@@ -224,7 +236,7 @@ sdlEvent2Event event =
                     evt    = cons src clicks
                     -- firing event to all widgets right away, updating source and returning the event
                 in  if motion == Released 
-                    then fireEventToWidgets pos' evt >>= \ids -> pure $ evt { source = src { widgetIds = ids } } 
+                    then fireEventToWidgets pos' evt >>= (\ids -> pure $ evt { source = src { widgetIds = ids } } )
                     else pure $ RawSDLEvent (emptySource event) p
             SDL.MouseMotionEvent me ->  
                 let SDL.P pos = SDL.mouseMotionEventPos me
