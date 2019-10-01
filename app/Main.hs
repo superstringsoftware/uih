@@ -37,10 +37,11 @@ test_widgets = mdo
     -- you got a widget with behavior.
     w <- tr2 <^$> eHover >>= accum testLabel3
     let logW wi = liftIO $ putStrLn $ "Widget is: " ++ (unpack $ text (wi::AbstractWidget) )
-    sink w logW
-    clickW <- onClick w
+    -- sink w logW
+    -- clickW <- onClickE w
     let logClick e = liftIO $ putStrLn $ "Click event: " ++ show e
-    sink clickW logClick
+    -- sink clickW logClick
+    onClickAct w logClick
     -- liftIO $ putStrLn "Testing reactive"
 
 -- fmapM :: MonadIO m => (Event -> (Widget -> Widget) ) -> StatefulSignal m Event -> m (StatefulSignal m (Widget -> Widget))

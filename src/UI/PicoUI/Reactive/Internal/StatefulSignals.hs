@@ -21,9 +21,12 @@ module UI.PicoUI.Reactive.Internal.StatefulSignals
     unions,
     accum,
     apply,
+    applyE,
     liftA2M,
     depend,
     filterApply,
+    filterApplyE,
+    filterJust,
 
     fire,
     sink,
@@ -102,7 +105,7 @@ fmapM :: MonadIO m => (a -> b) -> StatefulSignal m a -> m (StatefulSignal m b)
 fmapM f sig = do
     initVal <- readVal sig
     ret <- createStatefulSignal (f initVal)
-    let conn = (\x -> (modifyVal ret) (const (f x)) )
+    let conn = (\x -> (modifyVal ret) (const $! (f x)) )
     (addListener sig) conn
     return ret
 
@@ -149,6 +152,11 @@ filterS filt sig = do
     (addListener sig) conn
     return ret
 
+filterJust :: MonadIO m => StatefulSignal m (Maybe a) -> m (StatefulSignal m (Maybe a))
+filterJust = filterS (\e -> case e of
+                                        Nothing -> False
+                                        Just _  -> True ) 
+
 
 -- we don't really have simultaneous events in our model, do we???
 -- so this function is like combine
@@ -179,14 +187,41 @@ apply fsig sig = do
 
 f <^@> s = apply f s
 
+-- see the note for filterApplyE
+applyE :: MonadIO m => StatefulSignal m (a -> b) -> StatefulSignal m a -> m (StatefulSignal m b)
+applyE fsig sig = do
+    inf <- readVal fsig
+    inv <- readVal sig
+    ret <- createStatefulSignal (inf inv)
+    let conn1 = (\f -> readVal sig  >>= \v -> (modifyVal ret) (const (f v)) )
+    (addListener fsig) conn1
+    return ret
+
+
 -- only let the signal through if a filter signal is true
 filterApply :: MonadIO m => StatefulSignal m (a -> Bool) -> StatefulSignal m a -> m (StatefulSignal m a)
 filterApply filtSig sig = do
     inv <- readVal sig
     ret <- createStatefulSignal inv
-    let conn = (\e -> readVal filtSig >>= \f -> when (f e) $ (modifyVal ret) (const e) )
-    (addListener sig) conn
+    let conn1 = (\f -> readVal sig     >>= \e -> when (f e) $ (modifyVal ret) (const e) )
+    let conn2 = (\e -> readVal filtSig >>= \f -> when (f e) $ (modifyVal ret) (const e) )
+    (addListener filtSig) conn1
+    (addListener     sig) conn2
     return ret
+
+-- ok, the above case showed (when we tried to define on click) that the difference between Behaviors and
+-- Events is not just aesthetics. E.g., we need to ONLY apply filter when the Filter changes in some cases -
+-- so in essence, it's an event. For now, introducing a different function, that only listens to changes
+-- in the first and not the 2nd.    
+-- Probably need the same for apply??
+filterApplyE :: MonadIO m => StatefulSignal m (a -> Bool) -> StatefulSignal m a -> m (StatefulSignal m a)
+filterApplyE filtSig sig = do
+    inv <- readVal sig
+    ret <- createStatefulSignal inv
+    let conn1 = (\f -> readVal sig     >>= \e -> when (f e) $ (modifyVal ret) (const e) )
+    (addListener filtSig) conn1
+    return ret
+    
 
 -- analog Applicative liftA2, liftA2M f a b = f <^$> a <^@> b
 liftA2M :: MonadIO m => (a -> b -> c) -> StatefulSignal m a -> StatefulSignal m b -> m (StatefulSignal m c)
@@ -279,7 +314,7 @@ createStatefulSignal initVal = do
             v <- liftIO $ readIORef cache
             let val = f (value v)
             let ls = listeners v
-            -- liftIO (putStrLn $ "Calling modify with " ++ show (length ls) ++ " listeners")
+            -- liftIO (putStrLn $ "Calling modify with " ++ show (length ls) ++ " listeners" )
             liftIO $ writeIORef cache v { value = val }
             -- run listeners:
             mapM_ (\l -> l val ) ls

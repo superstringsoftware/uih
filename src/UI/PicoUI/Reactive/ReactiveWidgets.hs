@@ -15,6 +15,7 @@ import Color
 -- import UI.PicoUI.Raw.Widgets
 
 import Control.Monad.Trans.State.Strict (gets)
+import Control.Monad.IO.Class (liftIO, MonadIO)
 
 import UI.PicoUI.Raw.Events as P
 import UI.PicoUI.PicoUIMonad as Pico
@@ -40,16 +41,41 @@ data EventfulWidget = EventfulWidget {
 -- fmapM isHovering: (Event -> (Widget->Bool)) -> Signal Event -> Signal (Widget->Bool)
 -- filterApply: Signal (Widget->Bool) -> Signal Widget -> Signal Widget
 -- returns a signal that only lets click events on the given widget through!
+-- Ok, we need a better way to do it. !!!
+-- This works, but signal contains a widget, and we probably want an event
 onClick :: ReactiveWidget -> SDLIO ReactiveWidget
 onClick w = do
     events <- clickEvents <$> gets eventSources
-    ret <- fmapM isHovering events >>= \s -> filterApply s w
+    -- let logE e = liftIO $ putStrLn $ "Click Event: " ++ show e
+    -- sink events logE
+    ret <- fmapM isHovering events >>= \s -> filterApplyE s w
+    -- ret <- fmapM isHoveringW w >>= \s -> filterApplyE s events
     return ret
 
 isHovering :: P.Event -> Widget -> Bool
 isHovering e w = let (V2 x y) = pos $ source e
                  in  if isInWidget x y w then True else False
 
+isHoveringW :: Widget -> P.Event -> Bool
+isHoveringW w e = isHovering e w
+
+isHoveringE :: P.Event -> Widget -> Maybe (P.Event)
+isHoveringE e w = let (V2 x y) = pos $ source e
+                 in  if isInWidget x y w then Just e else Nothing
+
+-- returns a signal with click events for a specific widget
+onClickE :: ReactiveWidget -> SDLIO (StatefulSignal SDLIO (Maybe P.Event))
+onClickE w = do    
+    events <- clickEvents <$> gets eventSources
+    ret <- fmapM isHoveringE events >>= \f -> applyE f w >>= filterJust
+    return ret      
+    
+-- add a listener for on click events    
+onClickAct :: ReactiveWidget -> (P.Event -> SDLIO ()) -> SDLIO ()
+onClickAct w act = do
+    sig <- onClickE w
+    let conn (Just e) = act e
+    (addListener sig) conn
 
 
 {-
