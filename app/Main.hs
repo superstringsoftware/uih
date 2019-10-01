@@ -1,4 +1,5 @@
-{-# LANGUAGE OverloadedStrings, DuplicateRecordFields, OverloadedLists #-}
+{-# LANGUAGE OverloadedStrings, DuplicateRecordFields, OverloadedLists, 
+  RecursiveDo, ScopedTypeVariables #-}
 module Main where
 
 import Color
@@ -14,10 +15,47 @@ import UI.PicoUI.EventLoop
 import UI.PicoUI.Middle.PureHandlers
 import UI.PicoUI.Middle.Handlers
 import UI.PicoUI.Middle.AbstractWidgets
+import UI.PicoUI.Raw.Events (timestamp, source, Event, pos)
 
 -- import Data.Foldable
 
 import qualified SDL as SDL
+
+import UI.PicoUI.Reactive.Internal.StatefulSignals
+import UI.PicoUI.Reactive.ReactiveWidgets
+
+import PreludeFixes
+
+
+test_widgets :: SDLIO ()
+test_widgets = mdo
+    sdlSource <- allEvents <$> gets eventSources
+    eHover <- filterS isHover sdlSource
+    let logSink e = liftIO (putStrLn ("[HOVER EVENT][" ++ show (timestamp $ source e) ++ "]") >> putStrLn (show e))
+    -- Ok, turns out it works PERFECTLY via basic primitives!!! Just fmap and accum in this case.
+    -- So, define behavior signals, union them into a->a function signal, and accum on the pure widget - 
+    -- you got a widget with behavior.
+    w <- tr2 <^$> eHover >>= accum testLabel3
+    let logW wi = liftIO $ putStrLn $ "Widget is: " ++ (unpack $ text (wi::AbstractWidget) )
+    sink w logW
+    clickW <- onClick w
+    let logClick e = liftIO $ putStrLn $ "Click event: " ++ show e
+    sink clickW logClick
+    -- liftIO $ putStrLn "Testing reactive"
+
+-- fmapM :: MonadIO m => (Event -> (Widget -> Widget) ) -> StatefulSignal m Event -> m (StatefulSignal m (Widget -> Widget))
+
+tr2 :: Event -> Widget -> Widget
+tr2 e w = if tr1 e w then (setText "Hovering!" w) else (setText "NOT Hovering :(" w)
+
+setText :: Text -> Widget -> Widget
+setText txt w = w { text = txt }
+
+tr1 :: Event -> Widget -> Bool
+tr1 e w = let (V2 x y) = pos $ source e
+          in  if isInWidget x y w then True else False
+-- w { text = "Hovering!" } else w { text = "NOT Hovering :(" }
+
 
 -- import SDL.Raw.Types (Rect(..))
 testProgram :: SDLIO ()
@@ -28,6 +66,7 @@ testProgram =
     [filteredHandlerSDLIO isStoppedHover (\e -> liftIO $ putStrLn $ "Stopped hovering on: " ++ show e), setFocusOnClick ] -- IO handler for hover
   >> registerWidgetWithHandler testML pure  -- multiline widget
   >> registerWidgetWithHandlers testLabel2 hndlEditText [setFocusOnClick] -- editable widget
+  >> test_widgets
   >> pure ()
     
 redOn2Click = filteredHandler (isLeftClick 2) (changeBackground $ BGColor $ mRed 500)
@@ -74,6 +113,16 @@ testLabel2 = Label {
   background = BGColor $ mGrey 700, 
   cacheRect = V4 0 0 0 0
 }
+
+testLabel3 = Label {
+  fontData = FontDataDefault,
+  text = "Test Reactive",
+  valign = CenterAlign, halign = CenterAlign,
+  layout = l_TL 140 40 200 60,
+  background = BGColor $ mGrey 700, 
+  cacheRect = V4 140 40 200 60
+}
+
 
 
 

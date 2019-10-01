@@ -74,6 +74,13 @@ data InputDevicesState = InputDevicesState {
 
 } deriving Show
 
+data EventSources = EventSources {
+    allEvents      :: StatefulSignal SDLIO Event
+  , clickEvents    :: StatefulSignal SDLIO Event
+  , textEvents     :: StatefulSignal SDLIO Event
+  , keyboardEvents :: StatefulSignal SDLIO Event
+} deriving Show
+
 -- record to keep our current SDL subsystem state
 data SDLState = SDLState {
     mainWindow    :: Window
@@ -91,7 +98,7 @@ data SDLState = SDLState {
   , autoScale     :: Bool -- apply scaling automatically so that same logical size is used on high dpi displays
 
   --, readerEvent   :: Event -- currently handling event value for event hadlers and Reader monad instance
-  , eventSource   :: StatefulSignal SDLIO Event
+  , eventSources  :: EventSources
 } | SDLEmptyState deriving Show
 
 -- Stacking State and IO into a monad
@@ -208,10 +215,17 @@ mainWindowSettings = defaultWindow
 -- main initialization functions
 initState :: SDLIO ()
 initState = do
-    -- main SDL events to our events transforming Signal Source!
+    -- initializing event sources - they are SEPARATE, as event dispatching function
+    -- will filter them when converting SDL events, as this is going to be more efficient
     es <- createStatefulSignal $ ENonEvent zeroSource
+    -- ce <- createStatefulSignal $ ENonEvent zeroSource
+    -- for testing setting up ce via filter
+    ce <- filterS isAnyClick es
+    te <- createStatefulSignal $ ENonEvent zeroSource
+    ke <- createStatefulSignal $ ENonEvent zeroSource
+    let eS = EventSources es ce te ke
     s  <- liftIO initStateIO
-    put $ s { eventSource = es } 
+    put $ s { eventSources = eS } 
 
 initStateIO :: IO SDLState
 initStateIO = do 

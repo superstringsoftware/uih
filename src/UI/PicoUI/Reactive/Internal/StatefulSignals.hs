@@ -12,17 +12,26 @@ module UI.PicoUI.Reactive.Internal.StatefulSignals
     StatefulSignal,
 
     fmapM,
+    (<^$>),
+    (<^$),
+    (<^@>),
     filterS,
     unionWith,
     combine,
     unions,
     accum,
+    apply,
+    liftA2M,
+    depend,
+    filterApply,
 
     fire,
+    sink,
     createStatefulSignal,
     readVal,
     modifyVal,
-    addListener
+    addListener,
+    addListenerWRemove
 )
 
 where
@@ -32,6 +41,11 @@ import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad (when)
 
 import Data.IORef
+
+infixl 4 <^$>
+infixl 4 <^$
+-- infixl 4 $$>
+infixl 4 <^@>
 
 type Id = Int
 
@@ -44,23 +58,36 @@ data Signal m a = Signal {
     curId :: !Id
 }
 
+
 type StatefulSignal m a = (m a, -- read value
     (a -> a) -> m (), -- modify value
-    Listener m a -> m ()) -- add listener
+    Listener m a -> m (), -- add listener
+    Listener m a -> m (m ())) -- add listener and return remove listener action
 
 -- Getters for specific functions for our stateful object
+-- reads the value
 readVal :: MonadIO m => StatefulSignal m a -> m a
-readVal (x,_,_) = x
-modifyVal :: MonadIO m => StatefulSignal m a -> ((a -> a) -> m ())
-modifyVal (_,x,_) = x
-addListener :: MonadIO m => StatefulSignal m a -> (Listener m a -> m ())
-addListener (_,_,x) = x
+readVal (x,_,_,_) = x
+-- modifies the value and notifies listeners
+modifyVal :: MonadIO m => StatefulSignal m a -> (a -> a) -> m ()
+modifyVal (_,x,_,_) = x
+-- adds a listener
+addListener :: MonadIO m => StatefulSignal m a -> Listener m a -> m ()
+addListener (_,_,x,_) = x
+-- add listener, return remove function
+addListenerWRemove :: MonadIO m => StatefulSignal m a -> Listener m a -> m (m())
+addListenerWRemove (_,_,_,x) = x
 -- "fire signal eventValue" simply sets the value to eventValue and then fires it to all subscribers
 fire sig val = (modifyVal sig) (const val)
+-- listens to changes in the signal and executes an action in the monad in response
+-- again, a simple shortcut to addListener
+sink :: MonadIO m => StatefulSignal m a -> (a -> m()) -> m ()
+sink sig act = (addListener sig) act
 
 
 
-newtype StatefulSignalM m a = SS { unSS :: StatefulSignal m a }
+
+-- newtype StatefulSignalM m a = SS { unSS :: StatefulSignal m a }
 
 newSignal a = Signal {value = a, listeners = Map.empty, curId = 0}
 
@@ -79,12 +106,41 @@ fmapM f sig = do
     (addListener sig) conn
     return ret
 
--- what if we try this trick for functor?? 
-{-
-instance MonadIO m => Functor (StatefulSignalM m) where
-    fmap f siga = (SS <$> fmapM f (unSS siga))
--}
+-- using ^ to indicate it's monadic    
+f <^$> sig = fmapM f sig
+x <^$  sig = tagM x sig  
 
+-- analog of Functor's (<$):: a -> f b -> f a  
+tagM :: MonadIO m => b -> StatefulSignal m a -> m (StatefulSignal m b)
+tagM val sig = do
+    ret <- createStatefulSignal val
+    let conn = (\x -> (modifyVal ret) (const val) )
+    (addListener sig) conn
+    return ret
+
+-- probably the most versatile function:
+-- takes a *pure* function from signal b and an existing value of signal a, that produces a new value of signal a
+-- makes signal a depend on signal b via applying this function.
+-- This function allowed to implement some non-standard widget functionality, e.g.
+-- checking hover events via event coordinates etc. Also, since it allows establishing links
+-- after the signals were created, gives a lot of flexibility. Maybe at the expense of theoretical soundness.
+
+-- OK, TURNS OUT IT CAN EASILY BE CHANGED INTO fmapM f >>= accum ... !!!
+depend :: MonadIO m => (b -> a -> a) -> StatefulSignal m a -> StatefulSignal m b -> m ()
+depend f sig onSig = do
+    let conn b = (modifyVal sig) (f b)
+    (addListener onSig) conn
+    
+    
+
+-- Filter is simple on one hand, on the other - take a case of SDL, where 
+-- we do want to filter events into different types.
+-- This straightforward approach will have us go AS MANY TIMES AS THERE ARE FILTERS
+-- through the list of subscribers, even though more efficient would be to go through it once
+-- and dispatch only correct events to correct listeners.
+
+-- One approach to make it: have another map that maps filter functions to signals and make dispatching
+-- in one go. So, instead of creating a new signal here, create only one and then expand it.
 filterS :: MonadIO m => (a -> Bool) -> StatefulSignal m a -> m (StatefulSignal m a)
 filterS filt sig = do
     (initVal :: a) <- readVal sig
@@ -92,6 +148,7 @@ filterS filt sig = do
     let conn = (\x -> when (filt x) $ (modifyVal ret) (const x) )
     (addListener sig) conn
     return ret
+
 
 -- we don't really have simultaneous events in our model, do we???
 -- so this function is like combine
@@ -105,6 +162,53 @@ unionWith f sig1 sig2 = do
     (addListener sig2) conn
     return ret 
 
+-- IMPOSSIBLE TO IMPLEMENT IN OUR MODEL:
+-- we need to store reference to the first signal somewhere, and we can't.
+-- way around it: implement special "listeners" that hook into several signals at once?
+-- an attempt to make it work:
+apply :: MonadIO m => StatefulSignal m (a -> b) -> StatefulSignal m a -> m (StatefulSignal m b)
+apply fsig sig = do
+    inf <- readVal fsig
+    inv <- readVal sig
+    ret <- createStatefulSignal (inf inv)
+    let conn1 = (\f -> readVal sig  >>= \v -> (modifyVal ret) (const (f v)) )
+    let conn2 = (\v -> readVal fsig >>= \f -> (modifyVal ret) (const (f v)) )
+    (addListener fsig) conn1
+    (addListener  sig) conn2
+    return ret
+
+f <^@> s = apply f s
+
+-- only let the signal through if a filter signal is true
+filterApply :: MonadIO m => StatefulSignal m (a -> Bool) -> StatefulSignal m a -> m (StatefulSignal m a)
+filterApply filtSig sig = do
+    inv <- readVal sig
+    ret <- createStatefulSignal inv
+    let conn = (\e -> readVal filtSig >>= \f -> when (f e) $ (modifyVal ret) (const e) )
+    (addListener sig) conn
+    return ret
+
+-- analog Applicative liftA2, liftA2M f a b = f <^$> a <^@> b
+liftA2M :: MonadIO m => (a -> b -> c) -> StatefulSignal m a -> StatefulSignal m b -> m (StatefulSignal m c)
+liftA2M f sigA sigB = do
+    iv1 <- readVal sigA
+    iv2 <- readVal sigB
+    ret <- createStatefulSignal (f iv1 iv2)
+    let conn1 = (\v1 -> readVal sigB >>= \v2 -> (modifyVal ret) (const (f v1 v2)) )
+    let conn2 = (\v2 -> readVal sigA >>= \v1 -> (modifyVal ret) (const (f v1 v2)) )
+    (addListener sigA) conn1
+    (addListener sigB) conn2
+    return ret
+
+
+-- combines 2 signals of different types with a combination function into a third one    
+{-
+unionAB :: MonadIO m => (a -> b -> c) -> StatefulSignal m a -> StatefulSignal m b -> m (StatefulSignal m c)
+unionAB f sigA sigB = do
+    iv1 <- readVal sig1
+    iv2 <- readVal sig2
+-}
+
 -- analog of Semigroup <>    
 combine :: (MonadIO m, Semigroup a) => StatefulSignal m a -> StatefulSignal m a -> m (StatefulSignal m a)
 combine sig1 sig2 = do
@@ -116,6 +220,7 @@ combine sig1 sig2 = do
     (addListener sig2) conn
     return ret
 
+-- combines a list of function signals into one signal    
 unions :: MonadIO m => [StatefulSignal m (a -> a)] -> m (StatefulSignal m (a -> a))
 -- unions [] = never
 -- unions xs = foldr1 (unionWith (.)) xs
@@ -142,6 +247,7 @@ unionsM signals = do
 -- accumE :: MonadMoment m => a -> Event (a -> a) -> m (Event a)
 -- accumB :: MonadMoment m => a -> Event (a -> a) -> m (Behavior a)
 -- takes initial value and a signal of functions and applies it with each change
+-- useful in combination with unions...
 accum :: MonadIO m => a -> StatefulSignal m (a->a) -> m (StatefulSignal m a)
 accum initVal sig = do
     ret <- createStatefulSignal initVal
@@ -157,12 +263,14 @@ accum initVal sig = do
 -- type. 
 -- Is this an issue?
 -- createStatefulSignal :: a -> ...
+
 createStatefulSignal
   :: MonadIO m => a
      -> m
           (m a, -- read value
           (a -> a) -> m (), -- modify value
-          Listener m a -> m ()) -- add listener          
+          Listener m a -> m (), -- add listener     
+          Listener m a -> m (m ())) -- add listener and return remove listener function    
 createStatefulSignal initVal = do
     -- liftIO $ putStrLn "Creating stateful signal"
     cache <- liftIO $ newIORef (newSignal initVal)
@@ -176,14 +284,27 @@ createStatefulSignal initVal = do
             -- run listeners:
             mapM_ (\l -> l val ) ls
     let addL l = liftIO $ modifyIORef' cache (addListenerPure l)
-    pure (read, mod, addL)
+    -- add listener and return a remove listener function
+    -- CAN BE OPTIMIZED TO NOT READ CACHE SEVERAL TIMES
+    let addLR l = do
+            addL l
+            id <- curId <$> (liftIO $ readIORef cache)
+            let removeL = liftIO $ modifyIORef' cache (removeListenerPure id) 
+            pure removeL           
+    pure (read, mod, addL, addLR)
 
 addListenerPure :: Listener m a -> Signal m a -> Signal m a
 addListenerPure l r = 
     let ls  = listeners r
-        ci  = curId r
+        ci  = (curId r) + 1
         ls' = Map.insert ci l ls
-    in  r { listeners = ls', curId = ci + 1 }
+    in  r { listeners = ls', curId = ci }
+
+removeListenerPure :: Id -> Signal m a -> Signal m a    
+removeListenerPure i r = 
+    let ls  = listeners r
+        ls' = Map.delete i ls
+    in  r { listeners = ls' }
 
 plusOne :: Int -> Int
 plusOne x = x + 1
@@ -209,8 +330,8 @@ _test_signals = do
     eup   <- createStatefulSignal "Up"
     edown <- createStatefulSignal "Down"
 
-    counter <- unionsM [  fmapM (const (+1) ) eup
-                        , fmapM (const (subtract 1) ) edown
+    counter <- unionsM [  (+1) <^$ eup
+                        , (subtract 1) <^$ edown
                        ] >>= accum 0
 
     list    <- unionsM [  fmapM (:) eup

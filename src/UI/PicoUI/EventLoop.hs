@@ -37,6 +37,7 @@ import PreludeFixes
 
 handleResize w h = recalculateRectangles w h >> compileAllWidgets
 
+
 -- runSDLIO :: SDLIO a -> SDLState -> IO (a, SDLState)
 -- MAIN WRAPPER THAT HANDLES INITIALIZATION ETC
 runSDLIO program = runStateT 
@@ -57,9 +58,9 @@ runSDLIO program = runStateT
         initFonts
         -- setup the initial FRP network
         let logSink e = liftIO (putStrLn ("[EVENT][" ++ show (timestamp $ source e) ++ "]") >> putStrLn (show e))
-        sdlSource <- gets eventSource
-        sdlS' <- filterS (not • isRawSDL) sdlSource
-        (addListener sdlS') logSink
+        sdlSources <- allEvents <$> gets eventSources
+        -- sdlS' <- filterS (not • isRawSDL) sdlSource
+        -- (addListener sdlS') logSink
         -- (addListener sdlSource) logSink
         -- running the program
         program
@@ -110,7 +111,7 @@ fireEvent ev = do
     -- this fires an event to all widgets automatically, so we only need to fire to the other handlers
     event <- sdlEvent2Event ev
     -- firing in the reactive sdl source - eventually all logic needs to move here!!!
-    sdlSource <- gets eventSource
+    sdlSource <- allEvents <$> gets eventSources
     -- (modifyVal sdlSource) (const event)
     fire sdlSource event
     -- liftIO $ putStrLn $ "Firing event: " ++ show event

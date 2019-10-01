@@ -116,9 +116,18 @@ isStoppedHover :: Event -> Bool
 isStoppedHover (EMouseStoppedHover _) = True
 isStoppedHover _ = False
 
+isAnyClick :: Event -> Bool
+isAnyClick (ELeftClick _ _) = True
+isAnyClick (ERightClick _ _) = True
+isAnyClick _ = False
+
 isLeftClick :: Word8 -> Event -> Bool
 isLeftClick i (ELeftClick _ num) = if (num == i) then True else False
 isLeftClick _ _ = False
+
+isRightClick :: Word8 -> Event -> Bool
+isRightClick i (ERightClick _ num) = if (num == i) then True else False
+isRightClick _ _ = False
 
 isBackspace :: Event -> Bool
 isBackspace (EBackspace _) = True

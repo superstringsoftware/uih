@@ -140,6 +140,7 @@ data AbstractWidget =
     deriving (Show, Eq)
 
 -- different layout options and the rectangle conventions corresponding to them
+-- FIXME: *Center* series is not defined yet!!!
 data Layout = 
     -- EXPLICIT:
     TopLeft (V4 Int)          -- x y w h (same as StickT, so top only)
