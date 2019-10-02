@@ -42,10 +42,13 @@ test_widgets = mdo
     -- w <- tr2 <^$> eHover >>= accum testLabel3
     -- creating a widget with behavior
     w <- unionsM [ filterHoverApply (setText "Hovering!") (setText "NOT Hovering :(") <^$> eHover,
-                   filterHoverApply (setText "CLICKED!") (setText "NOT Clicked :(") <^$> eClick
+                   filterHoverApply (setText "CLICKED!") (setText "NOT Clicked :(") <^$> eClick,
+                   reactiveBackspace sdlSource,
+                   reactiveAppend sdlSource
                  ] >>= accum testLabel3
     -- creating Raw widget that runs compilation each time a widget is changed
     registerReactiveWidget w
+    -- NOW THE ONLY THING THAT'S MISSING IS RESIZE RECALCULATION!!!
     let logW wi = liftIO $ putStrLn $ "Widget is: " ++ (unpack $ text (wi::AbstractWidget) )
     -- sink w logW
     -- clickW <- onClickE w

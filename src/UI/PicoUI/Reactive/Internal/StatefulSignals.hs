@@ -129,6 +129,9 @@ fmapMM f sig = do
     (addListener sig) conn        
     return ret
 
+-- sort of like pure in Applicative but again, since we are in a monad...    
+-- pureM :: MonadIO m => a -> m (StatefulSignal m a)
+
 
 -- using ^ to indicate it's monadic    
 f <^$> sig = fmapM f sig

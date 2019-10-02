@@ -7,7 +7,7 @@ module UI.PicoUI.Reactive.ReactiveWidgets where
 
 import SDL as SDL hiding (get)
 import SDL.Font
-import Data.Text hiding (any)
+import Data.Text as T hiding (any)
 import Data.Word
 
 import Color
@@ -43,10 +43,35 @@ data EventfulWidget = EventfulWidget {
 -- The only (possible) drawback - need to be careful to run the network in 1 thread, but that was the initial design anyway.
 
 -- For now, we are simply adding raw widget signals to the map in the monad and running render on them periodically
+registerReactiveWidget :: StatefulSignal SDLIO Widget -> SDLIO ()
 registerReactiveWidget w = do
     rawW <- fmapMM (P.compile2Widget False) w
     insertRawWidget rawW 
 
+-- isBackspace (alterText (\txt -> if txt == "" then txt else init txt))  
+-- alterText :: (Text -> Text) -> AbstractWidget -> AbstractWidget  
+-- filterS :: MonadIO m => (a -> Bool) -> StatefulSignal m a -> m (StatefulSignal m a)
+-- filterApplyE :: MonadIO m => StatefulSignal m (a -> Bool) -> StatefulSignal m a -> m (StatefulSignal m a)
+-- reactiveBackspace :: P.Event -> 
+reactiveBackspace e = do
+    s1 <- filterS isBackspace e -- Signal Event, need to get to Signal (Widget -> Widget) -- how?
+    ret <- createStatefulSignal (alterText (\txt -> if txt == "" then txt else T.init txt))
+    let conn ev = (modifyVal ret) $ const (alterText (\txt -> if txt == "" then txt else T.init txt))
+    (addListener s1) conn
+    return ret
+
+reactiveAppend sig = do
+    e <- readVal sig
+    ret <- createStatefulSignal (_txtAppend e)
+    let conn ev = (modifyVal ret) $ const (_txtAppend ev)
+    (addListener sig) conn
+    return ret
+
+
+_txtAppend evt w = case evt of
+                        ETextInput{..} -> alterText (\txt0 -> txt0 <> txt) w
+                        _              -> w
+                
 
 -- Signal m Widget
 -- Signal m Event
