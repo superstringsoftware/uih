@@ -19,7 +19,7 @@ import Control.Monad.IO.Class (liftIO, MonadIO)
 
 import UI.PicoUI.Raw.Events as P
 import UI.PicoUI.Raw.WidgetCompiler as P
-import UI.PicoUI.PicoUIMonad as Pico
+import UI.PicoUI.PicoUIMonad as Pico hiding (calculateCacheRect)
 import UI.PicoUI.Middle.AbstractWidgets
 import UI.PicoUI.Middle.PureHandlers
 
@@ -48,6 +48,15 @@ registerReactiveWidget w = do
     rawW <- fmapMM (P.compile2Widget False) w
     insertRawWidget rawW 
 
+-- needs to receive RESIZE EVENTS ONLY AS A SOURCE!!!
+-- EWindowResized { source :: EventSource, size :: V2 Int }
+-- calculateCacheRect :: Int -> Int -> Widget -> Widget
+reactiveResize sig = do
+    ret <- createStatefulSignal (\w -> w)
+    let conn (EWindowResized _ (V2 x y)) = (modifyVal ret) $ const (calculateCacheRect x y)
+    (addListener sig) conn
+    return ret
+
 -- isBackspace (alterText (\txt -> if txt == "" then txt else init txt))  
 -- alterText :: (Text -> Text) -> AbstractWidget -> AbstractWidget  
 -- filterS :: MonadIO m => (a -> Bool) -> StatefulSignal m a -> m (StatefulSignal m a)
@@ -60,6 +69,8 @@ reactiveBackspace e = do
     (addListener s1) conn
     return ret
 
+-- ok this works but we need to optimize it so that there's no returning of w in _txtAppend in case
+-- there's no Text edit event, as otherwise it screws up listening signals (e.g. recompilation)    
 reactiveAppend sig = do
     e <- readVal sig
     ret <- createStatefulSignal (_txtAppend e)

@@ -41,10 +41,10 @@ test_widgets = mdo
     -- you got a widget with behavior.
     -- w <- tr2 <^$> eHover >>= accum testLabel3
     -- creating a widget with behavior
-    w <- unionsM [ filterHoverApply (setText "Hovering!") (setText "NOT Hovering :(") <^$> eHover,
-                   filterHoverApply (setText "CLICKED!") (setText "NOT Clicked :(") <^$> eClick,
-                   reactiveBackspace sdlSource,
-                   reactiveAppend sdlSource
+    w <- unionsM [ filterHoverApply (setText "Hovering!") (setText "NOT Hovering :(") <^$> eHover, -- handle hover
+                   filterHoverApply (setText "CLICKED!") (setText "NOT Clicked :(") <^$> eClick, -- handle click
+                   reactiveBackspace sdlSource, -- handle backspace
+                   reactiveAppend sdlSource  -- handle append text
                  ] >>= accum testLabel3
     -- creating Raw widget that runs compilation each time a widget is changed
     registerReactiveWidget w
