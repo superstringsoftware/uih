@@ -85,11 +85,15 @@ renderUI = do
     ws <- gets widgets
     -- liftIO $ putStrLn $ "Got widgets: " ++ show (Map.length ws)
     mapM_ (fn renderer) ws
+    -- now for reactive widgets
+    rws <- gets rawWidgets
+    mapM_ (fnr renderer) rws
     SDL.rendererRenderTarget renderer $= Nothing
     cf <- gets curFocusId
     if cf >= 0 then renderCursor renderer else pure ()
     SDL.present renderer
     where fn ren ActiveWidget{..} = renderWidgetToScreen compiledWidget ren
+          fnr ren rw = readVal rw >>= \w -> renderWidgetToScreen w ren
     
 
 appLoop :: SDLIO ()

@@ -12,6 +12,7 @@ module UI.PicoUI.Reactive.Internal.StatefulSignals
     StatefulSignal,
 
     fmapM,
+    fmapMM,
     (<^$>),
     (<^$),
     (<^@>),
@@ -19,6 +20,7 @@ module UI.PicoUI.Reactive.Internal.StatefulSignals
     unionWith,
     combine,
     unions,
+    unionsM,
     accum,
     apply,
     applyE,
@@ -109,6 +111,19 @@ fmapM f sig = do
     (addListener sig) conn
     return ret
 
+-- this hints that StatefulSignal is a monad, even if not a functor. Or does it?    
+fmapMM :: MonadIO m => (a -> m b) -> StatefulSignal m a -> m (StatefulSignal m b)
+fmapMM f sig = do
+    initVal <- readVal sig
+    iv <- f initVal
+    ret <- createStatefulSignal iv
+    let conn e = do
+            val <- f e
+            (modifyVal ret) (const val)
+    (addListener sig) conn        
+    return ret
+
+
 -- using ^ to indicate it's monadic    
 f <^$> sig = fmapM f sig
 x <^$  sig = tagM x sig  
@@ -152,6 +167,8 @@ filterS filt sig = do
     (addListener sig) conn
     return ret
 
+-- returns Maybe, but in fact it is guaranteed to only have Just values - the issue is 
+-- in the initial value...    
 filterJust :: MonadIO m => StatefulSignal m (Maybe a) -> m (StatefulSignal m (Maybe a))
 filterJust = filterS (\e -> case e of
                                         Nothing -> False

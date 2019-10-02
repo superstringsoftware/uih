@@ -17,6 +17,9 @@ import UI.PicoUI.Middle.Handlers
 import UI.PicoUI.Middle.AbstractWidgets
 import UI.PicoUI.Raw.Events (timestamp, source, Event, pos)
 
+import qualified UI.PicoUI.Raw.Widgets as Raw
+import qualified UI.PicoUI.Raw.WidgetCompiler as Raw
+
 -- import Data.Foldable
 
 import qualified SDL as SDL
@@ -31,13 +34,21 @@ test_widgets :: SDLIO ()
 test_widgets = mdo
     sdlSource <- allEvents <$> gets eventSources
     eHover <- filterS isHover sdlSource
+    eClick <- clickEvents <$> gets eventSources
     let logSink e = liftIO (putStrLn ("[HOVER EVENT][" ++ show (timestamp $ source e) ++ "]") >> putStrLn (show e))
     -- Ok, turns out it works PERFECTLY via basic primitives!!! Just fmap and accum in this case.
     -- So, define behavior signals, union them into a->a function signal, and accum on the pure widget - 
     -- you got a widget with behavior.
-    w <- tr2 <^$> eHover >>= accum testLabel3
+    -- w <- tr2 <^$> eHover >>= accum testLabel3
+    -- creating a widget with behavior
+    w <- unionsM [ filterHoverApply (setText "Hovering!") (setText "NOT Hovering :(") <^$> eHover,
+                   filterHoverApply (setText "CLICKED!") (setText "NOT Clicked :(") <^$> eClick
+                 ] >>= accum testLabel3
+    -- creating Raw widget that runs compilation each time a widget is changed
+    rawW <- fmapMM (Raw.compile2Widget False) w
+    insertRawWidget rawW -- adding raw widget signal to the raw map
     let logW wi = liftIO $ putStrLn $ "Widget is: " ++ (unpack $ text (wi::AbstractWidget) )
-    -- sink w logW
+    sink w logW
     -- clickW <- onClickE w
     let logClick e = liftIO $ putStrLn $ "Click event: " ++ show e
     -- sink clickW logClick
@@ -46,16 +57,8 @@ test_widgets = mdo
 
 -- fmapM :: MonadIO m => (Event -> (Widget -> Widget) ) -> StatefulSignal m Event -> m (StatefulSignal m (Widget -> Widget))
 
-tr2 :: Event -> Widget -> Widget
-tr2 e w = if tr1 e w then (setText "Hovering!" w) else (setText "NOT Hovering :(" w)
-
 setText :: Text -> Widget -> Widget
 setText txt w = w { text = txt }
-
-tr1 :: Event -> Widget -> Bool
-tr1 e w = let (V2 x y) = pos $ source e
-          in  if isInWidget x y w then True else False
--- w { text = "Hovering!" } else w { text = "NOT Hovering :(" }
 
 
 -- import SDL.Raw.Types (Rect(..))

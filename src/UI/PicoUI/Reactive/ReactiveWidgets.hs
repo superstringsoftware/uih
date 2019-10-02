@@ -52,6 +52,15 @@ onClick w = do
     -- ret <- fmapM isHoveringW w >>= \s -> filterApplyE s events
     return ret
 
+-- give 2 functions to apply to widget in case event was hovering or not and it will pick which one to use
+-- can be used to create widgets like:
+-- w <- unionsM [ filterHoverApply (setText "Hovering!") (setText "NOT Hovering :(") <^$> eHover,
+--                filterHoverApply (setText "CLICKED!") (setText "NOT Clicked :(") <^$> eClick
+--              ] >>= accum testLabel3
+filterHoverApply :: (Widget -> Widget) -> (Widget -> Widget) -> P.Event -> Widget -> Widget
+filterHoverApply ftrue ffalse e w = 
+    if isHovering e w then ftrue w else ffalse w 
+
 isHovering :: P.Event -> Widget -> Bool
 isHovering e w = let (V2 x y) = pos $ source e
                  in  if isInWidget x y w then True else False

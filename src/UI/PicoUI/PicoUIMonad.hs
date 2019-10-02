@@ -28,6 +28,7 @@ import Data.Text
 import Foreign.C.Types (CInt, CFloat)
 import Data.Word
 import qualified Data.Map.Strict as Map
+import qualified Data.IntMap.Strict as IMap
 
 import Control.Concurrent (threadDelay)
 
@@ -88,9 +89,11 @@ data SDLState = SDLState {
   , loadedFonts   :: Map.Map Text Font -- map from font names to actual fonts
   , cursor        :: CursorStatus
   , bgColor       :: V4 Word8
-  , widgets       :: Map.Map WidgetId ActiveWidget -- cache of the low level widgets, DO NOT manipulate it directly
+  , widgets       :: Map.Map WidgetId ActiveWidget 
+  , rawWidgets    :: IMap.IntMap (StatefulSignal SDLIO Widget) -- cache of the low level widgets, DO NOT manipulate it directly
   -- , widgets       :: Map.Map WidgetId 
   -- , pureHandlers  :: Map.Map WidgetId PureHandler -- lowest level handlers that work in concert with widgets
+  , rawIdCounter  :: !Int
   , idCounter     :: !WidgetId
   , curFocusId    :: !WidgetId
   , curHoverId    :: !WidgetId
@@ -177,6 +180,12 @@ findEventSources (V2 x y) = do
     ws <- widgets <$> get
     pure $ Map.assocs $ Map.filter (isInActiveWidget x y) ws
     
+insertRawWidget :: StatefulSignal SDLIO Widget -> SDLIO ()
+insertRawWidget w = do
+    i <- gets rawIdCounter
+    ws <- gets rawWidgets
+    let ws' = IMap.insert i w ws
+    modify' (\s-> s {rawWidgets = ws', rawIdCounter = i + 1})
 
 calculateCacheRect w h wid@ActiveWidget{..} = wid { widget = Mid.calculateCacheRect w h widget  }
 -- recalculates sizes of all top level widgets after a resize as needed        
@@ -240,10 +249,12 @@ initStateIO = do
                 cursor = CursorStatus 50 50 (mRed 500) 20 Nothing False 0,
                 bgColor = V4 210 210 210 0,
                 widgets = Map.empty,
+                rawWidgets = IMap.empty,
                 -- pureHandlers = Map.empty,
                 scaleXY = V2 1 1,
                 autoScale = True,
                 idCounter = 0,
+                rawIdCounter = 0,
                 curFocusId = -1,
                 curHoverId = -1
                 -- readerEvent = NonEvent                
