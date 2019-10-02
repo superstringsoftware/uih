@@ -111,7 +111,13 @@ fmapM f sig = do
     (addListener sig) conn
     return ret
 
--- this hints that StatefulSignal is a monad, even if not a functor. Or does it?    
+-- this hints that StatefulSignal is a monad, even if not a functor. Or does it?  
+-- or some sort of a meta monad???? How do we express this relationship???
+-- we can do unsafePerformIO of course, but it's a longer exploration so leaving for the future.  
+-- The signature is almost like: 
+-- mapM :: (Traversable t, Monad m) => (a -> m b) -> t a -> m (t b)
+-- However, since to be traversable StatefulSignal has to be Functor and Foldable,
+-- we can't really do that. Also, we ask for MonadIO, not just any monad.
 fmapMM :: MonadIO m => (a -> m b) -> StatefulSignal m a -> m (StatefulSignal m b)
 fmapMM f sig = do
     initVal <- readVal sig
@@ -360,6 +366,9 @@ removeListenerPure i r =
 
 plusOne :: Int -> Int
 plusOne x = x + 1
+
+
+
 
 ------------------------------------------------------------------------------------------
 -- REACTIVE BANANA EXAMPLES RECREATED

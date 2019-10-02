@@ -17,8 +17,8 @@ import UI.PicoUI.Middle.Handlers
 import UI.PicoUI.Middle.AbstractWidgets
 import UI.PicoUI.Raw.Events (timestamp, source, Event, pos)
 
-import qualified UI.PicoUI.Raw.Widgets as Raw
-import qualified UI.PicoUI.Raw.WidgetCompiler as Raw
+-- import qualified UI.PicoUI.Raw.Widgets as Raw
+-- import qualified UI.PicoUI.Raw.WidgetCompiler as Raw
 
 -- import Data.Foldable
 
@@ -45,10 +45,9 @@ test_widgets = mdo
                    filterHoverApply (setText "CLICKED!") (setText "NOT Clicked :(") <^$> eClick
                  ] >>= accum testLabel3
     -- creating Raw widget that runs compilation each time a widget is changed
-    rawW <- fmapMM (Raw.compile2Widget False) w
-    insertRawWidget rawW -- adding raw widget signal to the raw map
+    registerReactiveWidget w
     let logW wi = liftIO $ putStrLn $ "Widget is: " ++ (unpack $ text (wi::AbstractWidget) )
-    sink w logW
+    -- sink w logW
     -- clickW <- onClickE w
     let logClick e = liftIO $ putStrLn $ "Click event: " ++ show e
     -- sink clickW logClick

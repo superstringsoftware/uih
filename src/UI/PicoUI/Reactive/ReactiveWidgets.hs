@@ -18,6 +18,7 @@ import Control.Monad.Trans.State.Strict (gets)
 import Control.Monad.IO.Class (liftIO, MonadIO)
 
 import UI.PicoUI.Raw.Events as P
+import UI.PicoUI.Raw.WidgetCompiler as P
 import UI.PicoUI.PicoUIMonad as Pico
 import UI.PicoUI.Middle.AbstractWidgets
 import UI.PicoUI.Middle.PureHandlers
@@ -34,6 +35,17 @@ data EventfulWidget = EventfulWidget {
 
 
 -- Widget is: different fmaps defining Signal of Widget->Widget functions, and then accum on the initial value of the widget
+-- Compilation to low-level widgets should be handled via Signals as well - we just create an
+-- fmapM-ed signal from a Widget with a compile function, then we will recompile at each change automatically.
+-- Then, rendering can be done via events as well - have a "Render" event source, subscribe
+-- render functions with all low-level widgets (signals) to it, and send "Render" events at needed intervals.
+
+-- The only (possible) drawback - need to be careful to run the network in 1 thread, but that was the initial design anyway.
+
+-- For now, we are simply adding raw widget signals to the map in the monad and running render on them periodically
+registerReactiveWidget w = do
+    rawW <- fmapMM (P.compile2Widget False) w
+    insertRawWidget rawW 
 
 
 -- Signal m Widget
@@ -43,6 +55,7 @@ data EventfulWidget = EventfulWidget {
 -- returns a signal that only lets click events on the given widget through!
 -- Ok, we need a better way to do it. !!!
 -- This works, but signal contains a widget, and we probably want an event
+-- see below for that.
 onClick :: ReactiveWidget -> SDLIO ReactiveWidget
 onClick w = do
     events <- clickEvents <$> gets eventSources
@@ -87,34 +100,4 @@ onClickAct w act = do
     (addListener sig) conn
 
 
-{-
-Overall logic for the widgets should be:
 
-- tag incoming SDL events with (widget -> widget) pure functions depending on the event type
-- combine them into one source
-- accumulate
-
-So it will be something like
-
-rWidget <- unionsM [  (changeBackground red) <^$ ehover
-                        , (changeBackground white) <^$ eStopHover
-                        , ...
-                       ] >>= accum initialWidget
-
--- Ok, one scenario to work through the flow:
-
-- sdlSource fires "Click" event
-- a widget reacts and changes the background
-- but ALSO sends a "Click" event with itself as a source -- how?
-fmapM of some sort?
-
-clickSignal <- sendClick <^$> (filterS isClick sdlSource)
-
-filterS isClick sdlSource --> sig1, with event inside
-now need to filter it with *current* widget coordinates. So need a combination function that takes a value from the event,
-current value of the signal, and combines them somehow, like:
-
-let conn = (\x -> (modifyVal ret) ((f x)) )
-(addListener sig) conn
-
--}
