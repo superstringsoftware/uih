@@ -27,12 +27,6 @@ import UI.PicoUI.Reactive.Internal.StatefulSignals
 
 type ReactiveWidget = StatefulSignal SDLIO AbstractWidget
 
-data EventfulWidget = EventfulWidget {
-    widget :: AbstractWidget,
-    hovering :: Bool,
-    isFocus :: Bool
-}
-
 
 -- Widget is: different fmaps defining Signal of Widget->Widget functions, and then accum on the initial value of the widget
 -- Compilation to low-level widgets should be handled via Signals as well - we just create an
@@ -45,7 +39,7 @@ data EventfulWidget = EventfulWidget {
 -- For now, we are simply adding raw widget signals to the map in the monad and running render on them periodically
 registerReactiveWidget :: StatefulSignal SDLIO Widget -> SDLIO ()
 registerReactiveWidget w = do
-    rawW <- fmapMM (P.compile2Widget False) w
+    rawW <- fmapMM (\pw -> P.compile2Widget (isWidgetInFocus pw) pw) w
     insertRawWidget rawW 
 
 -- needs to receive RESIZE EVENTS ONLY AS A SOURCE!!!

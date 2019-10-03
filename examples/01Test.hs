@@ -120,7 +120,8 @@ fig1 = Label {
   valign = CenterAlign, halign = CenterAlign,
   layout = l_TL 40 40 60 40,
   background = BGColor $ mGrey 700, 
-  cacheRect = V4 0 0 0 0
+  cacheRect = V4 0 0 0 0,
+  isFocus = False
 }
 
 fig2 = Label {
@@ -129,7 +130,8 @@ fig2 = Label {
   valign = CenterAlign, halign = CenterAlign,
   layout = l_TL 120 40 60 40,
   background = BGColor $ mGrey 700, 
-  cacheRect = V4 0 0 0 0
+  cacheRect = V4 0 0 0 0,
+  isFocus = False
 }
 
 but = Label {
@@ -138,7 +140,8 @@ but = Label {
   valign = CenterAlign, halign = CenterAlign,
   layout = l_TL 40 100 140 60,
   background = BGColor $ mGrey 500, 
-  cacheRect = V4 0 0 0 0
+  cacheRect = V4 0 0 0 0,
+  isFocus = False
 }
 
 

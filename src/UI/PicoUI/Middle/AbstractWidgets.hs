@@ -109,7 +109,8 @@ data AbstractWidget =
         valign, halign :: TextAlign,
         layout :: Layout,
         background :: Background, 
-        cacheRect :: V4 Int
+        cacheRect :: V4 Int,
+        isFocus :: Bool
     } |
     -- Text label that CAN be edited - we are separating the 2 b/c this one will need event handlers 
     -- in the implmentation level
@@ -120,7 +121,8 @@ data AbstractWidget =
         layout :: Layout,
         background :: Background,
         cursorPos :: !Int, -- cursor position in terms of symbols
-        cacheRect :: V4 Int
+        cacheRect :: V4 Int,
+        isFocus :: Bool
     } |
     Panel {
         layout :: Layout,
@@ -134,10 +136,17 @@ data AbstractWidget =
         layout :: Layout,
         background :: Background,
         cursorCol, cursorLine :: !Int, -- cursor position in terms of symbols
-        cacheRect :: V4 Int
+        cacheRect :: V4 Int,
+        isFocus :: Bool
     } |
     SCREEN -- used for setting up CompositeWidget tree 
     deriving (Show, Eq)
+
+isWidgetInFocus :: AbstractWidget -> Bool
+isWidgetInFocus InputText{..} = isFocus
+isWidgetInFocus SimpleMultilineText{..} = isFocus
+isWidgetInFocus Label{..} = isFocus
+isWidgetInFocus _ = False
 
 -- different layout options and the rectangle conventions corresponding to them
 -- FIXME: *Center* series is not defined yet!!!

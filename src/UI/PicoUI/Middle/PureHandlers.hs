@@ -133,6 +133,10 @@ isBackspace :: Event -> Bool
 isBackspace (EBackspace _) = True
 isBackspace _ = False
 
+isTextEvent :: Event -> Bool
+isTextEvent (ETextInput _ _) = True
+isTextEvent _ = False
+
 isQuit :: Event -> Bool
 isQuit (EQuit _) = True
 isQuit _ = False

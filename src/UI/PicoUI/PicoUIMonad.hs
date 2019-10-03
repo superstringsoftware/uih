@@ -226,11 +226,13 @@ initState :: SDLIO ()
 initState = do
     -- initializing event sources - they are SEPARATE, as event dispatching function
     -- will filter them when converting SDL events, as this is going to be more efficient
+    -- Why is it going to be more efficient???
     es <- createStatefulSignal $ ENonEvent zeroSource
-    -- ce <- createStatefulSignal $ ENonEvent zeroSource
+    --ce <- createStatefulSignal $ ENonEvent zeroSource
     -- for testing setting up ce via filter
     ce <- filterS isAnyClick es
-    te <- createStatefulSignal $ ENonEvent zeroSource
+    te <- filterS (\e -> (isBackspace e) || (isTextEvent e)) es
+    -- te <- createStatefulSignal $ ENonEvent zeroSource
     ke <- createStatefulSignal $ ENonEvent zeroSource
     let eS = EventSources es ce te ke
     s  <- liftIO initStateIO

@@ -116,7 +116,6 @@ fireEvent ev = do
     event <- sdlEvent2Event ev
     -- firing in the reactive sdl source - eventually all logic needs to move here!!!
     sdlSource <- allEvents <$> gets eventSources
-    -- (modifyVal sdlSource) (const event)
     fire sdlSource event
     -- liftIO $ putStrLn $ "Firing event: " ++ show event
     -- fire <$> (gets eventSource) <*> pure event
@@ -222,7 +221,7 @@ registerWidgetWithHandlers w h hs = do
 -- retrieve widgets right away and fire events to them inside here as needed, too
 -- main function connecting SDL with our world
 sdlEvent2Event :: SDL.Event -> SDLIO P.Event
-sdlEvent2Event event =
+sdlEvent2Event event = 
     case SDL.eventPayload event of
             p@(SDL.MouseButtonEvent mb) -> 
                 -- MouseButtonEventData {mouseButtonEventWindow = Just (Window 0x00007f9500c38fb0), 

@@ -29,7 +29,14 @@ import UI.PicoUI.Reactive.ReactiveWidgets
 
 import PreludeFixes
 
-
+{-
+EventSources {
+    allEvents      :: StatefulSignal SDLIO Event
+  , clickEvents    :: StatefulSignal SDLIO Event
+  , textEvents     :: StatefulSignal SDLIO Event
+  , keyboardEvents :: StatefulSignal SDLIO Event
+} 
+-}
 test_widgets :: SDLIO ()
 test_widgets = mdo
     sdlSource <- allEvents <$> gets eventSources
@@ -99,7 +106,8 @@ testML = SimpleMultilineText { -- very basic multiline text, all in one style
   textLines = [
     "Line 1",
     "Line 2 that is a little bit longer"
-  ]
+  ],
+  isFocus = False
         
 } 
 
@@ -109,7 +117,8 @@ testLabel = Label {
   valign = CenterAlign, halign = CenterAlign,
   layout = l_TL 40 40 200 60,
   background = BGColor $ mGrey 700, 
-  cacheRect = V4 0 0 0 0
+  cacheRect = V4 0 0 0 0,
+  isFocus = False
 }
 
 testLabel2 = Label {
@@ -118,7 +127,8 @@ testLabel2 = Label {
   valign = CenterAlign, halign = CenterAlign,
   layout = l_SHB 20 60 20 50,
   background = BGColor $ mGrey 700, 
-  cacheRect = V4 0 0 0 0
+  cacheRect = V4 0 0 0 0,
+  isFocus = False
 }
 
 testLabel3 = Label {
@@ -127,7 +137,8 @@ testLabel3 = Label {
   valign = CenterAlign, halign = CenterAlign,
   layout = l_TL 280 40 200 60,
   background = BGColor $ mGrey 700, 
-  cacheRect = V4 280 40 200 60
+  cacheRect = V4 280 40 200 60,
+  isFocus = False
 }
 
 
