@@ -50,7 +50,6 @@ test_widgets = mdo
                  ] >>= accum testLabel3
     -- creating Raw widget that runs compilation each time a widget is changed
     registerReactiveWidget w
-    -- NOW THE ONLY THING THAT'S MISSING IS RESIZE RECALCULATION!!!
     let logW wi = liftIO $ putStrLn $ "Widget is: " ++ (unpack $ text (wi::AbstractWidget) )
     -- sink w logW
     -- clickW <- onClickE w
