@@ -96,8 +96,12 @@ renderUI = do
     rws <- gets rawWidgets
     mapM_ (fnr renderer) rws
     SDL.rendererRenderTarget renderer $= Nothing
+    {-
     cf <- gets curFocusId
     if cf >= 0 then renderCursor renderer else pure ()
+    -}
+    mfw <- gets focusWidget
+    maybe (pure ()) (const $ renderCursor renderer) mfw
     SDL.present renderer
     where fn ren ActiveWidget{..} = renderWidgetToScreen compiledWidget ren
           fnr ren rw = readVal rw >>= \w -> renderWidgetToScreen w ren

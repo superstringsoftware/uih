@@ -95,6 +95,7 @@ data SDLState = SDLState {
   , widgets       :: Map.Map WidgetId ActiveWidget 
   , rawWidgets    :: IMap.IntMap (StatefulSignal SDLIO Widget) -- cache of the low level widgets, DO NOT manipulate it directly
   , removeFocus   :: SDLIO () -- action to remove focus signal listener from a currently focused widget (see ReactiveWidgets addFocus etc)
+  , focusWidget   :: Maybe ReactiveWidget
   , rawIdCounter  :: !Int
   , idCounter     :: !WidgetId
   , curFocusId    :: !WidgetId
@@ -258,6 +259,7 @@ initStateIO = do
                 bgColor = V4 210 210 210 0,
                 widgets = Map.empty,
                 rawWidgets = IMap.empty,
+                focusWidget = Nothing,
                 -- pureHandlers = Map.empty,
                 scaleXY = V2 1 1,
                 autoScale = True,

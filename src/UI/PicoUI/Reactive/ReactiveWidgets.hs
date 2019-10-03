@@ -54,13 +54,19 @@ addFocus rw = do
     fe <- focusEvents <$> gets eventSources
     let conn e = (modifyVal rw) (pureTextEdit e)
     rm <- (addListenerWRemove fe) conn -- adding listener and getting a remove action
-    modify' (\s -> s { removeFocus = rm }) -- updating state with remove action
+    modify' (\s -> s { removeFocus = rm, focusWidget = Just rw }) -- updating state with remove action
+    (modifyVal rw) (\w -> w { isFocus = True })
 
+-- remove focus from the currently focused widget
 doRemoveFocus :: SDLIO ()
 doRemoveFocus = do 
     rf <- gets removeFocus
     rf -- execute remove action
-    modify' (\s -> s { removeFocus = pure () }) -- set it to nothing
+    mfw <- gets focusWidget
+    maybe (pure ())
+          (\rw -> (modifyVal rw) (\w -> w { isFocus = False }) ) -- resetting focus to false
+          mfw
+    modify' (\s -> s { removeFocus = pure (), focusWidget = Nothing }) -- set it to nothing
 
 -- handler for events that should only be received by widget currently in focus: mostly textedit events?    
 -- but eventually we need to handle mouse clicks so that the cursor is put in the right place etc
