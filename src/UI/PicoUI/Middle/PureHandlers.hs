@@ -141,6 +141,10 @@ isRawSDL :: Event -> Bool
 isRawSDL (RawSDLEvent _ _) = True
 isRawSDL _ = False
 
+isWindowResized :: Event -> Bool
+isWindowResized (EWindowResized _ _) = True
+isWindowResized _ = False
+
 -- checks whether x,y coords didn't hit any widgets - so it's a main window as a source
 -- needed to process e.g. resetting focus etc
 isSourceMainWindow :: Event -> Bool
