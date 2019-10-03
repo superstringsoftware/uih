@@ -32,6 +32,7 @@ import UI.PicoUI.Middle.Handlers
 import UI.PicoUI.Middle.AbstractWidgets as P
 
 import UI.PicoUI.Reactive.Internal.StatefulSignals
+import UI.PicoUI.Reactive.ReactiveWidgets
 
 import PreludeFixes
 
@@ -59,6 +60,12 @@ runSDLIO program = runStateT
         -- setup the initial FRP network
         let logSink e = liftIO (putStrLn ("[EVENT][" ++ show (timestamp $ source e) ++ "]") >> putStrLn (show e))
         sdlSources <- allEvents <$> gets eventSources
+        -- main window events
+        clickMainWindowEvents <- filterS 
+                (\e -> (isSourceMainWindow e) && (isLeftClick 1 e))
+                sdlSources
+        -- removing focus in case main window was clicked                
+        -- sink clickMainWindowEvents $ const doRemoveFocus
         -- sdlS' <- filterS (not • isRawSDL) sdlSource
         -- (addListener sdlS') logSink
         -- (addListener sdlSource) logSink

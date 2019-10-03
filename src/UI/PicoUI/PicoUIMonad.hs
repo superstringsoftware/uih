@@ -75,11 +75,14 @@ data InputDevicesState = InputDevicesState {
 
 } deriving Show
 
+type ReactiveWidget = StatefulSignal SDLIO Mid.AbstractWidget
+
 data EventSources = EventSources {
     allEvents      :: StatefulSignal SDLIO Event
   , clickEvents    :: StatefulSignal SDLIO Event
   , textEvents     :: StatefulSignal SDLIO Event
   , keyboardEvents :: StatefulSignal SDLIO Event
+  , focusEvents    :: StatefulSignal SDLIO Event -- source for the events that only a widget in focus should receive
 } deriving Show
 
 -- record to keep our current SDL subsystem state
@@ -91,8 +94,7 @@ data SDLState = SDLState {
   , bgColor       :: V4 Word8
   , widgets       :: Map.Map WidgetId ActiveWidget 
   , rawWidgets    :: IMap.IntMap (StatefulSignal SDLIO Widget) -- cache of the low level widgets, DO NOT manipulate it directly
-  -- , widgets       :: Map.Map WidgetId 
-  -- , pureHandlers  :: Map.Map WidgetId PureHandler -- lowest level handlers that work in concert with widgets
+  , removeFocus   :: SDLIO () -- action to remove focus signal listener from a currently focused widget (see ReactiveWidgets addFocus etc)
   , rawIdCounter  :: !Int
   , idCounter     :: !WidgetId
   , curFocusId    :: !WidgetId
@@ -103,6 +105,8 @@ data SDLState = SDLState {
   --, readerEvent   :: Event -- currently handling event value for event hadlers and Reader monad instance
   , eventSources  :: EventSources
 } | SDLEmptyState deriving Show
+
+instance Show (SDLIO ()) where show _ = "SDLIO () action"
 
 -- Stacking State and IO into a monad
 type SDLIO = StateT SDLState IO
@@ -234,9 +238,11 @@ initState = do
     te <- filterS (\e -> (isBackspace e) || (isTextEvent e)) es
     -- te <- createStatefulSignal $ ENonEvent zeroSource
     ke <- createStatefulSignal $ ENonEvent zeroSource
-    let eS = EventSources es ce te ke
+    -- focus events: for now only text, but eventually needs to be more complicated
+    fe <- filterS (\e -> (isBackspace e) || (isTextEvent e)) es
+    let eS = EventSources es ce te ke fe
     s  <- liftIO initStateIO
-    put $ s { eventSources = eS } 
+    put $ s { eventSources = eS, removeFocus = pure () } 
 
 initStateIO :: IO SDLState
 initStateIO = do 

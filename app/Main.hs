@@ -51,12 +51,18 @@ test_widgets = mdo
     -- creating a widget with behavior
     w <- unionsM [ filterHoverApply (setText "Hovering!") (setText "NOT Hovering :(") <^$> eHover, -- handle hover
                    filterHoverApply (setText "CLICKED!") (setText "NOT Clicked :(") <^$> eClick, -- handle click
-                   reactiveBackspace sdlSource, -- handle backspace
-                   reactiveAppend sdlSource,  -- handle append text
+                   -- pureTextEdit <^$> sdlSource, -- handle text edit
                    reactiveResize eResized -- handle resizes
                  ] >>= accum testLabel3
+    w1 <- unionsM [ filterHoverApply (changeBackground $ BGColor $ mBlue 500) (changeBackground $ BGColor $ mGrey 700) <^$> eHover, -- handle hover
+                    reactiveResize eResized
+                  ] >>= accum testLabel
     -- creating Raw widget that runs compilation each time a widget is changed
     registerReactiveWidget w
+    registerReactiveWidget w1
+    -- make it so that it can receive focus
+    makeFocusable w
+    makeFocusable w1
     let logW wi = liftIO $ putStrLn $ "Widget is: " ++ (unpack $ text (wi::AbstractWidget) )
     -- sink w logW
     -- clickW <- onClickE w
@@ -74,11 +80,13 @@ setText txt w = w { text = txt }
 -- import SDL.Raw.Types (Rect(..))
 testProgram :: SDLIO ()
 testProgram = 
+  {-
   registerWidgetWithHandlers 
     testLabel 
     compositeHandler -- pure handler that changes bg colors
     [filteredHandlerSDLIO isStoppedHover (\e -> liftIO $ putStrLn $ "Stopped hovering on: " ++ show e), setFocusOnClick ] -- IO handler for hover
-  >> registerWidgetWithHandler testML pure  -- multiline widget
+  -}
+  registerWidgetWithHandler testML pure  -- multiline widget
   >> registerWidgetWithHandlers testLabel2 hndlEditText [setFocusOnClick] -- editable widget
   >> test_widgets
   >> pure ()
@@ -117,7 +125,7 @@ testLabel = Label {
   valign = CenterAlign, halign = CenterAlign,
   layout = l_TL 40 40 200 60,
   background = BGColor $ mGrey 700, 
-  cacheRect = V4 0 0 0 0,
+  cacheRect = V4 40 40 200 60,
   isFocus = False
 }
 
