@@ -42,7 +42,7 @@ test_widgets = mdo
     sdlSource <- allEvents <$> gets eventSources
     eHover <- filterS isHover sdlSource
     eClick <- clickEvents <$> gets eventSources
-    eResized <- filterS isWindowResized sdlSource
+    -- eResized <- filterS isWindowResized sdlSource
     let logSink e = liftIO (putStrLn ("[HOVER EVENT][" ++ show (timestamp $ source e) ++ "]") >> putStrLn (show e))
     -- Ok, turns out it works PERFECTLY via basic primitives!!! Just fmap and accum in this case.
     -- So, define behavior signals, union them into a->a function signal, and accum on the pure widget - 
@@ -52,10 +52,10 @@ test_widgets = mdo
     w <- unionsM [ filterHoverApply (setText "Hovering!") (setText "NOT Hovering :(") <^$> eHover, -- handle hover
                    filterHoverApply (setText "CLICKED!") (setText "NOT Clicked :(") <^$> eClick, -- handle click
                    -- pureTextEdit <^$> sdlSource, -- handle text edit
-                   reactiveResize eResized -- handle resizes
+                   reactiveResize -- handle resizes
                  ] >>= accum testLabel3
     w1 <- unionsM [ filterHoverApply (changeBackground $ BGColor $ mBlue 500) (changeBackground $ BGColor $ mGrey 700) <^$> eHover, -- handle hover
-                    reactiveResize eResized
+                    reactiveResize
                   ] >>= accum testLabel
     -- creating Raw widget that runs compilation each time a widget is changed
     registerReactiveWidget w

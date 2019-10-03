@@ -72,6 +72,9 @@ runSDLIO program = runStateT
         -- running the program
         program
         handleResize (fromIntegral width) (fromIntegral height)
+        -- send initial resize event so that reactive widgets react
+        let size = V2 (fromIntegral width) (fromIntegral height)
+        fire sdlSources (EWindowResized zeroSource size)
         appLoop
     ) 
     SDLEmptyState
@@ -100,6 +103,7 @@ renderUI = do
     cf <- gets curFocusId
     if cf >= 0 then renderCursor renderer else pure ()
     -}
+    -- rendering cursor if there's a focus widget
     mfw <- gets focusWidget
     maybe (pure ()) (const $ renderCursor renderer) mfw
     SDL.present renderer

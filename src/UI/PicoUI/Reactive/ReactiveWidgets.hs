@@ -80,9 +80,11 @@ focusEventsListener e = do
 -- needs to receive RESIZE EVENTS ONLY AS A SOURCE!!!
 -- EWindowResized { source :: EventSource, size :: V2 Int }
 -- calculateCacheRect :: Int -> Int -> Widget -> Widget
-reactiveResize sig = do
+reactiveResize = do
+    sig <- allEvents <$> gets eventSources
     ret <- createStatefulSignal (\w -> w)
     let conn (EWindowResized _ (V2 x y)) = (modifyVal ret) $ const (calculateCacheRect x y)
+        conn _ = pure ()
     (addListener sig) conn
     return ret
 
