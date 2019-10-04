@@ -102,6 +102,8 @@ updateCursorPosition fnt txt x' y' = do
     cur <- gets cursor
     modify' (\s-> s { cursor = cur { x = x' + w, y = y', P.height = h } })
 
+updateCursorPositionExplicit x y h = gets cursor >>= \cur -> modify' (\s-> s { cursor = cur { x = x, y = y, P.height = h } })
+
 compile2Widget :: Bool -> Mid.AbstractWidget -> SDLIO Widget
 -- simple box with background
 compile2Widget focus Mid.Panel{..} = pure $ Widget {
@@ -127,7 +129,9 @@ compile2Widget focus Mid.Label {..} = do
     let xoff = calcXOffset halign w tw
     let yoff = calcYOffset valign h th
     -- updating cursor position!!!
-    if focus then updateCursorPosition fnt text (x + xoff) (y + yoff) else pure ()
+    let xc = if xoff + tw > w then (x + w) else if xoff < 0 then x else x + xoff + tw
+    if focus then updateCursorPositionExplicit xc (y + yoff) th else pure ()
+    -- updateCursorPosition fnt text (x + xoff) (y + yoff) else pure ()
     
     pure $ Widget {
                 isVisible = True,

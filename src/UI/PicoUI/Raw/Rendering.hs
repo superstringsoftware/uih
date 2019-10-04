@@ -13,6 +13,7 @@ import SDL.Font
 import PreludeFixes
 
 import UI.PicoUI.Raw.Widgets
+import UI.PicoUI.Raw.WidgetCompiler (castV4)
 import Foreign.C.Types (CInt)
 
 import Data.Vector (foldM')
@@ -47,15 +48,21 @@ renderCursor ren = do
         
 
     
+-- cut the texture based on offset and bounding rectangle dimensions
+-- cutTexture tex xo yo rw rh = do 
+-- castV2 (V2 x y) = V2 (fromIntegral x) (fromIntegral y)
 
-
--- this method DOES NOT check any bounds and DOES NOT set renderer target
+-- this method DOES NOT set renderer target
 -- to the screen, it has to be done elsewhere
 -- NO CACHING now, everything is very straightforward and naive
 renderWidgetToScreen :: Widget -> Renderer -> SDLIO ()
 renderWidgetToScreen Widget{..} ren = if not isVisible then pure () else do
-    let (V4 x y w h) = collider
-    mapM_ (fn1 x y w h ren) elements
+    let (V4 x' y' w' h') = collider
+    -- setting clipping rectangle to the bounding box of the element
+    let rect = Rectangle (P $ V2 (fromIntegral x') (fromIntegral y')) (V2 (fromIntegral w') (fromIntegral h'))
+    rendererClipRect ren $= Just rect
+    mapM_ (fn1 x' y' w' h' ren) elements
+    rendererClipRect ren $= Nothing
     where 
         fn1 :: CInt -> CInt -> CInt -> CInt -> Renderer -> WidgetElement -> SDLIO ()
         fn1 x y w h ren WidgetElement{..} = do
