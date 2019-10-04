@@ -142,6 +142,16 @@ data AbstractWidget =
     SCREEN -- used for setting up CompositeWidget tree 
     deriving (Show, Eq)
 
+defaultLabel = Label {
+    fontData = FontDataDefault,
+    text = "",
+    valign = CenterAlign, halign = CenterAlign,
+    layout = l_CA 0 0 50 50, 
+    background = BGColor $ mGrey 900, 
+    cacheRect = V4 0 0 0 0,
+    isFocus = False
+}    
+
 isWidgetInFocus :: AbstractWidget -> Bool
 isWidgetInFocus InputText{..} = isFocus
 isWidgetInFocus SimpleMultilineText{..} = isFocus

@@ -30,6 +30,9 @@ import PreludeFixes
 setText :: Text -> Widget -> Widget
 setText txt w = w { text = txt }
 
+setTextShow :: Show a => a -> Widget -> Widget
+setTextShow a w = w { text = pack $ show a }
+
 {-
 Reusing basic example from Reactive Banana: +/- buttons and a counter
 -}
@@ -38,57 +41,38 @@ test_widgets :: SDLIO ()
 test_widgets = do
     sdlSource <- allEvents <$> gets eventSources
     eHover <- filterS isHover sdlSource
-    w1 <- unionsM [ filterHoverApply (changeBackground $ BGColor $ mBlue 500) (changeBackground $ BGColor $ mGrey 700) <^$> eHover -- handle hover
-                    
-                  ] >>= accum fig1
-    w  <- unionsM [ filterHoverApply (changeBackground $ BGColor $ mRed 500) (changeBackground $ BGColor $ mGrey 700) <^$> eHover -- handle hover
-                    
-                  ] >>= accum fig2    
+    w1 <- filterHoverApply (changeBackground $ BGColor $ mBlue 500) 
+                           (changeBackground $ BGColor $ mGrey 700) 
+                           <^$> eHover >>= accum fig1
+    w  <- filterHoverApply (changeBackground $ BGColor $ mRed  500) 
+                           (changeBackground $ BGColor $ mGrey 700) 
+                           <^$> eHover >>= accum fig2    
     cw  <- onClick w
     cw1 <- onClick w1
-    -- let counter :: StatefulSignal SDLIO Int
     (counter :: StatefulSignal SDLIO Int) <- unionsM [ (+1) <^$ cw1, (subtract 1) <^$ cw ] >>= accum 0
-    ci <- readVal counter
-    w2 <- unionsM [ (\ci -> setText (pack $ show ci)) <^$> counter
-                  ] >>= accum but
-    -- creating Raw widget that runs compilation each time a widget is changed
+    w2 <- setTextShow <^$> counter >>= accum but
     registerReactiveWidgets [w, w1, w2]
-    
-
--- fmapM :: MonadIO m => (Int -> (Widget->Widget)) -> StatefulSignal m Int -> m (StatefulSignal m (Widget->Widget))
     
 
 main :: IO ()
 main = runSDLIO test_widgets >> pure ()
 
-fig1 = Label {
-  fontData = FontDataDefault,
+fig1 = defaultLabel {
   text = "Up",
-  valign = CenterAlign, halign = CenterAlign,
-  layout = l_CHT (-60) 40 60 40, -- l_TL 40 40 60 40,
-  background = BGColor $ mGrey 700, 
-  cacheRect = V4 0 0 0 0,
-  isFocus = False
+  layout = l_CHT (-40) 40 60 40, 
+  background = BGColor $ mGrey 700  
 }
 
-fig2 = Label {
-  fontData = FontDataDefault,
+fig2 = defaultLabel {
   text = "Down",
-  valign = CenterAlign, halign = CenterAlign,
-  layout = l_CHT 60 40 60 40, -- l_TL 120 40 60 40,
-  background = BGColor $ mGrey 700, 
-  cacheRect = V4 0 0 0 0,
-  isFocus = False
+  layout = l_CHT 40 40 60 40, 
+  background = BGColor $ mGrey 700  
 }
 
-but = Label {
-  fontData = FontDataDefault,
+but = defaultLabel {
   text = "0",
-  valign = CenterAlign, halign = CenterAlign,
-  layout = l_CA 0 0 100 60, -- l_TL 40 100 140 60,
-  background = BGColor $ mGrey 500, 
-  cacheRect = V4 0 0 0 0,
-  isFocus = False
+  layout = l_CHT 0 90 100 60, 
+  background = BGColor $ mGrey 500  
 }
 
 
