@@ -16,6 +16,8 @@ import PreludeFixes
 
 -- hiding our StatefulSignal and it's function inside a monad completely with newtype
 -- so that we can make functor etc instances and make a cleaner interface for reactive stuff
+
+-- TODO: IT DOESNT WORK - MONADIC ACTIONS DO NOT GET CALLED. NEED TO INTRODUCE LOGGING TO CHECK WHATS HAPPENING.
 newtype SignalM m a = MSS { unMSS :: m (SS.StatefulSignal m a) }
 
 --------------------------------------------------------------------------------
@@ -36,8 +38,17 @@ addListenerWRemove msig ls = unMSS msig >>= \s -> SS.addListenerWRemove s ls
 fire sig val = unMSS sig >>= \s -> SS.fire s val
 -- listens to changes in the signal and executes an action in the monad in response
 -- again, a simple shortcut to addListener
-sink :: MonadIO m => SignalM m a -> (a -> m()) -> m ()
-sink sig act = unMSS sig >>= \s -> SS.sink s act
+sink :: MonadIO m => SignalM m a -> (a -> m()) -> SignalM m a
+_sink sig act = do
+    s <- unMSS sig
+    SS.sink s act
+    pure s
+sink sig act = MSS $! (_sink sig act)
+
+sink' sig act = do
+    s <- unMSS sig
+    SS.sink s act
+    
 
 forceSignal :: MonadIO m => SignalM m a -> m ()
 forceSignal msig = readVal msig >>= \val -> pure ()
@@ -51,11 +62,16 @@ instance MonadIO m => Functor (SignalM m) where
 
 instance MonadIO m => Applicative (SignalM m) where
     pure = MSS • SS.createStatefulSignal
+            
         -- MSS (SS.createStatefulSignal x >>= \v -> return v)
         -- MSS • SS.createStatefulSignal
     -- apply :: MonadIO m => StatefulSignal m (a -> b) -> StatefulSignal m a -> m (StatefulSignal m b)
     (<*>) :: SignalM m (a -> b) -> SignalM m a -> SignalM m b
     mf <*> ms = MSS $ join (liftA2 SS.apply (unMSS mf) (unMSS ms))
+
+_pure :: MonadIO m => a -> m (SS.StatefulSignal m a)
+_pure x = SS.createStatefulSignal x >>= \v -> return v    
+
 
 -- MSS { unMSS :: m (SS.StatefulSignal m b) }    
 instance MonadIO m => Monad (SignalM m) where
@@ -85,7 +101,7 @@ apply :: MonadIO m => SignalM m (a -> b) -> SignalM m a -> SignalM m b
 apply = (<*>)
 
 unions :: MonadIO m => [ SignalM m (a -> a) ] -> SignalM m (a -> a)
-unions ss = MSS $ SS.unionsM (map unMSS ss)
+unions ss = MSS $ SS.unionsM $! (map unMSS ss)
 
 accum :: MonadIO m => a -> SignalM m (a->a) -> SignalM m a
 accum inv msig = MSS $ join $ (SS.accum inv) <$> (unMSS msig)
@@ -101,19 +117,21 @@ _test_monadic = do
     putStrLn $ "Hurray" 
 
 
+_test_signals :: IO ()
 _test_signals = do
-    let (eup   :: SignalM IO String) = pure "Up"
-    let (edown :: SignalM IO String) = pure "Down"
+    let (eup   :: SignalM IO String) = MSS $ _pure "Up"
+    -- let (edown :: SignalM IO String) = pure "Down"
 
-    forceSignal eup
-    forceSignal edown
+    let (edown :: SignalM IO String) = sink (pure "Down") (\s -> putStrLn $ "Got signal: " ++ show s)
+    -- let (eup :: SignalM IO String) = sink (pure "Up") (\s -> putStrLn $ "Got signal: " ++ show s)
+    let eup' = sink eup (\s -> putStrLn $ "Got signal: " ++ s)
 
-    {-
+    
     let (counter :: SignalM IO Int) = accum 0 $ 
                     unions [  (+1) <$ eup
                             , (subtract 1) <$ edown
                            ] 
-    -}
+    
 {-
     counter <- unionsM [  (+1) <^$ eup
                         , (subtract 1) <^$ edown
@@ -128,13 +146,12 @@ _test_signals = do
     (addListener counter) sink
     (addListener list) sink1
 -}
-    -- sink counter (\i -> putStrLn $ "Counter is: " ++ show i)
-    sink eup (\s -> putStrLn $ "Got signal: " ++ show s)
+    let c = sink counter (\i -> putStrLn $ "Counter is: " ++ show i)    
     let inp = do
             l <- getLine 
             if l == "-" 
             then fire edown "Down"
-            else fire eup "Up" >> forceSignal eup
+            else fire eup' "Up" -- unMSS eup >>= \e -> SS.fire e "Up"
             inp
 
     putStrLn "Running network"

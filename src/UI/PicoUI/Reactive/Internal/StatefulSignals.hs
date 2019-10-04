@@ -217,10 +217,6 @@ unionWith f sig1 sig2 = do
     (addListener sig2) conn
     return ret 
 
--- IMPOSSIBLE TO IMPLEMENT IN OUR MODEL:
--- we need to store reference to the first signal somewhere, and we can't.
--- way around it: implement special "listeners" that hook into several signals at once?
--- an attempt to make it work:
 apply :: MonadIO m => StatefulSignal m (a -> b) -> StatefulSignal m a -> m (StatefulSignal m b)
 apply fsig sig = do
     inf <- readVal fsig
@@ -363,7 +359,7 @@ createStatefulSignal initVal = do
             v <- liftIO $ readIORef cache
             let val = f (value v)
             let ls = listeners v
-            liftIO (putStrLn $ "Calling modify with " ++ show (length ls) ++ " listeners" )
+            -- liftIO (putStrLn $ "Calling modify with " ++ show (length ls) ++ " listeners" )
             liftIO $ writeIORef cache v { value = val }
             -- run listeners:
             mapM_ (\l -> l val ) ls
