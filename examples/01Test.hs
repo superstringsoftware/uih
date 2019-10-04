@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings, DuplicateRecordFields, OverloadedLists,
-    TypeSynonymInstances, RecordWildCards #-}
+    TypeSynonymInstances, RecordWildCards, ScopedTypeVariables #-}
 module Main where
 
 import Color
@@ -30,41 +30,33 @@ import PreludeFixes
 setText :: Text -> Widget -> Widget
 setText txt w = w { text = txt }
 
-
+{-
+Reusing basic example from Reactive Banana: +/- buttons and a counter
+-}
 
 test_widgets :: SDLIO ()
 test_widgets = do
     sdlSource <- allEvents <$> gets eventSources
     eHover <- filterS isHover sdlSource
-    eClick <- clickEvents <$> gets eventSources
-    eResized <- filterS isWindowResized sdlSource
-    let logSink e = liftIO (putStrLn ("[HOVER EVENT][" ++ show (timestamp $ source e) ++ "]") >> putStrLn (show e))
-    -- Ok, turns out it works PERFECTLY via basic primitives!!! Just fmap and accum in this case.
-    -- So, define behavior signals, union them into a->a function signal, and accum on the pure widget - 
-    -- you got a widget with behavior.
-    -- w <- tr2 <^$> eHover >>= accum testLabel3
-    -- creating a widget with behavior
-    w <- unionsM [ filterHoverApply (setText "Hovering!") (setText "NOT Hovering :(") <^$> eHover, -- handle hover
-                   filterHoverApply (setText "CLICKED!") (setText "NOT Clicked :(") <^$> eClick, -- handle click
-                   -- pureTextEdit <^$> sdlSource, -- handle text edit
-                   reactiveResize-- handle resizes
-                 ] >>= accum fig1
     w1 <- unionsM [ filterHoverApply (changeBackground $ BGColor $ mBlue 500) (changeBackground $ BGColor $ mGrey 700) <^$> eHover, -- handle hover
                     reactiveResize
-                  ] >>= accum fig2
+                  ] >>= accum fig1
+    w  <- unionsM [ filterHoverApply (changeBackground $ BGColor $ mRed 500) (changeBackground $ BGColor $ mGrey 700) <^$> eHover, -- handle hover
+                    reactiveResize
+                  ] >>= accum fig2    
+    cw  <- onClick w
+    cw1 <- onClick w1
+    -- let counter :: StatefulSignal SDLIO Int
+    (counter :: StatefulSignal SDLIO Int) <- unionsM [ (+1) <^$ cw1, (subtract 1) <^$ cw ] >>= accum 0
+    ci <- readVal counter
+    w2 <- unionsM [ reactiveResize, (\ci -> setText (pack $ show ci)) <^$> counter
+                  ] >>= accum but
     -- creating Raw widget that runs compilation each time a widget is changed
-    registerReactiveWidget w
-    registerReactiveWidget w1
-    -- make it so that it can receive focus
-    makeFocusable w
-    makeFocusable w1
-    let logW wi = liftIO $ putStrLn $ "Widget is: " ++ (unpack $ text (wi::AbstractWidget) )
-    -- sink w logW
-    -- clickW <- onClickE w
-    let logClick e = liftIO $ putStrLn $ "Click event: " ++ show e
-    -- sink clickW logClick
-    onClickAct w logClick
-    -- liftIO $ putStrLn "Testing reactive"
+    registerReactiveWidgets [w, w1, w2]
+    
+
+-- fmapM :: MonadIO m => (Int -> (Widget->Widget)) -> StatefulSignal m Int -> m (StatefulSignal m (Widget->Widget))
+    
 
 main :: IO ()
 main = runSDLIO test_widgets >> pure ()
