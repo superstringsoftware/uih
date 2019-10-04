@@ -65,7 +65,7 @@ fig1 = Label {
   fontData = FontDataDefault,
   text = "Up",
   valign = CenterAlign, halign = CenterAlign,
-  layout = l_TL 40 40 60 40,
+  layout = l_CHT (-60) 40 60 40, -- l_TL 40 40 60 40,
   background = BGColor $ mGrey 700, 
   cacheRect = V4 0 0 0 0,
   isFocus = False
@@ -75,7 +75,7 @@ fig2 = Label {
   fontData = FontDataDefault,
   text = "Down",
   valign = CenterAlign, halign = CenterAlign,
-  layout = l_TL 120 40 60 40,
+  layout = l_CHT 60 40 60 40, -- l_TL 120 40 60 40,
   background = BGColor $ mGrey 700, 
   cacheRect = V4 0 0 0 0,
   isFocus = False

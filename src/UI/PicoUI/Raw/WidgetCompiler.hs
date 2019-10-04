@@ -123,8 +123,12 @@ compile2Widget focus Mid.Panel{..} = pure $ Widget {
 compile2Widget focus Mid.Label {..} = do
     fnt <- fontData2Font fontData
     let coll@(V4 x y w h) = castV4 cacheRect
+    (V2 tw th) <- sizeTextTexture fnt text
+    let xoff = calcXOffset halign w tw
+    let yoff = calcYOffset valign h th
     -- updating cursor position!!!
-    if focus then updateCursorPosition fnt text (x + 8) (y + 4) else pure ()
+    if focus then updateCursorPosition fnt text (x + xoff) (y + yoff) else pure ()
+    
     pure $ Widget {
                 isVisible = True,
                 collider = coll,
@@ -140,7 +144,7 @@ compile2Widget focus Mid.Label {..} = do
                             cursorPos = (T.length text),
                             color = fontData2Color fontData
                         },
-                        offset = V2 8 4
+                        offset = V2 xoff yoff
                     }
                 ]
             }
@@ -172,4 +176,14 @@ compile2Widget focus Mid.SimpleMultilineText{..} = do
         offset = V2 8 (fromIntegral (i * vs + 4) )
     }
     
-    
+--  CenterAlign | LeftAlign | RightAlign 
+sizeTextTexture fnt txt = do
+    (w', h') <- size fnt txt
+    w <- fromIntegral <$> scaleFontSizeDown w'
+    h <- fromIntegral <$> scaleFontSizeDown h'
+    return $ V2 w h
+
+calcXOffset Mid.CenterAlign recW textW = round $ fromIntegral (recW - textW) / 2
+calcXOffset _ _ _ = 8
+calcYOffset Mid.CenterAlign recH textH = round $ fromIntegral (recH - textH) / 2
+calcYOffset _ _ _ = 4

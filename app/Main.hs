@@ -142,7 +142,7 @@ testLabel2 = Label {
 testLabel3 = Label {
   fontData = FontDataDefault,
   text = "Test Reactive",
-  valign = CenterAlign, halign = CenterAlign,
+  valign = CenterAlign, halign = LeftAlign,
   layout = l_TL 280 40 200 60,
   background = BGColor $ mGrey 700, 
   cacheRect = V4 280 40 200 60,
