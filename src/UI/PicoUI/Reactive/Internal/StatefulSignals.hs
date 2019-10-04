@@ -29,6 +29,7 @@ module UI.PicoUI.Reactive.Internal.StatefulSignals
     filterApply,
     filterApplyE,
     filterJust,
+    filterJustInit,
 
     fire,
     sink,
@@ -44,6 +45,7 @@ where
 import Data.Map.Strict as Map hiding (unions, unionWith)
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad (when, join)
+import System.IO.Unsafe (unsafePerformIO)
 
 import Data.IORef
 
@@ -68,6 +70,7 @@ type StatefulSignal m a = (m a, -- read value
     (a -> a) -> m (), -- modify value
     Listener m a -> m (), -- add listener
     Listener m a -> m (m ())) -- add listener and return remove listener action
+
 
 -- Getters for specific functions for our stateful object
 -- reads the value
@@ -176,6 +179,24 @@ filterS filt sig = do
     (addListener sig) conn
     return ret
 
+-- same as filterS, but we give it an initial value explicitly
+filterSInit :: MonadIO m => a -> (a -> Bool) -> StatefulSignal m a -> m (StatefulSignal m a)
+filterSInit initVal filt sig = do
+    ret <- createStatefulSignal initVal
+    let conn = (\x -> when (filt x) $ (modifyVal ret) (const x) )
+    (addListener sig) conn
+    return ret
+
+filterJustInit :: MonadIO m => a -> StatefulSignal m (Maybe a) -> m (StatefulSignal m a)
+filterJustInit initVal sig = do
+    ret <- createStatefulSignal initVal
+    let conn = (\x -> when (filt x) $ let (Just x') = x in (modifyVal ret) (const x') )
+    (addListener sig) conn
+    return ret 
+    where filt e = case e of
+            Nothing -> False
+            Just _  -> True
+    
 -- returns Maybe, but in fact it is guaranteed to only have Just values - the issue is 
 -- in the initial value...    
 filterJust :: MonadIO m => StatefulSignal m (Maybe a) -> m (StatefulSignal m (Maybe a))
@@ -336,15 +357,17 @@ createStatefulSignal initVal = do
     -- liftIO $ putStrLn "Creating stateful signal"
     cache <- liftIO $ newIORef (newSignal initVal)
     let read = value <$> liftIO (readIORef cache)
+    -- can we make at least read operation pure???
+    let readP = value $ unsafePerformIO $ readIORef cache
     let mod f = do
             v <- liftIO $ readIORef cache
             let val = f (value v)
             let ls = listeners v
-            -- liftIO (putStrLn $ "Calling modify with " ++ show (length ls) ++ " listeners" )
+            liftIO (putStrLn $ "Calling modify with " ++ show (length ls) ++ " listeners" )
             liftIO $ writeIORef cache v { value = val }
             -- run listeners:
             mapM_ (\l -> l val ) ls
-    let addL l = liftIO $ modifyIORef' cache (addListenerPure l)
+    let addL l = liftIO $ modifyIORef' cache (addListenerPure l)                     
     -- add listener and return a remove listener function
     -- CAN BE OPTIMIZED TO NOT READ CACHE SEVERAL TIMES
     let addLR l = do
