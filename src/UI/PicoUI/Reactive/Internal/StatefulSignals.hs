@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings, DuplicateRecordFields, 
 RecordWildCards, OverloadedLists, PostfixOperators, TypeSynonymInstances, 
-FlexibleInstances, FlexibleContexts, ScopedTypeVariables, TypeFamilies #-}
+FlexibleInstances, FlexibleContexts, ScopedTypeVariables, TypeFamilies, InstanceSigs #-}
 
 -- VERY EASY TO USE REACTIVE VAR IN THE MONAD TYPE
 -- it is immutable now, may want to add a mutable version with the same interface
@@ -43,7 +43,7 @@ where
 
 import Data.Map.Strict as Map hiding (unions, unionWith)
 import Control.Monad.IO.Class (liftIO, MonadIO)
-import Control.Monad (when)
+import Control.Monad (when, join)
 
 import Data.IORef
 
