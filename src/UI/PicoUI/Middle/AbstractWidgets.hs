@@ -174,11 +174,14 @@ l_TL  x  y  w h = TopLeft  $ V4 x y w h
 l_TR  dr y  w h = TopRight $ V4 dr y w h
 l_BL  x  db w h = BotLeft  $ V4 x db w h
 l_BR  dr db w h = BotRight $ V4 dr db w h
+
 l_SA  dl dt dr db = StretchAll $ V4 dl dt dr db
 l_SHT dl dt dr h = StretchH_Top $ V4 dl dt dr h
 l_SHB dl db dr h = StretchH_Bot $ V4 dl db dr h
 l_SVL dl dt w db = StretchV_Left $ V4 dl dt w db
 l_SVR dr dt w db = StretchV_Right $ V4 dr dt w db
+
+l_CA sx sy w h = CenterAll $ V4 sx sy w h
 
 -- default layout - centering
 defaultCenterLayout = l_SA 8 4 8 4
@@ -198,6 +201,12 @@ layoutToRectangle (StretchH_Top   (V4 l t r b)) (V4 x y w h)  = V4 (x+l) (y+t) (
 layoutToRectangle (StretchH_Bot   (V4 l t r b)) (V4 x y w h)  = V4 (x+l) (y+h-t-b) (w-l-r) b
 layoutToRectangle (StretchV_Left  (V4 l t r b)) (V4 x y w h)  = V4 (x+l) (y+t) r       (h-t-b)
 layoutToRectangle (StretchV_Right (V4 l t r b)) (V4 x y w h)  = V4 (x+w-l-r) (y+t) r   (h-t-b)
+
+-- shift_x shift_y w h - shifts are relative to the calculated position!
+layoutToRectangle (CenterAll     (V4 l t r b)) (V4 x y w h)  = 
+    let x' = round ( fromIntegral (x + w) / 2) - r + l
+        y' = round ( fromIntegral (y + h) / 2) - b + t
+    in  V4 x' y' r b
 
 -- ok this is crazy confusing so need to check
 __lt lay res = do

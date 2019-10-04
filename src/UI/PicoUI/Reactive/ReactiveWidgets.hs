@@ -41,6 +41,7 @@ registerReactiveWidget :: StatefulSignal SDLIO Widget -> SDLIO ()
 registerReactiveWidget w = do
     rawW <- fmapMM (\pw -> P.compile2Widget (isWidgetInFocus pw) pw) w
     insertRawWidget rawW 
+    addReactiveResize w
 
 -- make widget focusable on left click    
 makeFocusable :: ReactiveWidget -> SDLIO ()
@@ -90,6 +91,11 @@ reactiveResize = do
         conn _ = pure ()
     (addListener sig) conn
     return ret
+
+addReactiveResize w = do
+    fsig <- reactiveResize
+    let conn = (\f -> readVal w  >>= \v -> (modifyVal w) (const (f v)) )
+    (addListener fsig) conn    
 
 -- fmapM :: MonadIO m => (Event -> (Widget -> Widget) ) -> StatefulSignal m Event -> m (StatefulSignal m (Widget -> Widget) )
 -- function that handles different text editing events

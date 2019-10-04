@@ -38,18 +38,18 @@ test_widgets :: SDLIO ()
 test_widgets = do
     sdlSource <- allEvents <$> gets eventSources
     eHover <- filterS isHover sdlSource
-    w1 <- unionsM [ filterHoverApply (changeBackground $ BGColor $ mBlue 500) (changeBackground $ BGColor $ mGrey 700) <^$> eHover, -- handle hover
-                    reactiveResize
+    w1 <- unionsM [ filterHoverApply (changeBackground $ BGColor $ mBlue 500) (changeBackground $ BGColor $ mGrey 700) <^$> eHover -- handle hover
+                    
                   ] >>= accum fig1
-    w  <- unionsM [ filterHoverApply (changeBackground $ BGColor $ mRed 500) (changeBackground $ BGColor $ mGrey 700) <^$> eHover, -- handle hover
-                    reactiveResize
+    w  <- unionsM [ filterHoverApply (changeBackground $ BGColor $ mRed 500) (changeBackground $ BGColor $ mGrey 700) <^$> eHover -- handle hover
+                    
                   ] >>= accum fig2    
     cw  <- onClick w
     cw1 <- onClick w1
     -- let counter :: StatefulSignal SDLIO Int
     (counter :: StatefulSignal SDLIO Int) <- unionsM [ (+1) <^$ cw1, (subtract 1) <^$ cw ] >>= accum 0
     ci <- readVal counter
-    w2 <- unionsM [ reactiveResize, (\ci -> setText (pack $ show ci)) <^$> counter
+    w2 <- unionsM [ (\ci -> setText (pack $ show ci)) <^$> counter
                   ] >>= accum but
     -- creating Raw widget that runs compilation each time a widget is changed
     registerReactiveWidgets [w, w1, w2]
@@ -85,7 +85,7 @@ but = Label {
   fontData = FontDataDefault,
   text = "0",
   valign = CenterAlign, halign = CenterAlign,
-  layout = l_TL 40 100 140 60,
+  layout = l_CA 0 0 100 60, -- l_TL 40 100 140 60,
   background = BGColor $ mGrey 500, 
   cacheRect = V4 0 0 0 0,
   isFocus = False

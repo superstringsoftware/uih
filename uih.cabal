@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b23a082a7f2f296395ec341004d26e20f48b38314fdb208f742b73172de1fbf0
+-- hash: 2b5ced9308292c2d96886e6a211290bbbead48f251329cad18ada654351a626f
 
 name:           uih
 version:        0.1.0.0
@@ -40,6 +40,7 @@ library
       UI.PicoUI.Raw.WidgetCompiler
       UI.PicoUI.Raw.Widgets
       UI.PicoUI.Reactive.Internal.MonadicSignals
+      UI.PicoUI.Reactive.Internal.PureSignals
       UI.PicoUI.Reactive.Internal.StatefulSignals
       UI.PicoUI.Reactive.ReactiveWidgets
       UI.PicoUI.Reactive.SDLLoop
