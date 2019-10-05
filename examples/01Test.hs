@@ -27,29 +27,21 @@ import UI.PicoUI.Raw.Events (timestamp, source, Event, pos)
 
 import PreludeFixes
 
-setText :: Text -> Widget -> Widget
-setText txt w = w { text = txt }
-
-setTextShow :: Show a => a -> Widget -> Widget
-setTextShow a w = w { text = pack $ show a }
-
 {-
 Reusing basic example from Reactive Banana: +/- buttons and a counter
 -}
 
 test_widgets :: SDLIO ()
 test_widgets = do
-    sdlSource <- allEvents <$> gets eventSources
-    eHover <- filterS isHover sdlSource
+    eHover <- hoverEvents <$> gets eventSources
     w1 <- filterHoverApply (changeBackground $ BGColor $ mBlue 500) 
                            (changeBackground $ BGColor $ mGrey 700) 
                            <^$> eHover >>= accum fig1
     w  <- filterHoverApply (changeBackground $ BGColor $ mRed  500) 
                            (changeBackground $ BGColor $ mGrey 700) 
                            <^$> eHover >>= accum fig2    
-    cw  <- onClick w
-    cw1 <- onClick w1
-    (counter :: StatefulSignal SDLIO Int) <- unionsM [ (+1) <^$ cw1, (subtract 1) <^$ cw ] >>= accum 0
+    (counter :: PicoSignal Int) <- 
+        unionsM [ (+1) <^$^ (onClick w1), (subtract 1) <^$^ (onClick w) ] >>= accum 0
     w2 <- setTextShow <^$> counter >>= accum but
     registerReactiveWidgets [w, w1, w2]
     

@@ -15,6 +15,7 @@ module UI.PicoUI.Reactive.Internal.StatefulSignals
     fmapMM,
     (<^$>),
     (<^$),
+    (<^$^),
     (<^@>),
     filterS,
     unionWith,
@@ -51,6 +52,7 @@ import Data.IORef
 
 infixl 4 <^$>
 infixl 4 <^$
+infixl 4 <^$^
 -- infixl 4 $$>
 infixl 4 <^@>
 
@@ -139,6 +141,7 @@ fmapMM f sig = do
 -- using ^ to indicate it's monadic    
 f <^$> sig = fmapM f sig
 x <^$  sig = tagM x sig  
+x <^$^ sig = tagMM x sig 
 
 -- analog of Functor's (<$):: a -> f b -> f a  
 tagM :: MonadIO m => b -> StatefulSignal m a -> m (StatefulSignal m b)
@@ -147,6 +150,9 @@ tagM val sig = do
     let conn = (\x -> (modifyVal ret) (const val) )
     (addListener sig) conn
     return ret
+
+tagMM :: MonadIO m => b -> m (StatefulSignal m a) -> m (StatefulSignal m b)    
+tagMM val msig = msig >>= tagM val
 
 -- probably the most versatile function:
 -- takes a *pure* function from signal b and an existing value of signal a, that produces a new value of signal a

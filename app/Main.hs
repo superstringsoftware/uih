@@ -73,8 +73,6 @@ test_widgets = mdo
 
 -- fmapM :: MonadIO m => (Event -> (Widget -> Widget) ) -> StatefulSignal m Event -> m (StatefulSignal m (Widget -> Widget))
 
-setText :: Text -> Widget -> Widget
-setText txt w = w { text = txt }
 
 
 -- import SDL.Raw.Types (Rect(..))

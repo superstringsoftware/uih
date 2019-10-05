@@ -87,6 +87,7 @@ fontData2Font Mid.FontData{..} = do
         Nothing -> do
             -- font with given name not found in loaded fonts, let's try to load:
             fntm1 <- safeLoadFont (unpack fontName) fontSize
+            -- return either loaded or default
             maybe getDefaultFont (\fn -> pure $ fn) fntm1
 
 -- fontData2Color :: Mid.FontData -> Color

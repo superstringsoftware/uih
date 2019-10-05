@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2b5ced9308292c2d96886e6a211290bbbead48f251329cad18ada654351a626f
+-- hash: 8b24f185f05a31470cfd28a3f98a1a106e0967f797aa1d9a6b56e7bd7d3804eb
 
 name:           uih
 version:        0.1.0.0
@@ -19,7 +19,6 @@ license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
     README.md
-    ChangeLog.md
 
 source-repository head
   type: git

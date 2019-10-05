@@ -100,6 +100,13 @@ calculateDimensions (CompositeWidget parent rect@(V4 _ _ w h) children) =
                             (map calculateDimensions cchildren)
 -}
 
+setText :: Text -> Widget -> Widget
+setText txt w = w { text = txt }
+
+setTextShow :: Show a => a -> Widget -> Widget
+setTextShow a w = w { text = pack $ show a }
+
+
 -- SCREEN is used for top level, root definition of the UI tree.
 data AbstractWidget = 
     -- Text label that CANNOT be edited

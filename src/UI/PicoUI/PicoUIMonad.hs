@@ -76,13 +76,16 @@ data InputDevicesState = InputDevicesState {
 } deriving Show
 
 type ReactiveWidget = StatefulSignal SDLIO Mid.AbstractWidget
+-- reactive signals in SDLIO monad
+type PicoSignal a = StatefulSignal SDLIO a
 
 data EventSources = EventSources {
     allEvents      :: StatefulSignal SDLIO Event
   , clickEvents    :: StatefulSignal SDLIO Event
   , textEvents     :: StatefulSignal SDLIO Event
   , keyboardEvents :: StatefulSignal SDLIO Event
-  , focusEvents    :: StatefulSignal SDLIO Event -- source for the events that only a widget in focus should receive
+  , focusEvents    :: StatefulSignal SDLIO Event -- source for the events that only a widget in focus should receive, see ReactiveWidgets
+  , hoverEvents    :: StatefulSignal SDLIO Event
 } deriving Show
 
 -- record to keep our current SDL subsystem state
@@ -241,7 +244,8 @@ initState = do
     ke <- createStatefulSignal $ ENonEvent zeroSource
     -- focus events: for now only text, but eventually needs to be more complicated
     fe <- filterS (\e -> (isBackspace e) || (isTextEvent e)) es
-    let eS = EventSources es ce te ke fe
+    he <- filterS isHover es
+    let eS = EventSources es ce te ke fe he
     s  <- liftIO initStateIO
     put $ s { eventSources = eS, removeFocus = pure () } 
 
