@@ -22,7 +22,7 @@ import UI.PicoUI.Raw.Events (timestamp, source, Event, pos)
 
 -- import Data.Foldable
 
-import qualified SDL as SDL
+import qualified SDL
 
 import UI.PicoUI.Reactive.Internal.StatefulSignals
 import UI.PicoUI.Reactive.ReactiveWidgets
@@ -54,7 +54,7 @@ test_widgets = mdo
                    -- pureTextEdit <^$> sdlSource, -- handle text edit
                    reactiveResize -- handle resizes
                  ] >>= accum testLabel3
-    w1 <- unionsM [ filterHoverApply (changeBackground $ BGColor $ mBlue 500) (changeBackground $ BGColor $ mGrey 700) <^$> eHover, -- handle hover
+    w1 <- unionsM [ filterHoverApply (changeBackground $ BGColor $ mBlue 500) (changeBackground $ BGColor $ mdBlueGray 700) <^$> eHover, -- handle hover
                     reactiveResize
                   ] >>= accum testLabel
     -- creating Raw widget that runs compilation each time a widget is changed
@@ -90,7 +90,7 @@ testProgram =
   >> pure ()
     
 redOn2Click = filteredHandler (isLeftClick 2) (changeBackground $ BGColor $ mRed 500)
-blueOnClick = filteredHandler (isLeftClick 1) (changeBackground $ BGColor $ mBlue 500)
+blueOnClick = filteredHandler (isLeftClick 1) (changeBackground $ BGColor $ mdBlueGray 500)
 -- composite handler combining the 2
 -- compositeHandler w = redOn2Click w >>= blueOnClick
 

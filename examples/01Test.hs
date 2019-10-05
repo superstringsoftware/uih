@@ -34,11 +34,11 @@ Reusing basic example from Reactive Banana: +/- buttons and a counter
 test_widgets :: SDLIO ()
 test_widgets = do
     eHover <- hoverEvents <$> gets eventSources
-    w1 <- filterHoverApply (changeBackground $ BGColor $ mBlue 500) 
-                           (changeBackground $ BGColor $ mGrey 700) 
+    w1 <- filterHoverApply (changeBackground $ BGColor $ mdOrange 500) 
+                           (changeBackground $ BGColor $ mdBlueGray 700) 
                            <^$> eHover >>= accum fig1
-    w  <- filterHoverApply (changeBackground $ BGColor $ mRed  500) 
-                           (changeBackground $ BGColor $ mGrey 700) 
+    w  <- filterHoverApply (changeBackground $ BGColor $ mdTeal  500) 
+                           (changeBackground $ BGColor $ mdBlueGray 700) 
                            <^$> eHover >>= accum fig2    
     (counter :: PicoSignal Int) <- 
         unionsM [ (+1) <^$^ onClick w1, subtract 1 <^$^ onClick w ] >>= accum 0
@@ -52,19 +52,19 @@ main = runSDLIO test_widgets >> pure ()
 fig1 = defaultLabel {
   text = "Up",
   layout = l_CHT (-40) 40 60 40, 
-  background = BGColor $ mGrey 700  
+  background = BGColor $ mdBlueGray 700  
 }
 
 fig2 = defaultLabel {
   text = "Down",
   layout = l_CHT 40 40 60 40, 
-  background = BGColor $ mGrey 700  
+  background = BGColor $ mdBlueGray 700  
 }
 
 but = defaultLabel {
   text = "0",
   layout = l_CHT 0 90 100 60, 
-  background = BGColor $ mGrey 500  
+  background = BGColor $ mdBlueGray 500  
 }
 
 

@@ -87,18 +87,8 @@ calculateCacheRect w h widg = widg { cacheRect = layoutToRectangle (layout widg)
 
 isInWidget x y widg = 
     let (V4 a b w h) = cacheRect widg
-    in  if ( (x>a) && (x < a + w) && (y>b) && (y<b+h) ) then True else False
+    in  ( (x>a) && (x < a + w) && (y>b) && (y<b+h) )
 
-{-
--- ok not sure if recursion terminates here... should be with empty list, right?
-calculateDimensions :: CompositeWidget -> CompositeWidget
-calculateDimensions (CompositeWidget parent rect@(V4 _ _ w h) children) = 
-    CompositeWidget parent rect (map fn children) where
-        fn (CompositeWidget widget crect cchildren) = 
-            CompositeWidget widget 
-                            (calculateDimsRelToParent w h widget)
-                            (map calculateDimensions cchildren)
--}
 
 setText :: Text -> Widget -> Widget
 setText txt w = w { text = txt }
@@ -149,12 +139,16 @@ data AbstractWidget =
     SCREEN -- used for setting up CompositeWidget tree 
     deriving (Show, Eq)
 
+------------------------------------------------------------------------------
+-- DEFAULTS
+------------------------------------------------------------------------------
+defaultLabel :: AbstractWidget
 defaultLabel = Label {
     fontData = FontDataDefault,
     text = "",
     valign = CenterAlign, halign = CenterAlign,
     layout = l_CA 0 0 50 50, 
-    background = BGColor $ mGrey 900, 
+    background = BGColor $ mdBlueGray 900, 
     cacheRect = V4 0 0 0 0,
     isFocus = False
 }    
