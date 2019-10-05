@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings, DuplicateRecordFields, 
-RecordWildCards, OverloadedLists, PostfixOperators, TypeSynonymInstances, 
-FlexibleInstances, FlexibleContexts, ScopedTypeVariables, TypeFamilies, InstanceSigs #-}
+    RecordWildCards, OverloadedLists, PostfixOperators, TypeSynonymInstances, 
+    FlexibleInstances, FlexibleContexts, ScopedTypeVariables, TypeFamilies, InstanceSigs #-}
 
 module UI.PicoUI.Reactive.Internal.MonadicSignals
 
@@ -43,7 +43,7 @@ _sink sig act = do
     s <- unMSS sig
     SS.sink s act
     pure s
-sink sig act = MSS $! (_sink sig act)
+sink sig act = MSS $! _sink sig act
 
 sink' sig act = do
     s <- unMSS sig

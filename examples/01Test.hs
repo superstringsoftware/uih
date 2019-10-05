@@ -18,7 +18,7 @@ import UI.PicoUI.Middle.AbstractWidgets
 
 -- import Data.Foldable
 
-import qualified SDL as SDL
+import qualified SDL
 
 import UI.PicoUI.Reactive.Internal.StatefulSignals
 import UI.PicoUI.Reactive.ReactiveWidgets
@@ -41,7 +41,7 @@ test_widgets = do
                            (changeBackground $ BGColor $ mGrey 700) 
                            <^$> eHover >>= accum fig2    
     (counter :: PicoSignal Int) <- 
-        unionsM [ (+1) <^$^ (onClick w1), (subtract 1) <^$^ (onClick w) ] >>= accum 0
+        unionsM [ (+1) <^$^ onClick w1, subtract 1 <^$^ onClick w ] >>= accum 0
     w2 <- setTextShow <^$> counter >>= accum but
     registerReactiveWidgets [w, w1, w2]
     

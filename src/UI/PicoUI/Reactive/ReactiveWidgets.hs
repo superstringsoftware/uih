@@ -1,11 +1,11 @@
 {-# LANGUAGE OverloadedStrings, DuplicateRecordFields, 
-RecordWildCards, OverloadedLists, PostfixOperators #-}
+    RecordWildCards, OverloadedLists, PostfixOperators #-}
 
 module UI.PicoUI.Reactive.ReactiveWidgets where
 
 -- redefinition of event loop using our reactive engine
 
-import SDL as SDL hiding (get)
+import SDL hiding (get)
 import SDL.Font
 import Data.Text as T hiding (any)
 import Data.Word
@@ -16,6 +16,8 @@ import Color
 
 import Control.Monad.Trans.State.Strict (gets, modify')
 import Control.Monad.IO.Class (liftIO, MonadIO)
+
+import Control.Monad (join)
 
 import UI.PicoUI.Raw.Events as P
 import UI.PicoUI.Raw.WidgetCompiler as P
@@ -46,7 +48,7 @@ registerReactiveWidget w = do
 -- make widget focusable on left click    
 makeFocusable :: ReactiveWidget -> SDLIO ()
 makeFocusable rw = onClickActW rw (\w e -> 
-        if (isLeftClick 1 e) 
+        if isLeftClick 1 e
         then addFocus w
         else pure ()
     )
@@ -56,19 +58,19 @@ addFocus :: ReactiveWidget -> SDLIO ()
 addFocus rw = do
     doRemoveFocus -- first, remove currently focused widget
     fe <- focusEvents <$> gets eventSources
-    let conn e = (modifyVal rw) (pureTextEdit e)
-    rm <- (addListenerWRemove fe) conn -- adding listener and getting a remove action
+    let conn e = modifyVal rw (pureTextEdit e)
+    rm <- addListenerWRemove fe conn -- adding listener and getting a remove action
     modify' (\s -> s { removeFocus = rm, focusWidget = Just rw }) -- updating state with remove action
-    (modifyVal rw) (\w -> w { isFocus = True })
+    modifyVal rw (\w -> w { isFocus = True })
 
 -- remove focus from the currently focused widget
 doRemoveFocus :: SDLIO ()
 doRemoveFocus = do 
-    rf <- gets removeFocus
-    rf -- execute remove action
+    -- execute remove action:
+    join $ gets removeFocus
     mfw <- gets focusWidget
     maybe (pure ())
-          (\rw -> (modifyVal rw) (\w -> w { isFocus = False }) ) -- resetting focus to false
+          (\rw -> modifyVal rw (\w -> w { isFocus = False }) ) -- resetting focus to false
           mfw
     modify' (\s -> s { removeFocus = pure (), focusWidget = Nothing }) -- set it to nothing
 
@@ -86,22 +88,22 @@ focusEventsListener e = do
 -- calculateCacheRect :: Int -> Int -> Widget -> Widget
 reactiveResize = do
     sig <- allEvents <$> gets eventSources
-    ret <- createStatefulSignal (\w -> w)
-    let conn (EWindowResized _ (V2 x y)) = (modifyVal ret) $ const (calculateCacheRect x y)
+    ret <- createStatefulSignal id
+    let conn (EWindowResized _ (V2 x y)) = modifyVal ret $ const (calculateCacheRect x y)
         conn _ = pure ()
-    (addListener sig) conn
+    addListener sig conn
     return ret
 
 addReactiveResize w = do
     fsig <- reactiveResize
-    let conn = (\f -> readVal w  >>= \v -> (modifyVal w) (const (f v)) )
-    (addListener fsig) conn    
+    let conn f = readVal w  >>= \v -> modifyVal w (const (f v)) 
+    addListener fsig conn    
 
 -- fmapM :: MonadIO m => (Event -> (Widget -> Widget) ) -> StatefulSignal m Event -> m (StatefulSignal m (Widget -> Widget) )
 -- function that handles different text editing events
 pureTextEdit :: P.Event -> (Widget -> Widget)
 pureTextEdit e w = case e of
-    ETextInput{..} -> alterText (\txt0 -> txt0 <> txt) w
+    ETextInput{..} -> alterText (<> txt) w
     EBackspace{..} -> alterText (\txt -> if txt == "" then txt else T.init txt) w
     _              -> w
 
@@ -117,11 +119,8 @@ pureTextEdit e w = case e of
 onClick :: ReactiveWidget -> SDLIO ReactiveWidget
 onClick w = do
     events <- clickEvents <$> gets eventSources
-    -- let logE e = liftIO $ putStrLn $ "Click Event: " ++ show e
-    -- sink events logE
-    ret <- fmapM isHovering events >>= \s -> filterApplyE s w
-    -- ret <- fmapM isHoveringW w >>= \s -> filterApplyE s events
-    return ret
+    fmapM isHovering events >>= \s -> filterApplyE s w
+    
 
 -- give 2 functions to apply to widget in case event was hovering or not and it will pick which one to use
 -- can be used to create widgets like:
@@ -134,12 +133,12 @@ filterHoverApply ftrue ffalse e w =
 
 isHovering :: P.Event -> Widget -> Bool
 isHovering e w = let (V2 x y) = pos $ source e
-                 in  if isInWidget x y w then True else False
+                 in  isInWidget x y w
 
 isHoveringW :: Widget -> P.Event -> Bool
 isHoveringW w e = isHovering e w
 
-isHoveringE :: P.Event -> Widget -> Maybe (P.Event)
+isHoveringE :: P.Event -> Widget -> Maybe P.Event
 isHoveringE e w = let (V2 x y) = pos $ source e
                  in  if isInWidget x y w then Just e else Nothing
 
@@ -147,22 +146,22 @@ isHoveringE e w = let (V2 x y) = pos $ source e
 onClickE :: ReactiveWidget -> SDLIO (StatefulSignal SDLIO (Maybe P.Event))
 onClickE w = do    
     events <- clickEvents <$> gets eventSources
-    ret <- fmapM isHoveringE events >>= \f -> applyE f w >>= filterJust
-    return ret      
+    fmapM isHoveringE events >>= \f -> applyE f w >>= filterJust
+    
     
 -- add a listener for on click events    
 onClickAct :: ReactiveWidget -> (P.Event -> SDLIO ()) -> SDLIO ()
 onClickAct w act = do
     sig <- onClickE w
     let conn (Just e) = act e
-    (addListener sig) conn
+    addListener sig conn
 
 -- add a listener that also takes a widget as an argument    
 onClickActW :: ReactiveWidget -> (ReactiveWidget -> P.Event -> SDLIO ()) -> SDLIO ()    
 onClickActW w act = do
     sig <- onClickE w
     let conn (Just e) = act w e
-    (addListener sig) conn
+    addListener sig conn
 
 
 
