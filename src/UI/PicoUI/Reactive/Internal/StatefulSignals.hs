@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings, DuplicateRecordFields, 
-RecordWildCards, OverloadedLists, PostfixOperators, TypeSynonymInstances, 
-FlexibleInstances, FlexibleContexts, ScopedTypeVariables, TypeFamilies, InstanceSigs #-}
+    RecordWildCards, OverloadedLists, PostfixOperators, TypeSynonymInstances, 
+    FlexibleInstances, FlexibleContexts, ScopedTypeVariables, TypeFamilies, InstanceSigs, LambdaCase #-}
 
 -- VERY EASY TO USE REACTIVE VAR IN THE MONAD TYPE
 -- it is immutable now, may want to add a mutable version with the same interface
@@ -50,6 +50,8 @@ import System.IO.Unsafe (unsafePerformIO)
 
 import Data.IORef
 
+import PreludeFixes
+
 infixl 4 <^$>
 infixl 4 <^$
 infixl 4 <^$^
@@ -88,11 +90,11 @@ addListener (_,_,x,_) = x
 addListenerWRemove :: MonadIO m => StatefulSignal m a -> Listener m a -> m (m())
 addListenerWRemove (_,_,_,x) = x
 -- "fire signal eventValue" simply sets the value to eventValue and then fires it to all subscribers
-fire sig val = (modifyVal sig) (const val)
+fire sig val = modifyVal sig (const val)
 -- listens to changes in the signal and executes an action in the monad in response
 -- again, a simple shortcut to addListener
 sink :: MonadIO m => StatefulSignal m a -> (a -> m()) -> m ()
-sink sig act = (addListener sig) act
+sink = addListener
 
 
 
@@ -111,9 +113,8 @@ newSignal a = Signal {value = a, listeners = Map.empty, curId = 0}
 fmapM :: MonadIO m => (a -> b) -> StatefulSignal m a -> m (StatefulSignal m b)
 fmapM f sig = do
     initVal <- readVal sig
-    ret <- createStatefulSignal (f initVal)
-    let conn = (\x -> (modifyVal ret) (const $! (f x)) )
-    (addListener sig) conn
+    ret     <- createStatefulSignal (f initVal)
+    addListener sig (modifyVal ret • const • f)
     return ret
 
 -- this hints that StatefulSignal is a monad, even if not a functor. Or does it?  
@@ -128,10 +129,8 @@ fmapMM f sig = do
     initVal <- readVal sig
     iv <- f initVal
     ret <- createStatefulSignal iv
-    let conn e = do
-            val <- f e
-            (modifyVal ret) (const val)
-    (addListener sig) conn        
+    let conn e = f e >>= modifyVal ret • const
+    addListener sig conn        
     return ret
 
 -- sort of like pure in Applicative but again, since we are in a monad...    
@@ -147,8 +146,8 @@ x <^$^ sig = tagMM x sig
 tagM :: MonadIO m => b -> StatefulSignal m a -> m (StatefulSignal m b)
 tagM val sig = do
     ret <- createStatefulSignal val
-    let conn = (\x -> (modifyVal ret) (const val) )
-    (addListener sig) conn
+    let conn x = modifyVal ret (const val)
+    addListener sig conn
     return ret
 
 tagMM :: MonadIO m => b -> m (StatefulSignal m a) -> m (StatefulSignal m b)    
@@ -164,8 +163,8 @@ tagMM val msig = msig >>= tagM val
 -- OK, TURNS OUT IT CAN EASILY BE CHANGED INTO fmapM f >>= accum ... !!!
 depend :: MonadIO m => (b -> a -> a) -> StatefulSignal m a -> StatefulSignal m b -> m ()
 depend f sig onSig = do
-    let conn b = (modifyVal sig) (f b)
-    (addListener onSig) conn
+    let conn b = modifyVal sig (f b)
+    addListener onSig conn
     
     
 
@@ -179,25 +178,24 @@ depend f sig onSig = do
 -- in one go. So, instead of creating a new signal here, create only one and then expand it.
 filterS :: MonadIO m => (a -> Bool) -> StatefulSignal m a -> m (StatefulSignal m a)
 filterS filt sig = do
-    (initVal :: a) <- readVal sig
-    ret <- createStatefulSignal initVal
-    let conn = (\x -> when (filt x) $ (modifyVal ret) (const x) )
-    (addListener sig) conn
+    ret <- readVal sig >>= createStatefulSignal
+    let conn x = when (filt x) $ modifyVal ret (const x)
+    addListener sig conn
     return ret
 
 -- same as filterS, but we give it an initial value explicitly
 filterSInit :: MonadIO m => a -> (a -> Bool) -> StatefulSignal m a -> m (StatefulSignal m a)
 filterSInit initVal filt sig = do
     ret <- createStatefulSignal initVal
-    let conn = (\x -> when (filt x) $ (modifyVal ret) (const x) )
-    (addListener sig) conn
+    let conn x = when (filt x) $ modifyVal ret (const x)
+    addListener sig conn
     return ret
 
 filterJustInit :: MonadIO m => a -> StatefulSignal m (Maybe a) -> m (StatefulSignal m a)
 filterJustInit initVal sig = do
     ret <- createStatefulSignal initVal
-    let conn = (\x -> when (filt x) $ let (Just x') = x in (modifyVal ret) (const x') )
-    (addListener sig) conn
+    let conn x = when (filt x) $ let (Just x') = x in modifyVal ret (const x')
+    addListener sig conn
     return ret 
     where filt e = case e of
             Nothing -> False
@@ -206,9 +204,9 @@ filterJustInit initVal sig = do
 -- returns Maybe, but in fact it is guaranteed to only have Just values - the issue is 
 -- in the initial value...    
 filterJust :: MonadIO m => StatefulSignal m (Maybe a) -> m (StatefulSignal m (Maybe a))
-filterJust = filterS (\e -> case e of
-                                        Nothing -> False
-                                        Just _  -> True ) 
+filterJust = filterS (\case
+                        Nothing -> False
+                        Just _  -> True ) 
 
 
 -- we don't really have simultaneous events in our model, do we???
@@ -218,9 +216,9 @@ unionWith f sig1 sig2 = do
     iv1 <- readVal sig1
     iv2 <- readVal sig2
     ret <- createStatefulSignal (f iv1 iv2)
-    let conn = (\x -> (modifyVal ret) (const x) )
-    (addListener sig1) conn
-    (addListener sig2) conn
+    let conn = modifyVal ret • const
+    addListener sig1 conn
+    addListener sig2 conn
     return ret 
 
 apply :: MonadIO m => StatefulSignal m (a -> b) -> StatefulSignal m a -> m (StatefulSignal m b)
@@ -228,10 +226,10 @@ apply fsig sig = do
     inf <- readVal fsig
     inv <- readVal sig
     ret <- createStatefulSignal (inf inv)
-    let conn1 = (\f -> readVal sig  >>= \v -> (modifyVal ret) (const (f v)) )
-    let conn2 = (\v -> readVal fsig >>= \f -> (modifyVal ret) (const (f v)) )
-    (addListener fsig) conn1
-    (addListener  sig) conn2
+    let conn1 f = readVal sig  >>= \v -> modifyVal ret (const (f v))
+    let conn2 v = readVal fsig >>= \f -> modifyVal ret (const (f v))
+    addListener fsig conn1
+    addListener  sig conn2
     return ret
 
 f <^@> s = apply f s
@@ -242,8 +240,8 @@ applyE fsig sig = do
     inf <- readVal fsig
     inv <- readVal sig
     ret <- createStatefulSignal (inf inv)
-    let conn1 = (\f -> readVal sig  >>= \v -> (modifyVal ret) (const (f v)) )
-    (addListener fsig) conn1
+    let conn1 f = readVal sig  >>= \v -> modifyVal ret (const (f v))
+    addListener fsig conn1
     return ret
 
 
@@ -252,10 +250,10 @@ filterApply :: MonadIO m => StatefulSignal m (a -> Bool) -> StatefulSignal m a -
 filterApply filtSig sig = do
     inv <- readVal sig
     ret <- createStatefulSignal inv
-    let conn1 = (\f -> readVal sig     >>= \e -> when (f e) $ (modifyVal ret) (const e) )
-    let conn2 = (\e -> readVal filtSig >>= \f -> when (f e) $ (modifyVal ret) (const e) )
-    (addListener filtSig) conn1
-    (addListener     sig) conn2
+    let conn1 f = readVal sig     >>= \e -> when (f e) $ modifyVal ret (const e)
+    let conn2 e = readVal filtSig >>= \f -> when (f e) $ modifyVal ret (const e)
+    addListener filtSig conn1
+    addListener     sig conn2
     return ret
 
 -- ok, the above case showed (when we tried to define on click) that the difference between Behaviors and
@@ -267,8 +265,8 @@ filterApplyE :: MonadIO m => StatefulSignal m (a -> Bool) -> StatefulSignal m a 
 filterApplyE filtSig sig = do
     inv <- readVal sig
     ret <- createStatefulSignal inv
-    let conn1 = (\f -> readVal sig     >>= \e -> when (f e) $ (modifyVal ret) (const e) )
-    (addListener filtSig) conn1
+    let conn1 f = readVal sig     >>= \e -> when (f e) $ modifyVal ret (const e)
+    addListener filtSig conn1
     return ret
     
 
