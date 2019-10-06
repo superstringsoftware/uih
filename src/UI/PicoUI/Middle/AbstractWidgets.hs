@@ -8,6 +8,7 @@
     , RankNTypes
     , BlockArguments
     , DisambiguateRecordFields
+    , StandaloneDeriving
      #-}
 
 module UI.PicoUI.Middle.AbstractWidgets where
@@ -20,8 +21,11 @@ import Linear
 import Color
 
 import Data.Vector hiding ((++))
+import Data.Vector.Unboxed (Unbox)
 
 import UI.PicoUI.Raw.Widgets (WidgetId)
+
+import UI.PicoUI.Charts.DataSeries
 
 data FontStyle = Normal | Bold | Italic | Strikethrough | Underline deriving (Show, Eq)
 data TextAlign = CenterAlign | LeftAlign | RightAlign deriving (Show, Eq)
@@ -135,9 +139,16 @@ data AbstractWidget =
         cursorCol, cursorLine :: !Int, -- cursor position in terms of symbols
         cacheRect :: V4 Int,
         isFocus :: Bool
+    } | Chart {
+        layout :: Layout,
+        background :: Background,
+        cacheRect :: V4 Int,
+        dataSeries :: DataSeriesN Double Double
     } |
     SCREEN -- used for setting up CompositeWidget tree 
-    deriving (Show, Eq)
+    
+instance Show AbstractWidget where
+    show _ = "AbstractWidget"
 
 ------------------------------------------------------------------------------
 -- DEFAULTS

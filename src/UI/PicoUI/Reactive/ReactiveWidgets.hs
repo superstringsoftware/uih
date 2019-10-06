@@ -35,6 +35,9 @@ import UI.PicoUI.Reactive.Internal.StatefulSignals
 
 -- The only (possible) drawback - need to be careful to run the network in 1 thread, but that was the initial design anyway.
 
+createReactiveWidget :: Widget -> SDLIO (StatefulSignal SDLIO Widget)
+createReactiveWidget = createStatefulSignal
+
 -- For now, we are simply adding raw widget signals to the map in the monad and running render on them periodically
 registerReactiveWidgets ::[StatefulSignal SDLIO Widget] -> SDLIO ()
 registerReactiveWidgets = mapM_ registerReactiveWidget

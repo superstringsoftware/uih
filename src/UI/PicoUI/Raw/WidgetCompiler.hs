@@ -1,4 +1,5 @@
-{-# LANGUAGE OverloadedStrings, DuplicateRecordFields, OverloadedLists, RecordWildCards #-}
+{-# LANGUAGE OverloadedStrings, DuplicateRecordFields, OverloadedLists, RecordWildCards,
+    ScopedTypeVariables, RankNTypes, UndecidableInstances #-}
 module UI.PicoUI.Raw.WidgetCompiler where
 
 -- 
@@ -9,13 +10,20 @@ import SDL hiding (Vector, get)
 import SDL.Font
 import Control.Monad.Trans.State.Strict
 
-import Data.Vector as V hiding (mapM)
+import Data.Vector as V hiding (mapM, (!))
+import Data.Vector.Unboxed as U (Unbox, Vector)
+import Data.Vector.Storable as S (Vector, map, convert, generate) 
+import Data.Vector.Generic as G hiding (mapM)
+
 import Data.IORef
 
 import UI.PicoUI.Raw.Widgets
 import qualified UI.PicoUI.Middle.AbstractWidgets as Mid
 
+import UI.PicoUI.Charts.DataSeries
+
 import UI.PicoUI.PicoUIMonad as P
+
 
 import Color
 
@@ -68,7 +76,7 @@ compileAllWidgets = do
     where fn w@ActiveWidget{..} = do
                 cf <- gets curFocusId
                 -- calling with True when a widget is in focus - to handle cursor correctly!!!
-                cw <- if (widgetId == cf) then compile2Widget True widget else compile2Widget False widget 
+                cw <- if widgetId == cf then compile2Widget True widget else compile2Widget False widget 
                 pure $ w { compiledWidget = cw }
 
 
@@ -88,7 +96,7 @@ fontData2Font Mid.FontData{..} = do
             -- font with given name not found in loaded fonts, let's try to load:
             fntm1 <- safeLoadFont (unpack fontName) fontSize
             -- return either loaded or default
-            maybe getDefaultFont (\fn -> pure $ fn) fntm1
+            maybe getDefaultFont pure fntm1
 
 -- fontData2Color :: Mid.FontData -> Color
 fontData2Color Mid.FontDataDefault = mWhite
@@ -117,6 +125,41 @@ compile2Widget focus Mid.Panel{..} = pure $ Widget {
         }
     ]
 }
+
+{-
+Chart {
+        layout :: Layout,
+        background :: Background,
+        cacheRect :: V4 Int,
+        dataSeries :: DataSeriesRealFrac
+    } 
+SDLSeriesLines {
+    color :: V4 Word8,
+    points :: S.Vector (Point V2 CInt),
+    width :: !CInt
+}
+-}
+compile2Widget focus Mid.Chart{..} = do
+    let coll@(V4 x y w h) = castV4 cacheRect
+    pure $ Widget {
+                isVisible = True,
+                collider = coll,
+                elements = [
+                    WidgetElement {
+                        el = SDLBox (backgroundToColor background),
+                        offset = V2 0 0
+                    },
+                    WidgetElement {
+                        el = SDLSeriesLines {
+                            color = mdAmber 700,
+                            points = ds2storable dataSeries w h,
+                            width = 1
+                        },
+                        offset = V2 0 0
+                    }
+                ]
+            }
+
 -- this is NOT good as we are calling fontdata2font each time, and that is a VERY expensive
 -- operation, since we are reading from disk. Need to cache the font somehow - e.g., use recompile operation
 -- that is much less expensive and does updates surgically?
@@ -130,7 +173,9 @@ compile2Widget focus Mid.Label {..} = do
     let xoff = calcXOffset halign w tw
     let yoff = calcYOffset valign h th
     -- updating cursor position!!!
-    let xc = if xoff + tw > w then (x + w) else if xoff < 0 then x else x + xoff + tw
+    let xc  | xoff + tw > w = x + w
+            | xoff < 0 = x
+            | otherwise = x + xoff + tw
     if focus then updateCursorPositionExplicit xc (y + yoff) th else pure ()
     -- updateCursorPosition fnt text (x + xoff) (y + yoff) else pure ()
     
@@ -146,7 +191,7 @@ compile2Widget focus Mid.Label {..} = do
                         el = SDLText {
                             text = text,
                             font = fnt,
-                            cursorPos = (T.length text),
+                            cursorPos = T.length text,
                             color = fontData2Color fontData
                         },
                         offset = V2 xoff yoff
@@ -192,3 +237,17 @@ calcXOffset Mid.CenterAlign recW textW = round $ fromIntegral (recW - textW) / 2
 calcXOffset _ _ _ = 8
 calcYOffset Mid.CenterAlign recH textH = round $ fromIntegral (recH - textH) / 2
 calcYOffset _ _ _ = 4
+
+-- converting DataSeries into Storable Ints vector usable for rendering   
+ds2storable :: (Unbox a, Unbox b, RealFrac a, RealFrac b) => DataSeriesN a b -> CInt -> CInt -> S.Vector (Point V2 CInt)
+ds2storable DataSeriesN{..} xscreen yscreen = 
+    let xs = fromIntegral xscreen / (xmax - xmin)
+        ys = fromIntegral yscreen / (ymax - ymin)
+        -- (vec :: U.Vector (Point V2 Int)) = G.map (\(x,y) -> P $ V2 (fromIntegral $ round $ x * xs) (fromIntegral (yscreen - round (y * ys))) ) dataPoints
+        fn i = let (x,y) = dataPoints!i in P $ 
+                    V2 (fromIntegral $ round $ (x - xmin) * xs) 
+                       (fromIntegral (yscreen - round ( (y - ymin) * ys)))
+    in  S.generate (G.length dataPoints) fn
+
+--
+        

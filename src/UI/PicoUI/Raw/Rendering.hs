@@ -39,7 +39,7 @@ data Widget = Widget {
 renderCursor ren = do
     cur <- gets cursor
     curTick <- ticks
-    if (curTick - (prevTick cur)) < 500 then pure () 
+    if curTick - prevTick cur < 500 then pure () 
     else modify' (\s -> s { cursor = cur { blink = not (blink cur), prevTick = curTick } })
     if not (blink cur) then pure () else do
         let rect = Just $ Rectangle (P $ V2 (x cur) (y cur)) (V2 2 (P.height cur))
@@ -62,6 +62,7 @@ renderWidgetToScreen Widget{..} ren = if not isVisible then pure () else do
     let rect = Rectangle (P $ V2 (fromIntegral x') (fromIntegral y')) (V2 (fromIntegral w') (fromIntegral h'))
     rendererClipRect ren $= Just rect
     mapM_ (fn1 x' y' w' h' ren) elements
+    -- resetting clipping
     rendererClipRect ren $= Nothing
     where 
         fn1 :: CInt -> CInt -> CInt -> CInt -> Renderer -> WidgetElement -> SDLIO ()
@@ -80,7 +81,7 @@ renderWidgetToScreen Widget{..} ren = if not isVisible then pure () else do
 runUnscaled func ren = do  
     autos <- gets autoScale
     scale <- gets scaleXY
-    if autos then rendererScale ren $= (V2 1 1) else pure ()
+    if autos then rendererScale ren $= V2 1 1 else pure ()
     rs <- SDL.get $ rendererScale ren
     liftIO $ putStrLn $ "Renderer scale is: " ++ show rs
     ret  <- func ren
@@ -94,7 +95,8 @@ sdlElement2Texture size SDLBox{..} ren = do
     rendererDrawColor ren $= bgColor
     fillRect ren Nothing
     rendererRenderTarget ren $= Nothing
-    return $ tex
+    return tex
+
 sdlElement2Texture size SDLText{..} ren = do
     setStyle font []
     let text' = if text == "" then " " else text
@@ -103,6 +105,7 @@ sdlElement2Texture size SDLText{..} ren = do
     tex  <- createTextureFromSurface ren surf
     -- tex <- runUnscaled (flip createTextureFromSurface surf) ren
     freeSurface surf >> return tex
+
 -- folding textures from each styledtext into base sized texture
 -- TODO: MAKE IT MORE EFFICIENT, no need to check sizes at each step etc!!!
 sdlElement2Texture size SDLTextLine{..} renderer = do    
@@ -127,6 +130,21 @@ sdlElement2Texture size SDLTextLine{..} renderer = do
             copy renderer source (Just srcR) (Just destR)
             destroyTexture source
             return (x+recW)
+{-            
+SDLSeriesLines {
+    color :: V4 Word8,
+    points :: S.Vector (Point V2 CInt),
+    width :: !CInt
+}
+-}
+-- width is ignored by now
+sdlElement2Texture size SDLSeriesLines{..} renderer = do
+    tex <- emptyTexture size renderer
+    rendererRenderTarget renderer $= Just tex
+    rendererDrawColor renderer $= color
+    drawLines renderer points
+    rendererRenderTarget renderer $= Nothing
+    return tex 
 
 --
 styledText2Surface :: SDLStyledText -> Font -> SDLIO Surface
@@ -160,7 +178,7 @@ renderTextureUnscaled :: CInt -> CInt -> Texture -> Renderer -> SDLIO ()
 renderTextureUnscaled x y texture renderer = do
     autos <- gets autoScale
     scale@(V2 sx sy) <- gets scaleXY
-    if autos then rendererScale renderer $= (V2 1 1) else pure ()
+    if autos then rendererScale renderer $= V2 1 1 else pure ()
     ti <- queryTexture texture
     -- liftIO $ putStrLn $ "Size is " ++ (show ti) ++ " x,y: " ++ show x ++ ", " ++ show y
     let w = textureWidth ti

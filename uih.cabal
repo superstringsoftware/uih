@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 8b24f185f05a31470cfd28a3f98a1a106e0967f797aa1d9a6b56e7bd7d3804eb
+-- hash: af8a54bc78ec95c0e4b265a32e33f3da4ac096593d45955a6562080a0e2dbfc5
 
 name:           uih
 version:        0.1.0.0
@@ -29,6 +29,7 @@ library
       Color
       Logger
       PreludeFixes
+      UI.PicoUI.Charts.DataSeries
       UI.PicoUI.EventLoop
       UI.PicoUI.Middle.AbstractWidgets
       UI.PicoUI.Middle.Handlers

@@ -9,11 +9,16 @@ import SDL hiding (Vector)
 import SDL.Font
 
 import Data.Vector
+import qualified Data.Vector.Storable as S
 import Data.IORef
+
+import UI.PicoUI.Charts.DataSeries
 
 import Color
 
 type WidgetId = Int
+
+-- data RawSeriesType = RSLines | RSDots deriving (Show, Eq)
 
 -- represents styled piece of text
 -- font data is provided separately
@@ -38,6 +43,10 @@ data SDLElement = SDLBox { -- simply a colored box (eventually need to add with 
     font :: Font,
     texts :: Vector SDLStyledText,
     cursorPos :: !Int
+} | SDLSeriesLines {
+    color :: V4 Word8,
+    points :: S.Vector (Point V2 CInt),
+    width :: !CInt
 } deriving Show
 
 isSDLBox SDLBox{..} = True
@@ -61,7 +70,7 @@ data Widget = Widget {
 
 isInWidget x y widg = 
     let (V4 a b w h) = collider widg
-    in  if ( (x>a) && (x < a + w) && (y>b) && (y<b+h) ) then True else False
+    in  ( (x>a) && (x < a + w) && (y>b) && (y<b+h) )
 
 
 
