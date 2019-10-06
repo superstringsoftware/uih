@@ -32,7 +32,7 @@ sampleFunc :: Int -> Double -> Double -> (Double -> Double) -> DataSeriesN Doubl
 sampleFunc n xmin xmax f = DataSeriesN {
     xName = "", yName = "",
     xmin = xmin, xmax = xmax,
-    ymin = ymin', ymax = ymax',
+    ymin = ymin' - 0.05 * abs ymin', ymax = ymax' + 0.05 * abs ymax',
     dataPoints = vec
 } where step = (xmax - xmin) / fromIntegral n
         vec = G.generate (n+1) (\i -> let x = xmin + fromIntegral i * step in (x, f x))
