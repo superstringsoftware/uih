@@ -75,7 +75,7 @@ runSDLIO program = runStateT
         -- send initial resize event so that reactive widgets react
         let size = V2 (fromIntegral width) (fromIntegral height)
         fire sdlSources (EWindowResized zeroSource size)
-        appLoop
+        appLoop True
     ) 
     SDLEmptyState
 
@@ -111,17 +111,20 @@ renderUI = do
           fnr ren rw = readVal rw >>= \w -> renderWidgetToScreen w ren
     
 
-appLoop :: SDLIO ()
-appLoop = do
+appLoop :: Bool -> SDLIO ()
+appLoop draw = do
     -- isDirty <- getDirty
     -- if isDirty then renderUI >> setClean else pure ()
-    renderUI
+    if draw then renderUI else pure ()
     events <- SDL.pollEvents -- get the events queue from SDL
-    results <- mapM fireEvent events -- gather results
-    let quit = any (== True) results -- checking if any of the results is True
-    if quit 
-    then get >>= liftIO . putStrLn . show >> liftIO (putStrLn "Good-bye.")
-    else appLoop
+    case events of 
+        [] -> appLoop False
+        _  -> do
+                results <- mapM fireEvent events -- gather results
+                let quit = any (== True) results -- checking if any of the results is True
+                if quit 
+                then get >>= liftIO . putStrLn . show >> liftIO (putStrLn "Good-bye.")
+                else appLoop True
 
 -- takes an SDL event, converts it into our event, and runs all registered event handlers - 
 -- for now, only inside widgets, eventually all others as well.
