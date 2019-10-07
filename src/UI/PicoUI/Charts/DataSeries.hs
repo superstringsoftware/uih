@@ -68,13 +68,11 @@ data DataSeriesN a b = DataSeriesN {
   , xmin, xmax :: a 
   , ymin, ymax :: b
 } deriving Show
+
+
+
 -- representing final screen coordinates
 type ScreenDataSeries = DataSeriesN Int Int
-
-data DataPoint a b = DataPoint {
-    xvalue :: a,
-    yvalue :: b
-}
 
 -- type DataSeriesRealFrac = forall a b. (Unbox a, Unbox b, RealFrac a, RealFrac b) => DataSeriesN a b
 

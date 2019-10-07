@@ -101,7 +101,7 @@ focusEventsListener e = do
 reactiveResize = do
     sig <- allEvents <$> gets eventSources
     ret <- createStatefulSignal id
-    let conn (EWindowResized _ (V2 x y)) = modifyVal ret $ const (calculateCacheRect x y)
+    let conn (EWindowResized _ (V2 w h)) = modifyVal ret $ const (calculateCacheRect w h)
         conn _ = pure ()
     addListener sig conn
     return ret
