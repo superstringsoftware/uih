@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings, DuplicateRecordFields, 
-RecordWildCards, OverloadedLists, PostfixOperators, TypeSynonymInstances, FlexibleInstances #-}
+    RecordWildCards, OverloadedLists, PostfixOperators, TypeSynonymInstances, FlexibleInstances #-}
 module UI.PicoUI.PicoUIMonad where
 
 -- | this is a huge state monad taking care of low-level SDL interactions
@@ -22,7 +22,7 @@ module UI.PicoUI.PicoUIMonad where
 import Control.Monad.Trans.State.Strict
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Exception
-import SDL as SDL hiding (get, Event)
+import SDL hiding (get, Event)
 import SDL.Font hiding (height)
 import Data.Text
 import Foreign.C.Types (CInt, CFloat)
@@ -133,8 +133,6 @@ unsafePerformSDLIO = unsafePerformIO • quickEvalSDLIO
 instance {-# OVERLAPPING #-} Show a => Show (StatefulSignal (PicoUIM u) a) where
     show = show • unsafePerformSDLIO • readVal
 
--- instance Show EventHandler where show _ = "[EventHandler]"
-
 getRenderer :: PicoUIM u Renderer
 getRenderer = mainRenderer <$> get
     
@@ -164,9 +162,6 @@ mainWindowSettings = defaultWindow
   }
 
 
--- dumpSDLState :: SDLIO ()
--- dumpSDLState = get >>= liftIO . print . show
-
 -- main initialization functions
 initState :: PicoUIM u ()
 initState = do
@@ -177,11 +172,11 @@ initState = do
     --ce <- createStatefulSignal $ ENonEvent zeroSource
     -- for testing setting up ce via filter
     ce <- filterS isAnyClick es
-    te <- filterS (\e -> (isBackspace e) || (isTextEvent e)) es
+    te <- filterS (\e -> isBackspace e || isTextEvent e) es
     -- te <- createStatefulSignal $ ENonEvent zeroSource
     ke <- createStatefulSignal $ ENonEvent zeroSource
     -- focus events: for now only text, but eventually needs to be more complicated
-    fe <- filterS (\e -> (isBackspace e) || (isTextEvent e)) es
+    fe <- filterS (\e -> isBackspace e || isTextEvent e) es
     he <- filterS isHover es
     let eS = EventSources es ce te ke fe he
     s  <- liftIO initStateIO
@@ -232,17 +227,17 @@ safeLoadFont :: String -> Int -> PicoUIM u (Maybe Font)
 safeLoadFont path size = do
     autos <- gets autoScale
     V2 x y <- gets scaleXY
-    let size' = if autos then round ( (fromIntegral size) * (x + y) / 2) else size
+    let size' = if autos then round ( fromIntegral size * (x + y) / 2) else size
     r <- liftIO $ try $ load path size'
     either (\e -> liftIO $ print (e::SDLException) >> return Nothing)
-                (\fnt -> return $ Just fnt) r
+                (return • Just) r
 
 -- handles scaling of font related sizes used in rendering etc - need this for high dpi stuff
 scaleFontSizeDown :: Int -> PicoUIM u Int
 scaleFontSizeDown size = do
     V2 x y <- gets scaleXY
     autos <- gets autoScale
-    let size' = if autos then round ( (fromIntegral size) / ((x + y) / 2)) else size
+    let size' = if autos then round ( fromIntegral size / ((x + y) / 2)) else size
     return size'
 
                 
@@ -258,12 +253,10 @@ getDefaultFont = do
     st <- get 
     let fntm = Map.lookup "__DEFAULT__" (loadedFonts st)
     maybe (fail "Could not find default font, impossible to continue!")
-          (\fnt -> pure fnt) fntm
+          pure fntm
 
 getFont :: Text -> PicoUIM u (Maybe Font)
-getFont txt = do
-    st <- get 
-    pure $ Map.lookup txt (loadedFonts st)
+getFont txt = Map.lookup txt <$> gets loadedFonts
           
 
 getFontOrDefault :: Text -> PicoUIM u Font
@@ -271,7 +264,7 @@ getFontOrDefault txt = do
     st <- get 
     let fntm = Map.lookup txt (loadedFonts st)
     maybe getDefaultFont
-          (\fnt -> pure fnt) fntm
+          pure fntm
 
 initFonts :: PicoUIM u ()
 initFonts = do
@@ -286,7 +279,5 @@ initFonts = do
     liftIO $ putStrLn $ "Loaded font:\n" ++ show fd
     put st {loadedFonts = fonts}
     where initDefaultFont = do   
-            mfont <- (SDL.Font.initialize >> safeLoadFont defaultFontPath 16)
-            maybe (fail "Could not initialize TTF fonts!")
-                  (\font -> return $ font
-                   ) mfont
+            mfont <- SDL.Font.initialize >> safeLoadFont defaultFontPath 16
+            maybe (fail "Could not initialize TTF fonts!") pure mfont
