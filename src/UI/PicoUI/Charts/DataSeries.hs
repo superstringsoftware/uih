@@ -13,7 +13,47 @@ module UI.PicoUI.Charts.DataSeries where
 import Data.Vector.Unboxed as U
 import Data.Vector.Storable as S
 import Data.Vector.Generic as G
+import Data.Vector as V
 import Data.IntMap.Strict as Map
+
+import Color
+
+-- Ok, need to think how to generalize all this.
+-- Using Doubles as the most general type probably makes sense initially? If eventually we want to support Integral or
+-- Ratio types for some reason, we can add on top.
+
+-- Then, category names for "x" axis. In case we are not using x values as doubles, can simply use another vector with
+-- category names that maps index i to the name? But then all data series being passed into our type will need to be
+-- ordered and have values for ALL indices?
+
+-- So, shall we have series for 1,2,3,4 dimensional data initially? (4-dim: bubble chart with x,y,bubble size, color)
+
+-- One attempt to have one type to represent data series of all different kinds
+-- How we *render* it (line, bar, bubble etc) - should be defined elsewhere!
+-- Then we take GDS, add render type to it, stick them all into one chart, define
+-- which axis each one relates to (maximum 2 per chart?) - and draw it.
+-- 'a' should be Double, (Double,Double), (Double,Double,Double) etc for various dimensions of data
+
+-- Now, to convert it to widget - we have to have a separate collider for each data point in case we want to handle
+-- hover / click events on individual datapoints (as we might want to do and would be a good thing to do in general).
+data GenericDataSeries a = GenericDataSeries {
+    -- data points, x/y/z
+    dataPoints :: U.Vector a, 
+    -- names for data points - can be used as category names, or as individual point names in case of e.g. bubble charts
+    pointNames :: V.Vector String, 
+    -- a function that takes a point and creates a description for it, can be combined with point names
+    pointNameFunction :: Maybe (a -> String),
+    -- any additional comments for data points in case we want to display them somehow
+    -- pointComments :: V.Vector String, 
+    -- colors for points, if empty - use single color
+    colors :: U.Vector Color,
+    singleColor :: Color,
+    -- function that calculates color based on values in case we want to get fancy
+    -- if present, use this!
+    colorFunction :: Maybe (a -> Color)
+}
+
+data SeriesDrawType = SDPoint | SDLine | SDBar | SDBubble | SDPie
 
 -- unboxed data series, so mostly for math
 data DataSeriesN a b = DataSeriesN {
@@ -26,6 +66,11 @@ data DataSeriesN a b = DataSeriesN {
 } deriving Show
 -- representing final screen coordinates
 type ScreenDataSeries = DataSeriesN Int Int
+
+data DataPoint a b = DataPoint {
+    xvalue :: a,
+    yvalue :: b
+}
 
 -- type DataSeriesRealFrac = forall a b. (Unbox a, Unbox b, RealFrac a, RealFrac b) => DataSeriesN a b
 
