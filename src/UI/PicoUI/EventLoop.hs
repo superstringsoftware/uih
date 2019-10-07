@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings, DuplicateRecordFields, 
-RecordWildCards, OverloadedLists, PostfixOperators #-}
+    RecordWildCards, OverloadedLists, PostfixOperators #-}
 
 module UI.PicoUI.EventLoop where
 
@@ -10,7 +10,7 @@ import Control.Monad.Reader
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad (unless)
 import Control.Exception
-import SDL as SDL hiding (get)
+import SDL hiding (get)
 import SDL.Font
 import Data.Text hiding (any)
 import Foreign.C.Types (CInt, CFloat)
@@ -28,7 +28,6 @@ import UI.PicoUI.Raw.Events as P
 import UI.PicoUI.PicoUIMonad as Pico
 
 import UI.PicoUI.Middle.PureHandlers
-import UI.PicoUI.Middle.Handlers
 import UI.PicoUI.Middle.AbstractWidgets as P
 
 import UI.PicoUI.Reactive.Internal.StatefulSignals
@@ -49,7 +48,7 @@ runSDLIO program = runStateT
         V2 realw realh  <- window.-glGetDrawableSize   --vkGetDrawableSize
         liftIO $ putStrLn $ "Logical size: " ++ show width ++ "x" ++ show height
         liftIO $ putStrLn $ "Physical size: " ++ show realw ++ "x" ++ show realh
-        let scale = V2 ( (fromIntegral realw) / (fromIntegral width)) ( (fromIntegral realh) / (fromIntegral height))
+        let scale = V2 ( fromIntegral realw / fromIntegral width) ( fromIntegral realh / fromIntegral height)
         modify' (\s-> s { scaleXY = scale })
         autos <- gets autoScale
         ren <- getRenderer
@@ -58,11 +57,11 @@ runSDLIO program = runStateT
         -- need to init fonts after the scale has been set
         initFonts
         -- setup the initial FRP network
-        let logSink e = liftIO (putStrLn ("[EVENT][" ++ show (timestamp $ source e) ++ "]") >> putStrLn (show e))
+        let logSink e = liftIO (putStrLn ("[EVENT][" ++ show (timestamp $ source e) ++ "]") >> print e)
         sdlSources <- allEvents <$> gets eventSources
         -- main window events
         clickMainWindowEvents <- filterS 
-                (\e -> (isSourceMainWindow e) && (isLeftClick 1 e))
+                (\e -> isSourceMainWindow e && isLeftClick 1 e)
                 sdlSources
         -- removing focus in case main window was clicked                
         -- sink clickMainWindowEvents $ const doRemoveFocus
@@ -108,24 +107,19 @@ appLoop draw = do
         [] -> appLoop False
         _  -> do
                 results <- mapM fireEvent events -- gather results
-                let quit = any (== True) results -- checking if any of the results is True
+                let quit = True `elem` results -- checking if any of the results is True
                 if quit 
-                then get >>= liftIO . putStrLn . show >> liftIO (putStrLn "Good-bye.")
+                then get >>= liftIO . print >> liftIO (putStrLn "Good-bye.")
                 else appLoop True
 
 -- takes an SDL event, converts it into our event, and runs all registered event handlers - 
 -- for now, only inside widgets, eventually all others as well.
 fireEvent :: SDL.Event -> SDLIO Bool
 fireEvent ev = do
-    -- this fires an event to all widgets automatically, so we only need to fire to the other handlers
     event <- sdlEvent2Event ev
-    -- firing in the reactive sdl source - eventually all logic needs to move here!!!
+    -- firing in the reactive sdl source
     sdlSource <- allEvents <$> gets eventSources
     fire sdlSource event
-    -- liftIO $ putStrLn $ "Firing event: " ++ show event
-    -- fire <$> (gets eventSource) <*> pure event
-    -- handling event with main window default handlers
-    -- mHndlMainWindow event
     return $ isQuit event
 
 
@@ -185,7 +179,7 @@ sdlEvent2Event event =
                 case k of
                     KeycodeBackspace -> 
                         -- checking press only 
-                        if (keyboardEventKeyMotion ev) == Pressed 
+                        if keyboardEventKeyMotion ev == Pressed 
                         then let ee = EBackspace (emptySource event) in pure ee
                         else pure $ RawSDLEvent (emptySource event) p
                     _ -> pure $ RawSDLEvent (emptySource event) p

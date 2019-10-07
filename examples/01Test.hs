@@ -13,7 +13,6 @@ import Control.Monad
 import UI.PicoUI.PicoUIMonad
 import UI.PicoUI.EventLoop
 import UI.PicoUI.Middle.PureHandlers
-import UI.PicoUI.Middle.Handlers
 import UI.PicoUI.Middle.AbstractWidgets
 
 -- import Data.Foldable
