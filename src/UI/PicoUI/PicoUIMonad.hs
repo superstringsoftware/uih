@@ -105,14 +105,23 @@ data SDLState u = SDLState {
   , userState     :: u
 } | SDLEmptyState deriving Show
 
-instance Show (PicoUIM u ()) where show _ = "(PicoUIM u) () action"
+instance Show (PicoUIM u ()) where show _ = "PicoUIM u () action"
 
--- Stacking State and IO into a monad
+-- Stacking State and IO into a monad with potential user state
 type PicoUIM u = StateT (SDLState u) IO
--- type SDLIO = StateT SDLState IO
--- non-pure event handler running in SDLIO
--- can (and will) encompass pure event handlers (see EventLoop)
--- type EventHandler = Event -> SDLIO ()
+type PicoUI = PicoUIM () -- type synonim for a monad without user state
+
+getUState :: PicoUIM u u
+getUState = gets userState
+
+putUState :: u -> PicoUIM u ()
+putUState st = modify' (\s -> s{userState = st})
+
+modifyUState' :: (u -> u) -> PicoUIM u ()
+modifyUState' f = f <$> getUState >>= putUState
+
+getsU :: (u -> a) -> PicoUIM u a
+getsU f = f <$> getUState
 
 
 quickEvalSDLIO :: PicoUIM u a -> IO a
