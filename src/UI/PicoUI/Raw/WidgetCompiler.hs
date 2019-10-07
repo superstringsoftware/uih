@@ -125,11 +125,11 @@ makeAxis xmin xmax xscreen ymin ymax yscreen width color = SDLSeriesBrokenLines 
     color = color,
     width = width,
     lines = [ (P $ V2 0 y0, P $ V2 xscreen y0)
-            , (P $ V2 xscreen y0, P $ V2 (xscreen - 10) (y0 + 4))
-            , (P $ V2 xscreen y0, P $ V2 (xscreen - 10) (y0 - 4))
+            , (P $ V2 xscreen y0, P $ V2 (xscreen - 10) (y0 + 3))
+            , (P $ V2 xscreen y0, P $ V2 (xscreen - 10) (y0 - 3))
             , (P $ V2 x0 0, P $ V2 x0 yscreen)
-            , (P $ V2 x0 0, P $ V2 (x0 + 4) 10)
-            , (P $ V2 x0 0, P $ V2 (x0 - 4) 10)
+            , (P $ V2 x0 0, P $ V2 (x0 + 3) 10)
+            , (P $ V2 x0 0, P $ V2 (x0 - 3) 10)
             ]
 } where xs = fromIntegral xscreen / (xmax - xmin)
         ys = fromIntegral yscreen / (ymax - ymin)
@@ -163,7 +163,7 @@ compile2Widget focus Mid.Chart{..} = do
                     },
                     WidgetElement {
                         --makeAxis xmin xmax w ymin ymax h 1 (mdBlueGray 100),
-                        el = makeAxis (xmin dataSeries) (xmax dataSeries) w (ymin dataSeries) (ymax dataSeries) h 1 (mdBlueGray 200),
+                        el = makeAxis (xmin dataSeries) (xmax dataSeries) w (ymin dataSeries) (ymax dataSeries) h 1 (mdBlueGray 300),
                         offset = V2 0 0
                     },
                     WidgetElement {
