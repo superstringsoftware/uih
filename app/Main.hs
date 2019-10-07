@@ -84,9 +84,9 @@ testProgram =
     compositeHandler -- pure handler that changes bg colors
     [filteredHandlerSDLIO isStoppedHover (\e -> liftIO $ putStrLn $ "Stopped hovering on: " ++ show e), setFocusOnClick ] -- IO handler for hover
   -}
-  registerWidgetWithHandler testML pure  -- multiline widget
-  >> registerWidgetWithHandlers testLabel2 hndlEditText [setFocusOnClick] -- editable widget
-  >> test_widgets
+  -- registerWidgetWithHandler testML pure  -- multiline widget
+  -- >> registerWidgetWithHandlers testLabel2 hndlEditText [setFocusOnClick] -- editable widget
+  test_widgets
   >> pure ()
     
 redOn2Click = filteredHandler (isLeftClick 2) (changeBackground $ BGColor $ mRed 500)

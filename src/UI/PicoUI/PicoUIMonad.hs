@@ -95,14 +95,10 @@ data SDLState = SDLState {
   , loadedFonts   :: Map.Map Text Font -- map from font names to actual fonts
   , cursor        :: CursorStatus
   , bgColor       :: V4 Word8
-  , widgets       :: Map.Map WidgetId ActiveWidget 
   , rawWidgets    :: IMap.IntMap (StatefulSignal SDLIO Widget) -- cache of the low level widgets, DO NOT manipulate it directly
   , removeFocus   :: SDLIO () -- action to remove focus signal listener from a currently focused widget (see ReactiveWidgets addFocus etc)
   , focusWidget   :: Maybe ReactiveWidget
   , rawIdCounter  :: !Int
-  , idCounter     :: !WidgetId
-  , curFocusId    :: !WidgetId
-  , curHoverId    :: !WidgetId
   , scaleXY       :: V2 CFloat -- in case we use highDPI, this will be the scale
   , autoScale     :: Bool -- apply scaling automatically so that same logical size is used on high dpi displays
 
@@ -130,63 +126,8 @@ instance {-# OVERLAPPING #-} Show a => Show (StatefulSignal SDLIO a) where
 
 instance Show EventHandler where show _ = "[EventHandler]"
 
-data ActiveWidget = ActiveWidget {
-    widgetId :: WidgetId, -- needed for event handling etc
-    widget :: Mid.Widget, -- original high-level widget
-    compiledWidget :: Widget, -- "compiled" low-level cache for the widget
-    handler :: EventHandler -- composed event handler function for the Event originating from this widget
-} deriving Show
-
-isInActiveWidget x y ActiveWidget{..} = Mid.isInWidget x y widget
-
-{-
-mkPureToEventHandler handlerPure event = do
-    let (i,_,_) = source event
--}
-
-
-
--- 
--- set renderer to scale according to scale factor - it messes up fonts, so need to render them differently
--- scaleRendere
--- finds a pure handler for widget with id
-{-
-getPureHandler :: WidgetId -> SDLIO (Maybe PureHandler)
-getPureHandler i = (Map.lookup i) <$> gets pureHandlers
--}
-{-
--- finds id and widgets in which given coordinates are, empty list if nothing
-getCollidingWidgets :: CInt -> CInt -> SDLIO [(WidgetId, Widget)]
-getCollidingWidgets x y = do 
-    ws <- widgets <$> get
-    return $ Map.assocs $ Map.filter (isInWidget x y) ws
--}  
 getRenderer :: SDLIO Renderer
 getRenderer = mainRenderer <$> get
-
-setCurFocusId i = modify' (\s -> s { curFocusId = i })
-getFocusWidget :: SDLIO (Maybe ActiveWidget)
-getFocusWidget = Map.lookup <$> (gets curFocusId) <*> (gets widgets)
-
-setCurHoverId i = modify' (\s -> s { curHoverId = i }) -- >> liftIO (putStrLn $ "Set hover to: " ++ show i)
-getHoverWidget :: SDLIO (Maybe ActiveWidget)
-getHoverWidget = Map.lookup <$> (gets curHoverId) <*> (gets widgets)
-    
--- update widget at a given id
-updateWidget :: WidgetId -> ActiveWidget -> SDLIO ()
-updateWidget i w = 
-    (Map.insert i w) <$> (gets widgets) >>= 
-        \ws -> modify' (\s-> s{widgets = ws})
-
-getWidget :: WidgetId -> SDLIO (Maybe ActiveWidget)
-getWidget i = Map.lookup i <$> gets widgets
-
--- given x,y coordinates finds a widget that contains them and returns it (if any)
--- this is ALL CRAZY INEFFICIENT
-findEventSources :: V2 Int -> SDLIO [(WidgetId, ActiveWidget)]
-findEventSources (V2 x y) = do
-    ws <- widgets <$> get
-    pure $ Map.assocs $ Map.filter (isInActiveWidget x y) ws
     
 insertRawWidget :: StatefulSignal SDLIO Widget -> SDLIO ()
 insertRawWidget w = do
@@ -194,18 +135,6 @@ insertRawWidget w = do
     ws <- gets rawWidgets
     let ws' = IMap.insert i w ws
     modify' (\s-> s {rawWidgets = ws', rawIdCounter = i + 1})
-
-calculateCacheRect w h wid@ActiveWidget{..} = wid { widget = Mid.calculateCacheRect w h widget  }
--- recalculates sizes of all top level widgets after a resize as needed        
--- w h - new size of the screen
-recalculateRectangles :: Int -> Int -> SDLIO ()
-recalculateRectangles w h = do 
-    ws <- widgets <$> get
-    let ws' = Map.map (calculateCacheRect w h) ws
-    modify' (\s -> s { widgets = ws'} )
-
-
-initUI w h = recalculateRectangles w h
 
 instance Show Timer where
   show _ = "Timer present"
@@ -261,16 +190,12 @@ initStateIO = do
                 loadedFonts = Map.empty,
                 cursor = CursorStatus 50 50 (mdAmber 800) 20 Nothing False 0,
                 bgColor = V4 210 210 210 0,
-                widgets = Map.empty,
                 rawWidgets = IMap.empty,
                 focusWidget = Nothing,
                 -- pureHandlers = Map.empty,
                 scaleXY = V2 1 1,
                 autoScale = True,
-                idCounter = 0,
-                rawIdCounter = 0,
-                curFocusId = -1,
-                curHoverId = -1
+                rawIdCounter = 0
                 -- readerEvent = NonEvent                
                 }
     either (\e -> print (e::SDLException) >> fail "Could not initialize SDL")

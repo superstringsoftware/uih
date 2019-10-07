@@ -36,7 +36,7 @@ import UI.PicoUI.Reactive.ReactiveWidgets
 
 import PreludeFixes
 
-handleResize w h = recalculateRectangles w h >> compileAllWidgets
+-- handleResize w h = recalculateRectangles w h >> compileAllWidgets
 
 
 -- runSDLIO :: SDLIO a -> SDLState -> IO (a, SDLState)
@@ -71,7 +71,7 @@ runSDLIO program = runStateT
         -- (addListener sdlSource) logSink
         -- running the program
         program
-        handleResize (fromIntegral width) (fromIntegral height)
+        -- handleResize (fromIntegral width) (fromIntegral height)
         -- send initial resize event so that reactive widgets react
         let size = V2 (fromIntegral width) (fromIntegral height)
         fire sdlSources (EWindowResized zeroSource size)
@@ -87,28 +87,15 @@ renderUI = do
     bgClr <- gets Pico.bgColor
     rendererDrawColor renderer $= bgClr
     SDL.clear renderer
-    -- THIS RECALCULATES EVERYTHING EVERY CYCLE
-    -- window <- gets mainWindow
-    -- V2 width height <- (window.-windowSize?=)
-    -- handleResize (fromIntegral width) (fromIntegral height)
-    -- END OF RECALCULATION
-    ws <- gets widgets
-    -- liftIO $ putStrLn $ "Got widgets: " ++ show (Map.length ws)
-    mapM_ (fn renderer) ws
     -- now for reactive widgets
     rws <- gets rawWidgets
     mapM_ (fnr renderer) rws
     SDL.rendererRenderTarget renderer $= Nothing
-    {-
-    cf <- gets curFocusId
-    if cf >= 0 then renderCursor renderer else pure ()
-    -}
     -- rendering cursor if there's a focus widget
     mfw <- gets focusWidget
     maybe (pure ()) (const $ renderCursor renderer) mfw
     SDL.present renderer
-    where fn ren ActiveWidget{..} = renderWidgetToScreen compiledWidget ren
-          fnr ren rw = readVal rw >>= \w -> renderWidgetToScreen w ren
+    where fnr ren rw = readVal rw >>= \w -> renderWidgetToScreen w ren
     
 
 appLoop :: Bool -> SDLIO ()
@@ -138,102 +125,13 @@ fireEvent ev = do
     -- liftIO $ putStrLn $ "Firing event: " ++ show event
     -- fire <$> (gets eventSource) <*> pure event
     -- handling event with main window default handlers
-    mHndlMainWindow event
+    -- mHndlMainWindow event
     return $ isQuit event
 
--- fire specific event to a handler in an ActiveWidget
-fireEventToWidget :: P.Event -> ActiveWidget -> SDLIO ()
-fireEventToWidget event ActiveWidget{..} = handler event
-
--- fire event to focus widget if one exists and return the possibly modified with id as a source event
-fireEventToFocusWidget :: P.Event -> SDLIO P.Event
-fireEventToFocusWidget ee = do
-    mw <- getFocusWidget
-    maybe (pure ee) -- return original event if there's no widget in focus
-          (\w -> let e = setSrcId (widgetId w) ee in fireEventToWidget e w >> pure e) mw
-
--- fire event to currently hovered widget - primarily internally used for sending "stop hovering" events          
-fireEventToHoverWidget :: P.Event -> SDLIO P.Event
-fireEventToHoverWidget ee = do
-    mw <- getHoverWidget
-    maybe (pure ee) -- return original event if there's no widget in focus
-        (\w -> let e = setSrcId (widgetId w) ee in fireEventToWidget e w >> pure e) mw
-          
--- fires an event to all widgets that catch given position, collect WidgetIds of all relevant widgets    
-fireEventToWidgets :: V2 Int -> P.Event -> SDLIO [WidgetId]
-fireEventToWidgets (V2 x y) event = do
-    gets widgets >>= mapM fn >>= 
-        \ws' -> pure $ Map.foldlWithKey fn1 [] ws'
-    where 
-        fn1 acc i val = if val then (i:acc) else acc
-        fn w = 
-            if isInActiveWidget x y w 
-            then 
-                -- since we don't have sources here yet, setting the source to the current widget for proper handling
-                let event' = event { source = (source event) { widgetIds = [widgetId w] } }
-                in  (handler w) event' >> pure True 
-            else pure False
-
---
--- type PureHandler = AbstractWidget -> Reader Event AbstractWidget 
-
--- Ok, this is a bit tricky - we are creating a handler for an abstract widget with it's id
--- by memoizing id and widget values so that then we can use the id inside the monad
--- to update the widget. A bit crazy i know.
--- BOTTOM LINE: MUST USE THIS to generate event handlers that alter AbstractWidgets,
--- exactly by calling pureToEventHandler handler i -- so that it returns EventHandler function!
--- this is INTERNAL.
-pureToEventHandler :: PureHandler -> WidgetId -> P.Event -> SDLIO ()
-pureToEventHandler handler i event = do
-    widm <- getWidget i
-    maybe (pure ()) -- shouldn't be happening!!! need to LOG AN ERROR here
-          (\wid -> do
-                     -- first, use pure handler to transform the widget by running the reader action
-                     let w' = runReader (handler (widget wid)) event
-                     -- then, compiling new abstract widget to low level widget
-                     -- TODO: be smarter here about the updates etc
-                     cf <- gets curFocusId
-                     cw <- if (widgetId wid) == cf then compile2Widget True w' else compile2Widget False w'
-                     -- now, update the ActiveWidget in the monad
-                     updateWidget i wid { widget = w', compiledWidget = cw }
-          ) widm
 
 composeManyHandlers :: [EventHandler] -> P.Event -> SDLIO ()
 composeManyHandlers hs evt = mapM_ (fn evt) hs where fn evt h = h evt
 
-----------------------------------------------------------------------------------------
--- So overall idea is: take a PureHandler, AbstractWidget and then call some function 
--- that sets up ActiveWidget with correct id, handler function etc.
--- THIS IS THE MAIN EXTERNAL FUNCTION TO REGISTER HANDLERS WITH WIDGETS!!!
-----------------------------------------------------------------------------------------
-registerWidgetWithHandler :: AbstractWidget -> PureHandler -> SDLIO Int
-registerWidgetWithHandler w h = do
-    ws <- gets widgets
-    i  <- fmap (+1) (gets idCounter)
-    -- creating a monadic handler from pure
-    let handler = pureToEventHandler h i
-    cf <- gets curFocusId
-    cw <- if i == cf then compile2Widget True w else compile2Widget False w
-    -- cw <- compile2Widget w
-    let ws' = Map.insert i (ActiveWidget { widgetId = i, widget = w, compiledWidget = cw, handler = handler })  ws
-    modify' (\s-> s{idCounter = i, widgets = ws'})
-    return i
-
--- register widget with already composed in reader monad pure handler and optional
--- monadic in SDLIO handlers; same as above but adds monadic
-registerWidgetWithHandlers :: AbstractWidget -> PureHandler -> [EventHandler] -> SDLIO Int
-registerWidgetWithHandlers w h hs = do
-    ws <- gets widgets
-    i  <- fmap (+1) (gets idCounter)
-    -- creating a monadic handler from pure
-    let h' = pureToEventHandler h i
-    let handler = composeManyHandlers (h':hs)
-    cf <- gets curFocusId
-    cw <- if i == cf then compile2Widget True w else compile2Widget False w
-    -- cw <- compile2Widget w
-    let ws' = Map.insert i (ActiveWidget { widgetId = i, widget = w, compiledWidget = cw, handler = handler })  ws
-    modify' (\s-> s{idCounter = i, widgets = ws'})
-    return i
     
 -- converting SDL event to our event inside a monad - to be able to 
 -- retrieve widgets right away and fire events to them inside here as needed, too
@@ -258,32 +156,18 @@ sdlEvent2Event event =
                     evt    = cons src clicks
                     -- firing event to all widgets right away, updating source and returning the event
                 in  if motion == Released 
-                    then fireEventToWidgets pos' evt >>= (\ids -> pure $ evt { source = src { widgetIds = ids } } )
+                    then pure evt
                     else pure $ RawSDLEvent (emptySource event) p
             SDL.MouseMotionEvent me ->  
                 let SDL.P pos = SDL.mouseMotionEventPos me
                     pos'  = castV2 pos
                     src   = EventSource [] pos' (SDL.eventTimestamp event)
                     evt   = EMouseHover src
-                in  fireEventToWidgets pos' evt >>= 
-                        \ids ->
-                            -- this has to do with hovering so need to process currently hovering id correctly right here
-                            if ids == []
-                            then 
-                                -- need to send "stopped hovering" event to currently being hovered widget
-                                fireEventToHoverWidget (EMouseStoppedHover src)
-                                -- setting current hover id to -1 which is mainwindow
-                                >> setCurHoverId (-1)
-                                >> pure (evt { source = src { widgetIds = ids } })
-                            else
-                                -- setting current hover id to the first item in the fired events list
-                                -- TODO: FIX THIS, has to be handled differently
-                                setCurHoverId (Prelude.head ids) 
-                                >> pure (evt { source = src { widgetIds = ids } })
+                in  pure evt
             SDL.WindowResizedEvent dt -> 
                 let src           = emptySource event
                     size@(V2 w h) = castV2 $ SDL.windowResizedEventSize dt
-                in  handleResize w h >> pure (EWindowResized src size)
+                in  pure (EWindowResized src size)
             SDL.QuitEvent -> pure $ EQuit $ emptySource event
             -- keyboard events are a bit tricky
             -- need to add checks whether TEXT INPUT is on, otherwise process keypresses differently potentially
@@ -292,7 +176,7 @@ sdlEvent2Event event =
                 -- liftIO $ print $ show ev
                 prolongCursor
                 let ee = ETextInput (emptySource event) (textInputEventText ev)
-                fireEventToFocusWidget ee
+                pure ee
             p@(SDL.KeyboardEvent ev) -> do
                 prolongCursor
                 -- liftIO $ print $ show ev
@@ -302,7 +186,7 @@ sdlEvent2Event event =
                     KeycodeBackspace -> 
                         -- checking press only 
                         if (keyboardEventKeyMotion ev) == Pressed 
-                        then let ee = EBackspace (emptySource event) in fireEventToFocusWidget ee
+                        then let ee = EBackspace (emptySource event) in pure ee
                         else pure $ RawSDLEvent (emptySource event) p
                     _ -> pure $ RawSDLEvent (emptySource event) p
         

@@ -38,18 +38,6 @@ instance CompilesToRaw Mid.AbstractWidget where
     isInFocus = Mid.isWidgetInFocus
 
 
--- LEGACY: for non-reactive widgets
-compileAllWidgets :: SDLIO ()
-compileAllWidgets = do 
-    ws <- widgets <$> get
-    ws' <- mapM fn ws
-    modify' (\s -> s { widgets = ws'} )
-    where fn w@ActiveWidget{..} = do
-                cf <- gets curFocusId
-                -- calling with True when a widget is in focus - to handle cursor correctly!!!
-                cw <- if widgetId == cf then compile2Widget True widget else compile2Widget False widget 
-                pure $ w { compiledWidget = cw }
-
 
 castV4 (V4 x y w h) = V4 (fromIntegral x) (fromIntegral y) (fromIntegral w) (fromIntegral h)
 
