@@ -30,7 +30,7 @@ import Color
 -- Compiler from abstract widgets
 
 class CompilesToRaw a where
-    compileToRawWidget :: Bool -> a -> SDLIO Widget
+    compileToRawWidget :: Bool -> a -> PicoUIM u Widget
     isInFocus :: a -> Bool
 
 instance CompilesToRaw Mid.AbstractWidget where
@@ -45,7 +45,7 @@ backgroundToColor (Mid.BGColor clr) = clr
 backgroundToColor _ = mRed 500
 
 -- converts fontdata to font - NO SIZE CHECKS NOW!!!
-fontData2Font :: Mid.FontData -> SDLIO Font
+fontData2Font :: Mid.FontData -> PicoUIM u Font
 fontData2Font Mid.FontDataDefault = getDefaultFont
 fontData2Font Mid.FontData{..} = do
     fntm <- getFont fontName
@@ -62,7 +62,7 @@ fontData2Color Mid.FontDataDefault = mWhite
 fontData2Color fd = Mid.fontColor fd
 
 -- calculates screen position for cursor drawing based on the font, text string *up to cursor position*, x / y offset
-updateCursorPosition :: Font -> Text -> CInt -> CInt -> SDLIO ()
+updateCursorPosition :: Font -> Text -> CInt -> CInt -> PicoUIM u ()
 updateCursorPosition fnt txt x' y' = do
     (w', h') <- size fnt txt
     w <- fromIntegral <$> scaleFontSizeDown w'
@@ -97,7 +97,7 @@ makeAxis xmin xmax xscreen ymin ymax yscreen width color = SDLSeriesBrokenLines 
 
 
 
-compile2Widget :: Bool -> Mid.AbstractWidget -> SDLIO Widget
+compile2Widget :: Bool -> Mid.AbstractWidget -> PicoUIM u Widget
 -- simple box with background
 compile2Widget focus Mid.Panel{..} = pure $ Widget {
     isVisible = True,

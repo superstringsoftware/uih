@@ -9,7 +9,7 @@
     , BlockArguments
     , DisambiguateRecordFields
     , StandaloneDeriving
-     #-}
+#-}
 
 module UI.PicoUI.Middle.AbstractWidgets where
 

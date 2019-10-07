@@ -35,16 +35,16 @@ import UI.PicoUI.Reactive.Internal.StatefulSignals
 
 -- The only (possible) drawback - need to be careful to run the network in 1 thread, but that was the initial design anyway.
 
-createReactiveWidget :: Widget -> SDLIO (StatefulSignal SDLIO Widget)
+createReactiveWidget :: Widget -> PicoUIM u (StatefulSignal (PicoUIM u) Widget)
 createReactiveWidget = createStatefulSignal
 
 -- For now, we are simply adding raw widget signals to the map in the monad and running render on them periodically
-registerReactiveWidgets ::[StatefulSignal SDLIO Widget] -> SDLIO ()
+registerReactiveWidgets ::[StatefulSignal (PicoUIM u) Widget] -> PicoUIM u ()
 registerReactiveWidgets = mapM_ registerReactiveWidget
 
 -- this can be made generic - as long as something compiles to raw widget, we can make a signal out of it and
 -- register a raw widget based on it as a source
-registerReactiveWidget :: StatefulSignal SDLIO Widget -> SDLIO ()
+registerReactiveWidget :: StatefulSignal (PicoUIM u) Widget -> PicoUIM u ()
 registerReactiveWidget w = do
     rawW <- fmapMM (\pw -> P.compile2Widget (isWidgetInFocus pw) pw) w
     insertRawWidget rawW 
@@ -52,13 +52,13 @@ registerReactiveWidget w = do
 
 -- GENERIC variant of registering ANY signal that is instance of CompilesToRaw class
 -- DOES NOT ADD REACTIVE RESIZE!!! Need to think how to handle.
-registerReactiveSignal :: CompilesToRaw a => StatefulSignal SDLIO a -> SDLIO ()    
+registerReactiveSignal :: CompilesToRaw a => StatefulSignal (PicoUIM u) a -> PicoUIM u ()    
 registerReactiveSignal s = do
     rawW <- fmapMM (\pw -> P.compileToRawWidget (P.isInFocus pw) pw) s
     insertRawWidget rawW
 
 -- make widget focusable on left click    
-makeFocusable :: ReactiveWidget -> SDLIO ()
+makeFocusable :: ReactiveWidget u -> PicoUIM u ()
 makeFocusable rw = onClickActW rw (\w e -> 
         if isLeftClick 1 e
         then addFocus w
@@ -66,7 +66,7 @@ makeFocusable rw = onClickActW rw (\w e ->
     )
 
 -- register Signal to receive focus events and put remove listener action to then remove focus
-addFocus :: ReactiveWidget -> SDLIO ()
+addFocus :: ReactiveWidget u -> PicoUIM u ()
 addFocus rw = do
     doRemoveFocus -- first, remove currently focused widget
     fe <- focusEvents <$> gets eventSources
@@ -76,7 +76,7 @@ addFocus rw = do
     modifyVal rw (\w -> w { isFocus = True })
 
 -- remove focus from the currently focused widget
-doRemoveFocus :: SDLIO ()
+doRemoveFocus :: PicoUIM u ()
 doRemoveFocus = do 
     -- execute remove action:
     join $ gets removeFocus
@@ -128,7 +128,7 @@ pureTextEdit e w = case e of
 -- Ok, we need a better way to do it. !!!
 -- This works, but signal contains a widget, and we probably want an event
 -- see below for that.
-onClick :: ReactiveWidget -> SDLIO ReactiveWidget
+onClick :: ReactiveWidget u -> PicoUIM u (ReactiveWidget u)
 onClick w = do
     events <- clickEvents <$> gets eventSources
     fmapM isHovering events >>= \s -> filterApplyE s w
@@ -155,21 +155,21 @@ isHoveringE e w = let (V2 x y) = pos $ source e
                  in  if isInWidget x y w then Just e else Nothing
 
 -- returns a signal with click events for a specific widget
-onClickE :: ReactiveWidget -> SDLIO (StatefulSignal SDLIO (Maybe P.Event))
+onClickE :: ReactiveWidget u -> PicoUIM u (StatefulSignal (PicoUIM u) (Maybe P.Event))
 onClickE w = do    
     events <- clickEvents <$> gets eventSources
     fmapM isHoveringE events >>= \f -> applyE f w >>= filterJust
     
     
 -- add a listener for on click events    
-onClickAct :: ReactiveWidget -> (P.Event -> SDLIO ()) -> SDLIO ()
+onClickAct :: ReactiveWidget u -> (P.Event -> PicoUIM u ()) -> PicoUIM u ()
 onClickAct w act = do
     sig <- onClickE w
     let conn (Just e) = act e
     addListener sig conn
 
 -- add a listener that also takes a widget as an argument    
-onClickActW :: ReactiveWidget -> (ReactiveWidget -> P.Event -> SDLIO ()) -> SDLIO ()    
+onClickActW :: ReactiveWidget u -> (ReactiveWidget u -> P.Event -> PicoUIM u ()) -> PicoUIM u ()    
 onClickActW w act = do
     sig <- onClickE w
     let conn (Just e) = act w e

@@ -55,7 +55,7 @@ renderCursor ren = do
 -- this method DOES NOT set renderer target
 -- to the screen, it has to be done elsewhere
 -- NO CACHING now, everything is very straightforward and naive
-renderWidgetToScreen :: Widget -> Renderer -> SDLIO ()
+renderWidgetToScreen :: Widget -> Renderer -> PicoUIM u ()
 renderWidgetToScreen Widget{..} ren = if not isVisible then pure () else do
     let (V4 x' y' w' h') = collider
     -- setting clipping rectangle to the bounding box of the element
@@ -65,7 +65,7 @@ renderWidgetToScreen Widget{..} ren = if not isVisible then pure () else do
     -- resetting clipping
     rendererClipRect ren $= Nothing
     where 
-        fn1 :: CInt -> CInt -> CInt -> CInt -> Renderer -> WidgetElement -> SDLIO ()
+        fn1 :: CInt -> CInt -> CInt -> CInt -> Renderer -> WidgetElement -> PicoUIM u ()
         fn1 x y w h ren WidgetElement{..} = do
                 let (V2 xo yo) = offset
                 tex <- sdlElement2Texture (V2 w h) el ren
@@ -90,7 +90,7 @@ runUnscaled func ren = do
     if autos then rendererScale ren $= scale else pure ()              
     return ret
 
-sdlElement2Texture :: V2 CInt -> SDLElement -> Renderer -> SDLIO Texture
+sdlElement2Texture :: V2 CInt -> SDLElement -> Renderer -> PicoUIM u Texture
 sdlElement2Texture size SDLBox{..} ren = do
     tex <- emptyTexture size ren
     rendererRenderTarget ren $= Just tex
@@ -170,14 +170,14 @@ sdlElement2Texture size SDLSeriesBrokenLines{..} renderer = do
     where fn (p1,p2) = drawLine renderer p1 p2
 
 --
-styledText2Surface :: SDLStyledText -> Font -> SDLIO Surface
+styledText2Surface :: SDLStyledText -> Font -> PicoUIM u Surface
 styledText2Surface SDLStyledText{..} font = do
     setStyle font styles
     let text' = if text == "" then " " else text
     maybe (blended font color text')
           (\bgClr -> shaded font color bgClr text' ) bgColor
     
-styledText2Texture :: SDLStyledText -> Font -> Renderer -> SDLIO Texture
+styledText2Texture :: SDLStyledText -> Font -> Renderer -> PicoUIM u Texture
 styledText2Texture st font ren = do
     surf <- styledText2Surface st font
     -- tex <- runUnscaled (flip createTextureFromSurface surf) ren
@@ -188,7 +188,7 @@ styledText2Texture st font ren = do
 emptyTexture size ren = createTexture ren RGBA8888 TextureAccessTarget size
 
 -- render a given texture at x y coordinates ON SCREEN
-renderTexture :: CInt -> CInt -> Texture -> Renderer -> SDLIO ()
+renderTexture :: CInt -> CInt -> Texture -> Renderer -> PicoUIM u ()
 renderTexture x y texture renderer = do
     ti <- queryTexture texture
     -- liftIO $ putStrLn $ "Size is " ++ (show ti) ++ " x,y: " ++ show x ++ ", " ++ show y
@@ -197,7 +197,7 @@ renderTexture x y texture renderer = do
     let dest = Rectangle (P (V2 x y)) (V2 w h)
     copy renderer texture Nothing (Just dest)
 
-renderTextureUnscaled :: CInt -> CInt -> Texture -> Renderer -> SDLIO ()
+renderTextureUnscaled :: CInt -> CInt -> Texture -> Renderer -> PicoUIM u ()
 renderTextureUnscaled x y texture renderer = do
     autos <- gets autoScale
     scale@(V2 sx sy) <- gets scaleXY

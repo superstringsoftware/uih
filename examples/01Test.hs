@@ -32,7 +32,7 @@ import PreludeFixes
 Reusing basic example from Reactive Banana: +/- buttons and a counter
 -}
 
-test_widgets :: SDLIO ()
+test_widgets :: PicoUIM u ()
 test_widgets = do
     eHover <- hoverEvents <$> gets eventSources
     w1 <- filterHoverApply (changeBackground $ BGColor $ mdOrange 500) 
@@ -41,7 +41,7 @@ test_widgets = do
     w  <- filterHoverApply (changeBackground $ BGColor $ mdTeal  500) 
                            (changeBackground $ BGColor $ mdBlueGray 700) 
                            <^$> eHover >>= accum fig2    
-    (counter :: PicoSignal Int) <- 
+    (counter :: PicoSignal u Int) <- 
         unionsM [ (+1) <^$^ onClick w1, subtract 1 <^$^ onClick w ] >>= accum 0
     w2 <- setTextShow <^$> counter >>= accum but
     wch1 <- createReactiveWidget ch1

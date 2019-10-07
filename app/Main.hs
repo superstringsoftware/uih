@@ -36,7 +36,7 @@ EventSources {
   , keyboardEvents :: StatefulSignal SDLIO Event
 } 
 -}
-test_widgets :: SDLIO ()
+test_widgets :: PicoUIM u ()
 test_widgets = mdo
     sdlSource <- allEvents <$> gets eventSources
     eHover <- filterS isHover sdlSource
@@ -75,7 +75,7 @@ test_widgets = mdo
 
 
 -- import SDL.Raw.Types (Rect(..))
-testProgram :: SDLIO ()
+testProgram :: PicoUIM u ()
 testProgram = 
   {-
   registerWidgetWithHandlers 

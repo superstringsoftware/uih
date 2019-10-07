@@ -79,7 +79,7 @@ runSDLIO program = runStateT
     SDLEmptyState
 
 
-renderUI :: SDLIO ()
+renderUI :: PicoUIM u ()
 renderUI = do
     renderer <- getRenderer
     SDL.rendererRenderTarget renderer $= Nothing -- rendering to Screen
@@ -97,7 +97,7 @@ renderUI = do
     where fnr ren rw = readVal rw >>= \w -> renderWidgetToScreen w ren
     
 
-appLoop :: Bool -> SDLIO ()
+appLoop :: Bool -> PicoUIM u ()
 appLoop draw = do
     -- isDirty <- getDirty
     -- if isDirty then renderUI >> setClean else pure ()
@@ -109,12 +109,12 @@ appLoop draw = do
                 results <- mapM fireEvent events -- gather results
                 let quit = True `elem` results -- checking if any of the results is True
                 if quit 
-                then get >>= liftIO . print >> liftIO (putStrLn "Good-bye.")
+                then liftIO (putStrLn "Good-bye.")
                 else appLoop True
 
 -- takes an SDL event, converts it into our event, and runs all registered event handlers - 
 -- for now, only inside widgets, eventually all others as well.
-fireEvent :: SDL.Event -> SDLIO Bool
+fireEvent :: SDL.Event -> PicoUIM u Bool
 fireEvent ev = do
     event <- sdlEvent2Event ev
     -- firing in the reactive sdl source
@@ -123,14 +123,10 @@ fireEvent ev = do
     return $ isQuit event
 
 
-composeManyHandlers :: [EventHandler] -> P.Event -> SDLIO ()
-composeManyHandlers hs evt = mapM_ (fn evt) hs where fn evt h = h evt
-
-    
 -- converting SDL event to our event inside a monad - to be able to 
 -- retrieve widgets right away and fire events to them inside here as needed, too
 -- main function connecting SDL with our world
-sdlEvent2Event :: SDL.Event -> SDLIO P.Event
+sdlEvent2Event :: SDL.Event -> PicoUIM u P.Event
 sdlEvent2Event event = 
     case SDL.eventPayload event of
             p@(SDL.MouseButtonEvent mb) -> 
@@ -195,7 +191,7 @@ sdlEvent2Event event =
 
 -- So, additional state of the input devices which is passed with each event and updated by the main cycle
 -- as events are proceeding?
-checkEventOLD :: SDL.Event ->  SDLIO Bool
+checkEventOLD :: SDL.Event ->  PicoUIM u Bool
 checkEventOLD event = do
     --liftIO $ print $ show $ event
     case SDL.eventPayload event of

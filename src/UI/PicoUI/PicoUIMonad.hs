@@ -59,7 +59,7 @@ data CursorStatus = CursorStatus {
     , prevTick :: Word32
 } deriving Show
 
-prolongCursor :: SDLIO ()
+prolongCursor :: PicoUIM u ()
 prolongCursor = do
     curTick <- ticks
     cur <- gets cursor
@@ -75,61 +75,61 @@ data InputDevicesState = InputDevicesState {
 
 } deriving Show
 
-type ReactiveWidget = StatefulSignal SDLIO Mid.AbstractWidget
--- reactive signals in SDLIO monad
-type PicoSignal a = StatefulSignal SDLIO a
+type ReactiveWidget u = StatefulSignal (PicoUIM u) Mid.AbstractWidget
+-- reactive signals in (PicoUIM u) monad
+type PicoSignal u a = StatefulSignal (PicoUIM u) a
 
-data EventSources = EventSources {
-    allEvents      :: StatefulSignal SDLIO Event
-  , clickEvents    :: StatefulSignal SDLIO Event
-  , textEvents     :: StatefulSignal SDLIO Event
-  , keyboardEvents :: StatefulSignal SDLIO Event
-  , focusEvents    :: StatefulSignal SDLIO Event -- source for the events that only a widget in focus should receive, see ReactiveWidgets
-  , hoverEvents    :: StatefulSignal SDLIO Event
+data EventSources u = EventSources {
+    allEvents      :: StatefulSignal (PicoUIM u) Event
+  , clickEvents    :: StatefulSignal (PicoUIM u) Event
+  , textEvents     :: StatefulSignal (PicoUIM u) Event
+  , keyboardEvents :: StatefulSignal (PicoUIM u) Event
+  , focusEvents    :: StatefulSignal (PicoUIM u) Event -- source for the events that only a widget in focus should receive, see ReactiveWidgets
+  , hoverEvents    :: StatefulSignal (PicoUIM u) Event
 } deriving Show
 
 -- record to keep our current SDL subsystem state
-data SDLState = SDLState {
+data SDLState u = SDLState {
     mainWindow    :: Window
   , mainRenderer  :: Renderer
   , loadedFonts   :: Map.Map Text Font -- map from font names to actual fonts
   , cursor        :: CursorStatus
   , bgColor       :: V4 Word8
-  , rawWidgets    :: IMap.IntMap (StatefulSignal SDLIO Widget) -- cache of the low level widgets, DO NOT manipulate it directly
-  , removeFocus   :: SDLIO () -- action to remove focus signal listener from a currently focused widget (see ReactiveWidgets addFocus etc)
-  , focusWidget   :: Maybe ReactiveWidget
+  , rawWidgets    :: IMap.IntMap (StatefulSignal (PicoUIM u) Widget) -- cache of the low level widgets, DO NOT manipulate it directly
+  , removeFocus   :: PicoUIM u () -- action to remove focus signal listener from a currently focused widget (see ReactiveWidgets addFocus etc)
+  , focusWidget   :: Maybe (ReactiveWidget u)
   , rawIdCounter  :: !Int
   , scaleXY       :: V2 CFloat -- in case we use highDPI, this will be the scale
   , autoScale     :: Bool -- apply scaling automatically so that same logical size is used on high dpi displays
-
-  --, readerEvent   :: Event -- currently handling event value for event hadlers and Reader monad instance
-  , eventSources  :: EventSources
+  , eventSources  :: EventSources u
+  , userState     :: u
 } | SDLEmptyState deriving Show
 
-instance Show (SDLIO ()) where show _ = "SDLIO () action"
+instance Show (PicoUIM u ()) where show _ = "(PicoUIM u) () action"
 
 -- Stacking State and IO into a monad
-type SDLIO = StateT SDLState IO
+type PicoUIM u = StateT (SDLState u) IO
+-- type SDLIO = StateT SDLState IO
 -- non-pure event handler running in SDLIO
 -- can (and will) encompass pure event handlers (see EventLoop)
-type EventHandler = Event -> SDLIO ()
+-- type EventHandler = Event -> SDLIO ()
 
 
-quickEvalSDLIO :: SDLIO a -> IO a
+quickEvalSDLIO :: PicoUIM u a -> IO a
 quickEvalSDLIO act = evalStateT act SDLEmptyState
 
-unsafePerformSDLIO :: SDLIO a -> a
+unsafePerformSDLIO :: PicoUIM u a -> a
 unsafePerformSDLIO = unsafePerformIO • quickEvalSDLIO 
 
-instance {-# OVERLAPPING #-} Show a => Show (StatefulSignal SDLIO a) where
+instance {-# OVERLAPPING #-} Show a => Show (StatefulSignal (PicoUIM u) a) where
     show = show • unsafePerformSDLIO • readVal
 
-instance Show EventHandler where show _ = "[EventHandler]"
+-- instance Show EventHandler where show _ = "[EventHandler]"
 
-getRenderer :: SDLIO Renderer
+getRenderer :: PicoUIM u Renderer
 getRenderer = mainRenderer <$> get
     
-insertRawWidget :: StatefulSignal SDLIO Widget -> SDLIO ()
+insertRawWidget :: StatefulSignal (PicoUIM u) Widget -> PicoUIM u ()
 insertRawWidget w = do
     i <- gets rawIdCounter
     ws <- gets rawWidgets
@@ -159,7 +159,7 @@ mainWindowSettings = defaultWindow
 -- dumpSDLState = get >>= liftIO . print . show
 
 -- main initialization functions
-initState :: SDLIO ()
+initState :: PicoUIM u ()
 initState = do
     -- initializing event sources - they are SEPARATE, as event dispatching function
     -- will filter them when converting SDL events, as this is going to be more efficient
@@ -178,7 +178,7 @@ initState = do
     s  <- liftIO initStateIO
     put $ s { eventSources = eS, removeFocus = pure () } 
 
-initStateIO :: IO SDLState
+initStateIO :: IO (SDLState u)
 initStateIO = do 
     r <- try $ do
             SDL.initializeAll
@@ -219,7 +219,7 @@ defaultFont size = load defaultFontPath size
 -- The logic is:
 -- We make font size SCALE UP in high-dpi environments
 -- when we render font related textures, we scale back to 0 so that they are rendered correctly
-safeLoadFont :: String -> Int -> SDLIO (Maybe Font)
+safeLoadFont :: String -> Int -> PicoUIM u (Maybe Font)
 safeLoadFont path size = do
     autos <- gets autoScale
     V2 x y <- gets scaleXY
@@ -229,7 +229,7 @@ safeLoadFont path size = do
                 (\fnt -> return $ Just fnt) r
 
 -- handles scaling of font related sizes used in rendering etc - need this for high dpi stuff
-scaleFontSizeDown :: Int -> SDLIO Int
+scaleFontSizeDown :: Int -> PicoUIM u Int
 scaleFontSizeDown size = do
     V2 x y <- gets scaleXY
     autos <- gets autoScale
@@ -244,27 +244,27 @@ data SDLFontData = SDLFontData {
     fntLineSkip :: !Int
 } deriving (Eq, Show)
 
-getDefaultFont :: SDLIO Font
+getDefaultFont :: PicoUIM u Font
 getDefaultFont = do 
     st <- get 
     let fntm = Map.lookup "__DEFAULT__" (loadedFonts st)
     maybe (fail "Could not find default font, impossible to continue!")
           (\fnt -> pure fnt) fntm
 
-getFont :: Text -> SDLIO (Maybe Font)
+getFont :: Text -> PicoUIM u (Maybe Font)
 getFont txt = do
     st <- get 
     pure $ Map.lookup txt (loadedFonts st)
           
 
-getFontOrDefault :: Text -> SDLIO Font
+getFontOrDefault :: Text -> PicoUIM u Font
 getFontOrDefault txt = do
     st <- get 
     let fntm = Map.lookup txt (loadedFonts st)
     maybe getDefaultFont
           (\fnt -> pure fnt) fntm
 
-initFonts :: SDLIO ()
+initFonts :: PicoUIM u ()
 initFonts = do
     fnt <- initDefaultFont
     st <- get
