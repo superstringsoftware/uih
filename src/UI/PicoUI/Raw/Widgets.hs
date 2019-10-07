@@ -43,9 +43,13 @@ data SDLElement = SDLBox { -- simply a colored box (eventually need to add with 
     font :: Font,
     texts :: Vector SDLStyledText,
     cursorPos :: !Int
-} | SDLSeriesLines {
+} | SDLSeriesLines { -- connected lines (used for charts mostly now)
     color :: V4 Word8,
     points :: S.Vector (Point V2 CInt),
+    width :: !CInt
+} | SDLSeriesBrokenLines { -- separate lines (used for charts mostly now, e.g. axis)
+    color :: V4 Word8,
+    lines :: Vector (Point V2 CInt, Point V2 CInt),
     width :: !CInt
 } deriving Show
 

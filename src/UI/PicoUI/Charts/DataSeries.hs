@@ -20,7 +20,8 @@ data DataSeriesN a b = DataSeriesN {
     dataPoints :: U.Vector (a,b)
   , xName      :: String
   , yName      :: String
-  , xmin, xmax :: a -- minimum and maximum values for the axes
+  -- minimum and maximum values for the axes
+  , xmin, xmax :: a 
   , ymin, ymax :: b
 } deriving Show
 -- representing final screen coordinates
@@ -28,6 +29,7 @@ type ScreenDataSeries = DataSeriesN Int Int
 
 -- type DataSeriesRealFrac = forall a b. (Unbox a, Unbox b, RealFrac a, RealFrac b) => DataSeriesN a b
 
+-- make n samples of the function f and turn it into a data series
 sampleFunc :: Int -> Double -> Double -> (Double -> Double) -> DataSeriesN Double Double
 sampleFunc n xmin xmax f = DataSeriesN {
     xName = "", yName = "",
@@ -38,8 +40,7 @@ sampleFunc n xmin xmax f = DataSeriesN {
         vec = G.generate (n+1) (\i -> let x = xmin + fromIntegral i * step in (x, f x))
         (_,ymin') = G.minimumBy (\(_,y1) (_,y2) -> if y1 < y2 then LT else GT) vec
         (_,ymax') = G.maximumBy (\(_,y1) (_,y2) -> if y1 < y2 then LT else GT) vec
--- maximumBy :: (a -> a -> Ordering) -> Vector a -> a            
-
+           
 
 
 -- convert data series into screen coordinates relative to 0,0 with xscreen max and yscreen max

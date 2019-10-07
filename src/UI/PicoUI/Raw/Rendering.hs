@@ -69,6 +69,8 @@ renderWidgetToScreen Widget{..} ren = if not isVisible then pure () else do
         fn1 x y w h ren WidgetElement{..} = do
                 let (V2 xo yo) = offset
                 tex <- sdlElement2Texture (V2 w h) el ren
+                -- textureBlendMode :: Texture -> StateVar BlendMode
+                textureBlendMode tex $= BlendAlphaBlend
                 -- unfortunately need to check between constructors here to correctly handle text rendering
                 -- for high-dpi autoscaling environments
                 case el of
@@ -141,10 +143,31 @@ SDLSeriesLines {
 sdlElement2Texture size SDLSeriesLines{..} renderer = do
     tex <- emptyTexture size renderer
     rendererRenderTarget renderer $= Just tex
+    rendererDrawColor renderer $= V4 0 0 0 0
+    clear renderer
     rendererDrawColor renderer $= color
     drawLines renderer points
     rendererRenderTarget renderer $= Nothing
     return tex 
+
+-- 
+{-
+SDLSeriesBrokenLines { -- separate lines (used for charts mostly now, e.g. axis)
+    color :: V4 Word8,
+    lines :: Vector (Point V2 CInt, Point V2 CInt),
+    width :: !CInt
+} 
+-}   
+sdlElement2Texture size SDLSeriesBrokenLines{..} renderer = do
+    tex <- emptyTexture size renderer
+    rendererRenderTarget renderer $= Just tex
+    rendererDrawColor renderer $= V4 0 0 0 0
+    clear renderer
+    rendererDrawColor renderer $= color
+    mapM_ fn lines
+    rendererRenderTarget renderer $= Nothing
+    return tex 
+    where fn (p1,p2) = drawLine renderer p1 p2
 
 --
 styledText2Surface :: SDLStyledText -> Font -> SDLIO Surface

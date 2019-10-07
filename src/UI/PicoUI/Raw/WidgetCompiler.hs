@@ -113,6 +113,31 @@ updateCursorPosition fnt txt x' y' = do
 
 updateCursorPositionExplicit x y h = gets cursor >>= \cur -> modify' (\s-> s { cursor = cur { x = x, y = y, P.height = h } })
 
+{-
+SDLSeriesBrokenLines { -- separate lines (used for charts mostly now, e.g. axis)
+    color :: V4 Word8,
+    lines :: Vector (Point V2 CInt, Point V2 CInt),
+    width :: !CInt
+}
+-}
+-- make axis lines for the chart
+makeAxis xmin xmax xscreen ymin ymax yscreen width color = SDLSeriesBrokenLines {
+    color = color,
+    width = width,
+    lines = [ (P $ V2 0 y0, P $ V2 xscreen y0)
+            , (P $ V2 xscreen y0, P $ V2 (xscreen - 10) (y0 + 4))
+            , (P $ V2 xscreen y0, P $ V2 (xscreen - 10) (y0 - 4))
+            , (P $ V2 x0 0, P $ V2 x0 yscreen)
+            , (P $ V2 x0 0, P $ V2 (x0 + 4) 10)
+            , (P $ V2 x0 0, P $ V2 (x0 - 4) 10)
+            ]
+} where xs = fromIntegral xscreen / (xmax - xmin)
+        ys = fromIntegral yscreen / (ymax - ymin)
+        y0 = fromIntegral (yscreen - round ( (-ymin) * ys))
+        x0 = fromIntegral $ round $ (-xmin) * xs
+
+
+
 compile2Widget :: Bool -> Mid.AbstractWidget -> SDLIO Widget
 -- simple box with background
 compile2Widget focus Mid.Panel{..} = pure $ Widget {
@@ -126,19 +151,6 @@ compile2Widget focus Mid.Panel{..} = pure $ Widget {
     ]
 }
 
-{-
-Chart {
-        layout :: Layout,
-        background :: Background,
-        cacheRect :: V4 Int,
-        dataSeries :: DataSeriesRealFrac
-    } 
-SDLSeriesLines {
-    color :: V4 Word8,
-    points :: S.Vector (Point V2 CInt),
-    width :: !CInt
-}
--}
 compile2Widget focus Mid.Chart{..} = do
     let coll@(V4 x y w h) = castV4 cacheRect
     pure $ Widget {
@@ -150,6 +162,11 @@ compile2Widget focus Mid.Chart{..} = do
                         offset = V2 0 0
                     },
                     WidgetElement {
+                        --makeAxis xmin xmax w ymin ymax h 1 (mdBlueGray 100),
+                        el = makeAxis (xmin dataSeries) (xmax dataSeries) w (ymin dataSeries) (ymax dataSeries) h 1 (mdBlueGray 200),
+                        offset = V2 0 0
+                    },
+                    WidgetElement {
                         el = SDLSeriesLines {
                             color = mdAmber 700,
                             points = ds2storable dataSeries w h,
@@ -157,8 +174,10 @@ compile2Widget focus Mid.Chart{..} = do
                         },
                         offset = V2 0 0
                     }
+                    
                 ]
             }
+    
 
 -- this is NOT good as we are calling fontdata2font each time, and that is a VERY expensive
 -- operation, since we are reading from disk. Need to cache the font somehow - e.g., use recompile operation
