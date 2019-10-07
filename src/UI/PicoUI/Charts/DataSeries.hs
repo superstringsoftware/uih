@@ -53,6 +53,10 @@ data GenericDataSeries a = GenericDataSeries {
     colorFunction :: Maybe (a -> Color)
 }
 
+type DS1 = GenericDataSeries Double -- suitable for bar charts
+type DS2 = GenericDataSeries (Double,Double) -- suitable for line, point charts
+type DS3 = GenericDataSeries (Double,Double,Double) -- suitable for bubble charts or 3D
+
 data SeriesDrawType = SDPoint | SDLine | SDBar | SDBubble | SDPie
 
 -- unboxed data series, so mostly for math

@@ -42,11 +42,20 @@ createReactiveWidget = createStatefulSignal
 registerReactiveWidgets ::[StatefulSignal SDLIO Widget] -> SDLIO ()
 registerReactiveWidgets = mapM_ registerReactiveWidget
 
+-- this can be made generic - as long as something compiles to raw widget, we can make a signal out of it and
+-- register a raw widget based on it as a source
 registerReactiveWidget :: StatefulSignal SDLIO Widget -> SDLIO ()
 registerReactiveWidget w = do
     rawW <- fmapMM (\pw -> P.compile2Widget (isWidgetInFocus pw) pw) w
     insertRawWidget rawW 
     addReactiveResize w
+
+-- GENERIC variant of registering ANY signal that is instance of CompilesToRaw class
+-- DOES NOT ADD REACTIVE RESIZE!!! Need to think how to handle.
+registerReactiveSignal :: CompilesToRaw a => StatefulSignal SDLIO a -> SDLIO ()    
+registerReactiveSignal s = do
+    rawW <- fmapMM (\pw -> P.compileToRawWidget (P.isInFocus pw) pw) s
+    insertRawWidget rawW
 
 -- make widget focusable on left click    
 makeFocusable :: ReactiveWidget -> SDLIO ()
