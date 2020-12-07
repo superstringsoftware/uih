@@ -152,10 +152,16 @@ mainWindowSettings = defaultWindow
   -- There are issues with high DPI windows b/c we need to recalculate all coordinates when drawing / checking event
   -- coordinates, so its support is pending
   -- OpenGLContext defaultOpenGL
-  , windowHighDPI      = True
+  , windowHighDPI      = False
   , windowInputGrabbed = False
   , windowMode         = Windowed
-  , windowGraphicsContext = OpenGLContext defaultOpenGL
+  , windowGraphicsContext = OpenGLContext $ defaultOpenGL {
+                                                              glColorPrecision = V4 8 8 8 0
+                                                            , glDepthPrecision = 24
+                                                            , glStencilPrecision = 8
+                                                            , glMultisampleSamples = 0
+                                                            , glProfile = Compatibility Debug 3 2
+                                                          }
   , windowPosition     = Wherever
   , windowResizable    = True
   , windowInitialSize  = V2 1200 800
@@ -186,8 +192,11 @@ initStateIO :: IO (SDLState u)
 initStateIO = do 
     r <- try $ do
             SDL.initializeAll
+            print "SDL Initialized (hopefully)"
             window <- SDL.createWindow "My SDL Application" mainWindowSettings
+            print $ "SDL Window created:\n" ++ show window 
             renderer <- SDL.createRenderer window (-1) SDL.defaultRenderer {SDL.rendererTargetTexture = True}
+            print "SDL Renderer initialized"
             return $ SDLState {
                 mainWindow = window,
                 mainRenderer = renderer,

@@ -5,3 +5,9 @@ packages:
 extra-deps: 
 # resolver: lts-9.11
 resolver: lts-14.4
+
+# making our solution self contained in terms of the SDL and other non-haskell dependencies
+#
+#nix:
+#  enable: true
+#  packages: [pkg-config, SDL2, SDL2_gfx, SDL2_ttf]
