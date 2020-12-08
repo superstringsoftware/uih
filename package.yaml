@@ -72,6 +72,18 @@ executables:
     - base
     - text
 
+  ng:
+    main:                NewGenTest.hs
+    source-dirs:         examples/ng
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - uih
+    - base
+    - text
+
   
 
 tests:

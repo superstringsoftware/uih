@@ -21,7 +21,7 @@ module UI.PicoUI.PicoUIMonad where
 
 import Control.Monad.Trans.State.Strict
 import Control.Monad.IO.Class (liftIO, MonadIO)
-import Control.Exception
+import Control.Exception ( try )
 import SDL hiding (get, Event)
 import SDL.Font hiding (height)
 import Data.Text
@@ -206,7 +206,7 @@ initStateIO = do
                 rawWidgets = IMap.empty,
                 focusWidget = Nothing,
                 -- pureHandlers = Map.empty,
-                scaleXY = V2 1 1,
+                scaleXY = V2 2 2,
                 autoScale = True,
                 rawIdCounter = 0
                 -- readerEvent = NonEvent                
