@@ -28,6 +28,7 @@ testText = SDLStyledText {
     bgColor = Just $ mdGray 100
 }
 
+
 initStateIO :: IO ()
 initStateIO = do 
     r <- try $ do
@@ -44,14 +45,17 @@ initStateIO = do
                         text = testText,
                         cursorPos = 0
                      }
+            let testEl = mkRWSimpleTextLine st "id0"
+            let testEl' = renderElement ren testEl
             tex <- render ren st
-            ti <- queryTexture tex
-            let w = textureWidth ti
-            let h = textureHeight ti
-            let dest = Rectangle (P (V2 50 50)) (V2 w h)
+            dest <- rectangleFromTexture tex 50 50
+            -- let (Just tex'') = texCache testEl'
+            tex' <- texCache testEl'
+            dest' <- rectangleFromTexture tex' 50 150
             rendererDrawColor ren $= mWhite
             clear ren
-            SDL.copy ren tex Nothing (Just dest) 
+            SDL.copy ren tex Nothing (Just dest)
+            SDL.copy ren tex' Nothing (Just dest') 
             present ren
             destroyTexture tex
             free mfont

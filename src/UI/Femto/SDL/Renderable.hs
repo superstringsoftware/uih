@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, DuplicateRecordFields, OverloadedLists, RecordWildCards, MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings, DuplicateRecordFields, OverloadedLists, RecordWildCards, MultiParamTypeClasses, ExistentialQuantification #-}
 module UI.Femto.SDL.Renderable where
 
 -- SDL Rendering in the IO monad!    
@@ -12,6 +12,7 @@ import SDL.Font
 
 import PreludeFixes
 import Foreign.C.Types (CInt)
+import Foreign.Ptr(nullPtr, Ptr)
 
 import Data.Text
 import Data.Word
@@ -63,25 +64,47 @@ instance Renderable RWSimpleTextLine IO where
     render ren RWSimpleTextLine{..} = styledText2Texture text font ren
 
 
+-- helper function to create a rectangle based on the texture
+rectangleFromTexture :: Texture -> CInt -> CInt -> IO (Rectangle CInt)
+rectangleFromTexture tex x y = do
+    ti <- queryTexture tex
+    let w = textureWidth ti
+    let h = textureHeight ti
+    return $ Rectangle (P (V2 x y)) (V2 w h)
 
--- low level SDL widgets used for caching
-data SDLElement = SDLBox { -- simply a colored box (eventually need to add with an image)
-    bgColor :: V4 Word8
-} | SDLText { -- text without any background
-    text :: Text,
-    font :: Font, -- SDL font object to render with
-    color :: V4 Word8, -- color to render text with
-    cursorPos :: !Int
-} | SDLTextLine { -- text line with different styles but the same font and size
-    font :: Font,
-    texts :: Vector SDLStyledText,
-    cursorPos :: !Int
-} | SDLSeriesLines { -- connected lines (used for charts mostly now)
-    color :: V4 Word8,
-    points :: SV.Vector (Point V2 CInt),
-    width :: !CInt
-} | SDLSeriesBrokenLines { -- separate lines (used for charts mostly now, e.g. axis)
-    color :: V4 Word8,
-    lines :: Vector (Point V2 CInt, Point V2 CInt),
-    width :: !CInt
-} deriving Show
+-- Widgets as existentials?
+
+data CacheableElement = forall w. CacheableElement {
+    _widget :: w -- existential widget type
+  , _eventHandler :: SDL.Event -> w -> w -- event handler that transforms our state (w) based on SDL Events
+  , _render :: w -> Renderer -> IO Texture -- render our state into a texture
+  , isDirty :: Bool -- do we need to rerender?
+  , id :: !Text -- global ID (Do we need it at the element level???)
+  , texCache :: IO Texture -- cached texture that we use for rendering as needed
+}
+
+-- updates the element based on the event
+handleElementEvent :: SDL.Event -> CacheableElement -> CacheableElement
+handleElementEvent ev (CacheableElement w eh r isd id1 tc) = CacheableElement {
+        _widget = eh ev w,
+        _eventHandler = eh,
+        _render = r,
+        isDirty = True, -- needs to change depending on the result of running the event handler
+        id = id1,
+        texCache = tc
+    }
+
+-- updates the texture cache
+renderElement :: Renderer -> CacheableElement -> CacheableElement
+renderElement ren ce@CacheableElement{..} = if not isDirty then ce else ce { texCache = _render _widget ren, isDirty = False }
+
+-- making an element out of a textline
+mkRWSimpleTextLine :: RWSimpleTextLine -> Text -> CacheableElement 
+mkRWSimpleTextLine rws ide = CacheableElement {
+        _widget = rws
+      , _eventHandler = \ev w -> w
+      , _render = \RWSimpleTextLine{..} ren -> styledText2Texture text font ren
+      , isDirty = True
+      , id = ide
+      , texCache = undefined -- ok, this is not very nice, but we are not using Maybe for performance reasons. After first call to render, this will be initialized.
+    }
