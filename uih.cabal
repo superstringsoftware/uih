@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d272f784421a5e7e6899ad996bbabbdac7511366767b26eb0a5ead68658b111c
+-- hash: 687db824b62aa370f4b98890010b07635c904d7700a15e671a674c4280273ba7
 
 name:           uih
 version:        0.1.0.0
@@ -28,6 +28,7 @@ library
   exposed-modules:
       Color
       PreludeFixes
+      UI.Femto.SDL.Common
       UI.Femto.SDL.Renderable
       UI.PicoUI.Charts.DataSeries
       UI.PicoUI.EventLoop
@@ -51,11 +52,13 @@ library
     , bytestring
     , clock
     , containers
+    , extra
     , ghc-prim
     , linear
     , mtl
     , random
     , sdl2
+    , sdl2-image
     , sdl2-ttf
     , text
     , transformers
@@ -75,11 +78,13 @@ executable ng
     , bytestring
     , clock
     , containers
+    , extra
     , ghc-prim
     , linear
     , mtl
     , random
     , sdl2
+    , sdl2-image
     , sdl2-ttf
     , text
     , transformers
@@ -100,11 +105,13 @@ executable t01
     , bytestring
     , clock
     , containers
+    , extra
     , ghc-prim
     , linear
     , mtl
     , random
     , sdl2
+    , sdl2-image
     , sdl2-ttf
     , text
     , transformers
@@ -126,12 +133,14 @@ executable uih
     , clock
     , containers
     , directory
+    , extra
     , ghc-prim
     , linear
     , mtl
     , random
     , sdl2
     , sdl2-gfx
+    , sdl2-image
     , sdl2-ttf
     , text
     , transformers
@@ -153,11 +162,13 @@ test-suite math-test
     , bytestring
     , clock
     , containers
+    , extra
     , ghc-prim
     , linear
     , mtl
     , random
     , sdl2
+    , sdl2-image
     , sdl2-ttf
     , text
     , transformers
