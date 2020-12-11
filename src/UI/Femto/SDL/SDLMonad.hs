@@ -44,6 +44,7 @@ data SDLState u = SDLState {
   , rawIdCounter  :: !Int
   , scaleXY       :: V2 CFloat -- in case we use highDPI, this will be the scale
   , autoScale     :: Bool -- apply scaling automatically so that same logical size is used on high dpi displays
+  , defaultPixelFormat :: PixelFormat
   , userState     :: u
 } | SDLEmptyState deriving Show
 

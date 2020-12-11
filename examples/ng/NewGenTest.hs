@@ -42,13 +42,14 @@ testText = SDLStyledText {
 }
 
 -- main function that runs the main FemtoUI program
-runFemtoSDLProgram :: u -> FemtoUIM u () -> IO ()
+runFemtoSDLProgram :: forall u. Show u => u -> FemtoUIM u () -> IO ()
 runFemtoSDLProgram uState prog = do
   r <- try $ do
         SDL.initializeAll
         window <- SDL.createWindow "My SDL Application" mainWindowSettings
         showWindow window
         ren <- SDL.createRenderer window (-1) SDL.defaultRenderer {SDL.rendererTargetTexture = True}
+        pf <- SDL.getWindowPixelFormat window
         let initState = SDLState {
                 mainWindow = window
               , mainRenderer  = ren
@@ -57,9 +58,10 @@ runFemtoSDLProgram uState prog = do
               , rawIdCounter = 0
               , scaleXY = V2 1 1
               , autoScale = True
+              , defaultPixelFormat = pf
               , userState = uState
             }
-
+        print $ show initState
         quickEvalSDLIO $ do 
             put initState
             initFonts
@@ -83,23 +85,21 @@ prog1 = do
                         text = testText,
                         cursorPos = 0
                      }
-  let testEl = mkRWSimpleTextLine st "id0"
-  let testEl' = renderElement ren testEl
-  tex <- liftIO $ render ren st
-  dest <- liftIO $ rectangleFromTexture tex 50 50
-  -- let (Just tex'') = texCache testEl'
-  tex' <- liftIO $ texCache testEl'
-  dest' <- liftIO $ rectangleFromTexture tex' 50 150
+  let testEl  = renderElement $ mkRWSimpleTextLine st "id0"
+  let testEl' = renderElement $ mkRWBox (RWBox { bgColor = mdAmberA 200, fgColor = Nothing, boundingRec = Rectangle (P (V2 0 0)) (V2 250 100)  }) "id1"
+  tex  <- texCache testEl
+  tex' <- texCache testEl'
   rendererDrawColor ren $= mWhite
-  clear ren
-  SDL.copy ren tex Nothing (Just dest)
-  SDL.copy ren tex' Nothing (Just dest') 
-  whileM $
+  liftIO $ whileM $
     C.isContinue <$> SDL.pollEvent
-    >>= C.conditionallyRun (sillyLoop ren)
+    >>= C.conditionallyRun (sillyLoop ren tex tex' )
 
 
-sillyLoop r = present r 
+sillyLoop r t1 t2 = do
+  clear r
+  renderTexture 50 50 t1 r
+  renderTexture 50 150 t2 r
+  present r 
 
 mainWindowSettings = defaultWindow
   { windowBorder       = True
