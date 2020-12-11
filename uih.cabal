@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 687db824b62aa370f4b98890010b07635c904d7700a15e671a674c4280273ba7
+-- hash: 39d4e409666d2e43a23daa9fbb1fd5ce557a51078934076aefcdb2fd34ead209
 
 name:           uih
 version:        0.1.0.0
@@ -29,7 +29,9 @@ library
       Color
       PreludeFixes
       UI.Femto.SDL.Common
+      UI.Femto.SDL.Fonts
       UI.Femto.SDL.Renderable
+      UI.Femto.SDL.SDLMonad
       UI.PicoUI.Charts.DataSeries
       UI.PicoUI.EventLoop
       UI.PicoUI.Middle.AbstractWidgets
