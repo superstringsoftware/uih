@@ -12,6 +12,7 @@ import PreludeFixes
 
 import Control.Exception ( try )
 import Data.Either
+import Data.IORef
 
 import Control.Monad.Extra(whileM)
 
@@ -19,6 +20,7 @@ import SDL
 import SDL.Font
 
 import UI.Femto.SDL.Renderable
+import qualified UI.Femto.Middle.Events as E
 
 import UI.Femto.SDL.Common as C
 
@@ -27,9 +29,58 @@ import UI.Femto.SDL.SDLMonad
 
 import qualified Data.Map.Strict as Map
 
-main :: IO ()
-main = runFemtoSDLProgram prog1
+import Control.Monad (unless)
 
+import UI.Hatto.Widgets 
+
+main :: IO ()
+main = runHattoProgram (putStrLn "Hello") -- runFemtoSDLProgram prog1
+
+runHattoProgram :: MonadIO m => m () -> IO ()
+runHattoProgram prog = do
+  r <- try $ do
+        SDL.initializeAll
+        window <- SDL.createWindow "My SDL Application" mainWindowSettings
+        showWindow window
+        ren <- SDL.createRenderer window (-1) SDL.defaultRenderer {SDL.rendererTargetTexture = True}
+        pf <- SDL.getWindowPixelFormat window
+        
+        
+        lbl <- (label <$> newIORef (0::Int))
+        lbl' <- lbl
+        renderDebug lbl'
+        appLoop ren lbl
+
+        destroyRenderer ren
+        destroyWindow window
+        SDL.quit
+
+  either (\e -> print (e::SDLException) >> fail "Could not initialize SDL")
+         (\st -> putStrLn "Initialized SDL") r
+
+
+-- appLoop :: Renderer -> IO ()
+appLoop renderer w = do
+  events <- pollEvents
+  let eventIsQPress event =
+        case eventPayload event of
+          KeyboardEvent keyboardEvent -> pure $
+            keyboardEventKeyMotion keyboardEvent == Pressed &&
+            keysymKeycode (keyboardEventKeysym keyboardEvent) == KeycodeQ
+          MouseButtonEvent mbe -> do 
+            putStrLn ("Mouse Event!\n" ++ show mbe) 
+            w' <- w
+            processEventsInWidget (E.sdlEvent2Event event) w'
+            w'' <- w
+            renderDebug w''
+            pure False
+          _ -> pure False
+  qPresses <- mapM eventIsQPress events
+  let qPressed = any (== True) qPresses
+  rendererDrawColor renderer $= V4 0 0 255 255
+  clear renderer
+  present renderer
+  unless qPressed (appLoop renderer w)
 
 
 testText = SDLStyledText {
