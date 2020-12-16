@@ -90,6 +90,7 @@ addListener (_,_,x,_) = x
 addListenerWRemove :: MonadIO m => StatefulSignal m a -> Listener m a -> m (m())
 addListenerWRemove (_,_,_,x) = x
 -- "fire signal eventValue" simply sets the value to eventValue and then fires it to all subscribers
+fire :: MonadIO m => StatefulSignal m b -> b -> m ()
 fire sig val = modifyVal sig (const val)
 -- listens to changes in the signal and executes an action in the monad in response
 -- again, a simple shortcut to addListener

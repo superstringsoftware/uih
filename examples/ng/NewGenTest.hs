@@ -28,7 +28,7 @@ import UI.Femto.SDL.SDLMonad
 import qualified Data.Map.Strict as Map
 
 main :: IO ()
-main = runFemtoSDLProgram () prog1
+main = runFemtoSDLProgram prog1
 
 
 
@@ -42,8 +42,8 @@ testText = SDLStyledText {
 }
 
 -- main function that runs the main FemtoUI program
-runFemtoSDLProgram :: forall u. Show u => u -> FemtoUIM u () -> IO ()
-runFemtoSDLProgram uState prog = do
+runFemtoSDLProgram :: FemtoUIM () -> IO ()
+runFemtoSDLProgram prog = do
   r <- try $ do
         SDL.initializeAll
         window <- SDL.createWindow "My SDL Application" mainWindowSettings
@@ -59,7 +59,7 @@ runFemtoSDLProgram uState prog = do
               , scaleXY = V2 1 1
               , autoScale = True
               , defaultPixelFormat = pf
-              , userState = uState
+              
             }
         print $ show initState
         quickEvalSDLIO $ do 
@@ -76,7 +76,7 @@ runFemtoSDLProgram uState prog = do
          (\st -> putStrLn "Initialized SDL") r
 
 
-prog1 :: FemtoUI ()
+prog1 :: FemtoUIM ()
 prog1 = do
   ren <- getRenderer
   mfont <- getDefaultFont
@@ -113,7 +113,7 @@ mainWindowSettings = defaultWindow
                                                               glColorPrecision = V4 8 8 8 0
                                                             , glDepthPrecision = 24
                                                             , glStencilPrecision = 8
-                                                            , glMultisampleSamples = 0
+                                                            , glMultisampleSamples = 1
                                                             , glProfile = Compatibility Debug 3 2
                                                           }
   , windowPosition     = Wherever

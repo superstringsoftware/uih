@@ -68,7 +68,7 @@ data RWBox = RWBox {
   , boundingRec :: Rectangle CInt
 } deriving Show
 
-renderRWBox :: RWBox -> FemtoUIM u Texture
+renderRWBox :: RWBox -> FemtoUIM Texture
 renderRWBox RWBox{..} = do
     st <- Mon.get
     let ren = mainRenderer st
@@ -105,17 +105,17 @@ rectangleFromTexture tex x y = do
 
 -- Widgets as existentials?
 
-data CacheableElement u = forall w. CacheableElement {
+data CacheableElement = forall w. CacheableElement {
     _widget :: w -- existential widget type
   , _eventHandler :: SDL.Event -> w -> w -- event handler that transforms our state (w) based on SDL Events
-  , _render :: w -> FemtoUIM u Texture -- render our state into a texture
+  , _render :: w -> FemtoUIM Texture -- render our state into a texture
   , isDirty :: Bool -- do we need to rerender?
   , id :: !Text -- global ID (Do we need it at the element level???)
-  , texCache :: FemtoUIM u Texture -- cached texture that we use for rendering as needed
+  , texCache :: FemtoUIM Texture -- cached texture that we use for rendering as needed
 }
 
 -- updates the element based on the event
-handleElementEvent :: SDL.Event -> CacheableElement u -> CacheableElement u
+handleElementEvent :: SDL.Event -> CacheableElement -> CacheableElement
 handleElementEvent ev (CacheableElement w eh r isd id1 tc) = CacheableElement {
         _widget = eh ev w,
         _eventHandler = eh,
@@ -126,11 +126,11 @@ handleElementEvent ev (CacheableElement w eh r isd id1 tc) = CacheableElement {
     }
 
 -- updates the texture cache
-renderElement :: CacheableElement u -> CacheableElement u
+renderElement :: CacheableElement -> CacheableElement
 renderElement ce@CacheableElement{..} = if not isDirty then ce else ce { texCache = _render _widget, isDirty = False }
 
 -- making an element out of a textline
-mkRWSimpleTextLine :: RWSimpleTextLine -> Text -> CacheableElement u 
+mkRWSimpleTextLine :: RWSimpleTextLine -> Text -> CacheableElement
 mkRWSimpleTextLine rws ide = CacheableElement {
         _widget = rws
       , _eventHandler = \ev w -> w
@@ -140,7 +140,7 @@ mkRWSimpleTextLine rws ide = CacheableElement {
       , texCache = undefined -- ok, this is not very nice, but we are not using Maybe for performance reasons. After first call to render, this will be initialized.
     }
 
-mkRWBox :: RWBox -> Text -> CacheableElement u
+mkRWBox :: RWBox -> Text -> CacheableElement
 mkRWBox rwb ide = CacheableElement {
         _widget = rwb
       , _eventHandler = \ev w -> w

@@ -28,7 +28,7 @@ defaultFontKey = ("Roboto-Light", 32)
 -- The logic is:
 -- We make font size SCALE UP in high-dpi environments
 -- when we render font related textures, we scale back to 0 so that they are rendered correctly
-safeLoadFont :: String -> Int -> FemtoUIM u (Maybe Font)
+safeLoadFont :: String -> Int -> FemtoUIM (Maybe Font)
 safeLoadFont path size = do
     autos <- gets autoScale
     V2 x y <- gets scaleXY
@@ -38,7 +38,7 @@ safeLoadFont path size = do
                 (return • Just) r
 
 -- handles scaling of font related sizes used in rendering etc - need this for high dpi stuff
-scaleFontSizeDown :: Int -> FemtoUIM u Int
+scaleFontSizeDown :: Int -> FemtoUIM Int
 scaleFontSizeDown size = do
     V2 x y <- gets scaleXY
     autos <- gets autoScale
@@ -52,25 +52,25 @@ data SDLFontData = SDLFontData {
     fntLineSkip :: !Int
 } deriving (Eq, Show)
 
-getDefaultFont :: FemtoUIM u Font
+getDefaultFont :: FemtoUIM Font
 getDefaultFont = do 
     st <- get 
     let fntm = Map.lookup defaultFontKey (loadedFonts st)
     maybe (fail "Could not find default font, impossible to continue!")
           pure fntm
 
-getFont :: (Text, Int) -> FemtoUIM u (Maybe Font)
+getFont :: (Text, Int) -> FemtoUIM (Maybe Font)
 getFont txt = Map.lookup txt <$> gets loadedFonts
           
 
-getFontOrDefault :: (Text, Int) -> FemtoUIM u Font
+getFontOrDefault :: (Text, Int) -> FemtoUIM Font
 getFontOrDefault txt = do
     st <- get 
     let fntm = Map.lookup txt (loadedFonts st)
     maybe getDefaultFont
           pure fntm
 
-initFonts :: FemtoUIM u ()
+initFonts :: FemtoUIM ()
 initFonts = do
     fnt <- initDefaultFont
     st <- get
@@ -86,5 +86,5 @@ initFonts = do
             mfont <- SDL.Font.initialize >> safeLoadFont defaultFontPath (snd defaultFontKey)
             maybe (fail "Could not initialize TTF fonts!") pure mfont
 
-destroyFonts :: FemtoUIM u ()
+destroyFonts :: FemtoUIM ()
 destroyFonts = get >>= \st -> mapM_ (liftIO . free) (loadedFonts st)

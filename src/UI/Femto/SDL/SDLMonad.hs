@@ -36,7 +36,7 @@ import Color
 import PreludeFixes
 
 -- record to keep our current SDL subsystem state
-data SDLState u = SDLState {
+data SDLState = SDLState {
     mainWindow    :: Window
   , mainRenderer  :: Renderer
   , loadedFonts   :: Map.Map (Text, Int) Font -- map from font names and sizes to actual fonts
@@ -45,32 +45,19 @@ data SDLState u = SDLState {
   , scaleXY       :: V2 CFloat -- in case we use highDPI, this will be the scale
   , autoScale     :: Bool -- apply scaling automatically so that same logical size is used on high dpi displays
   , defaultPixelFormat :: PixelFormat
-  , userState     :: u
 } | SDLEmptyState deriving Show
 
-instance Show (FemtoUIM u ()) where show _ = "FemtoUIM u () action"
+-- instance Show (FemtoUIM u ()) where show _ = "FemtoUIM u () action"
 
 -- Stacking State and IO into a monad with potential user state
-type FemtoUIM u = StateT (SDLState u) IO
-type FemtoUI = FemtoUIM () -- type synonim for a monad without user state
-
-getUState :: FemtoUIM u u
-getUState = gets userState
-
-putUState :: u -> FemtoUIM u ()
-putUState st = modify' (\s -> s{userState = st})
-
-modifyUState' :: (u -> u) -> FemtoUIM u ()
-modifyUState' f = getUState >>= putUState • f  
-
-getsU :: (u -> a) -> FemtoUIM u a
-getsU f = f <$> getUState
+type FemtoUIM = StateT SDLState IO
 
 
-quickEvalSDLIO :: FemtoUIM u a -> IO a
+
+quickEvalSDLIO :: FemtoUIM a -> IO a
 quickEvalSDLIO act = evalStateT act SDLEmptyState
 
-getRenderer :: FemtoUIM u Renderer
+getRenderer :: FemtoUIM Renderer
 getRenderer = mainRenderer <$> get
 
 

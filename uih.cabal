@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 39d4e409666d2e43a23daa9fbb1fd5ce557a51078934076aefcdb2fd34ead209
+-- hash: 10b9ec3efe1670987910346c54d36ee20090e3ad864bf35375332dbb95e95901
 
 name:           uih
 version:        0.1.0.0
@@ -28,10 +28,15 @@ library
   exposed-modules:
       Color
       PreludeFixes
+      UI.Femto.Middle.Components
+      UI.Femto.Middle.Events
+      UI.Femto.Middle.Widgets
       UI.Femto.SDL.Common
       UI.Femto.SDL.Fonts
       UI.Femto.SDL.Renderable
       UI.Femto.SDL.SDLMonad
+      UI.Femto.SDL.SDLWidgets
+      UI.Hatto.Widgets
       UI.PicoUI.Charts.DataSeries
       UI.PicoUI.EventLoop
       UI.PicoUI.Middle.AbstractWidgets
