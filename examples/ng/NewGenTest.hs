@@ -45,11 +45,10 @@ runHattoProgram prog = do
         ren <- SDL.createRenderer window (-1) SDL.defaultRenderer {SDL.rendererTargetTexture = True}
         pf <- SDL.getWindowPixelFormat window
         
-        
-        lbl <- (label <$> newIORef (0::Int))
-        lbl' <- lbl
-        renderDebug lbl'
-        appLoop ren lbl
+        -- lbl <- label <$> newMutState (0::Int)
+        b <- board <$> newMutState [0,0]
+        renderDebug b
+        appLoop ren b
 
         destroyRenderer ren
         destroyWindow window
@@ -69,10 +68,8 @@ appLoop renderer w = do
             keysymKeycode (keyboardEventKeysym keyboardEvent) == KeycodeQ
           MouseButtonEvent mbe -> do 
             putStrLn ("Mouse Event!\n" ++ show mbe) 
-            w' <- w
-            processEventsInWidget (E.sdlEvent2Event event) w'
-            w'' <- w
-            renderDebug w''
+            walkWidgetWithEvents (E.sdlEvent2Event event) w
+            renderDebug w
             pure False
           _ -> pure False
   qPresses <- mapM eventIsQPress events

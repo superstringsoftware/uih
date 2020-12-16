@@ -79,20 +79,85 @@ data Widget m = Widget {
     rerender :: Bool
 }
 
-label :: IORef Int -> IO (Widget IO)
-label i' = do 
-    i <- liftIO $ readIORef i'
+-- Wrapper around IORefs to keep our mutable state for Components in m monad
+data MutState s = MutState {
+    state :: IORef s
+}
+-- creating a new mutable state
+newMutState :: MonadIO m => s -> m (MutState s)
+newMutState s = liftIO (newIORef s) >>= \s' -> return $ MutState { state = s' }
+-- reading
+readMutState :: MonadIO m => MutState s -> m s
+readMutState MutState{..} = liftIO $ readIORef state
+-- modifying - strict only (why?)
+updateMutState :: MonadIO m => MutState s -> (s -> s) -> m ()
+updateMutState MutState{..} f = liftIO $ modifyIORef' state f
+
+
+renderDebug :: MonadIO m => m (Widget m) -> m ()
+renderDebug a = do 
+    rd a
+    a' <- a
+    mapM_ rd (children a')
+    where rd x = x>>= \Widget{..} -> liftIO $ putStrLn $ show element
+
+processEventsInWidget :: MonadIO m => Event -> Widget m -> m ()
+processEventsInWidget e Widget{..} = mapM_ (\a -> a e) eventHandlers
+
+walkWidgetWithEvents :: MonadIO m => Event -> m (Widget m) -> m ()
+walkWidgetWithEvents e mw = do
+    w <- mw
+    processEventsInWidget e w
+    mapM_ (walkWidgetWithEvents e) (children w)
+
+------------ some tests
+
+label :: MonadIO m => MutState Int -> m (Widget m)
+label ms = do 
+    i <- readMutState ms
     pure Widget {
         element = WEDebug $ show i,
         children = [],
-        eventHandlers = [\e -> modifyIORef' i' (+1)],
+        eventHandlers = [\e -> updateMutState ms (+1)],
         skeleton = emptySkeleton,
         texture = Nothing,
         rerender = True
     }
 
-renderDebug :: Widget m -> IO ()
-renderDebug Widget{..} = putStrLn $ show element
+-- simple tic-tac-toe-like-react example
+box :: MonadIO m => Int -> (Event -> m ()) -> m (Widget m)
+box i eh = pure Widget {
+        element = WEDebug $ "Cell: " ++ show i,
+        children = [],
+        eventHandlers = [eh],
+        skeleton = emptySkeleton,
+        texture = Nothing,
+        rerender = True
+    }
 
-processEventsInWidget :: MonadIO m => Event -> Widget m -> m ()
-processEventsInWidget e Widget{..} = mapM_ (\a -> a e) eventHandlers
+board :: MonadIO m => MutState [Int] -> m (Widget m)
+board ms = do
+    st <- readMutState ms
+    pure Widget {
+        element = WEDebug $ "Board state is: "  ++ show st,
+        children = [
+            box (st!!0) (onLeftClick  $ updateMutState ms (const [1,0])),
+            box (st!!1) (onRightClick $ updateMutState ms (const [0,1]))
+        ],
+        eventHandlers = [],
+        skeleton = emptySkeleton,
+        texture = Nothing,
+        rerender = True
+    }
+
+onClick :: MonadIO m  => m () -> Event -> m ()
+onClick handler (SDLEvent _ (MouseButtonEvent mbe)) = handler
+onClick _ _ = pure ()
+
+onLeftClick :: MonadIO m  => m () -> Event -> m ()
+onLeftClick handler (SDLEvent _ (MouseButtonEvent mbe)) = if (SDL.mouseButtonEventButton mbe == SDL.ButtonLeft) then handler else pure ()
+onLeftClick _ _ = pure ()
+
+onRightClick :: MonadIO m  => m () -> Event -> m ()
+onRightClick handler (SDLEvent _ (MouseButtonEvent mbe)) = if (SDL.mouseButtonEventButton mbe == SDL.ButtonRight) then handler else pure ()
+onRightClick _ _ = pure ()
