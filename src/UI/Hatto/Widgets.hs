@@ -3,24 +3,37 @@
 module UI.Hatto.Widgets
 where
 
-import Data.Text
+import Data.Text as T hiding (map)
 import Color
 
 import Linear
 import Foreign.C.Types (CInt)
 
-import UI.Femto.Middle.Events
+import UI.Hatto.Events
 
 import qualified SDL
+import qualified SDL.Font as SDL
 
 import Data.IORef
 import Control.Monad.IO.Class (liftIO, MonadIO)
+
+import Data.Functor ((<&>))
 
 data TextStyle = TextStyle {
     fontName  :: Text
   , fontSize  :: !Int
   , fontColor :: Color
+  , fontStyle :: [SDL.Style]
+  , bgColor   :: Maybe Color
 } deriving (Show, Eq)
+
+defaultTextStyle = TextStyle {
+        fontName = "Roboto",
+        fontSize = 16,
+        fontColor = mBlack,
+        fontStyle = [],
+        bgColor = Nothing
+    }
 
 data VAlign = VAlignTop  | VAlignMiddle | VAlignBottom deriving (Show, Eq)
 data HAlign = HAlignLeft | HAlignMiddle | HAlignRight  deriving (Show, Eq)
@@ -73,14 +86,14 @@ data Element =
 data Widget m = Widget {
     element  :: Element,
     children :: [m (Widget m)],
-    eventHandlers :: [Event -> m ()],
+    eventHandlers :: [EventHandlerM m],
     skeleton :: WidgetSkeleton,
     texture :: Maybe SDL.Texture,
     rerender :: Bool
 }
 
 -- Wrapper around IORefs to keep our mutable state for Components in m monad
-data MutState s = MutState {
+newtype MutState s = MutState {
     state :: IORef s
 }
 -- creating a new mutable state
@@ -93,22 +106,61 @@ readMutState MutState{..} = liftIO $ readIORef state
 updateMutState :: MonadIO m => MutState s -> (s -> s) -> m ()
 updateMutState MutState{..} f = liftIO $ modifyIORef' state f
 
-
+-- render widgets to console
 renderDebug :: MonadIO m => m (Widget m) -> m ()
 renderDebug a = do 
-    rd a
     a' <- a
-    mapM_ rd (children a')
-    where rd x = x>>= \Widget{..} -> liftIO $ putStrLn $ show element
+    rd a'
+    mapM_ renderDebug (children a')
+    where rd Widget{..} = liftIO $ putStrLn $ show element
 
-processEventsInWidget :: MonadIO m => Event -> Widget m -> m ()
-processEventsInWidget e Widget{..} = mapM_ (\a -> a e) eventHandlers
-
+-- send a given event to all widgets in the tree
 walkWidgetWithEvents :: MonadIO m => Event -> m (Widget m) -> m ()
 walkWidgetWithEvents e mw = do
     w <- mw
     processEventsInWidget e w
     mapM_ (walkWidgetWithEvents e) (children w)
+    where processEventsInWidget e Widget{..} = mapM_ (\a -> a e) eventHandlers
+
+-- Walk a widget with a transformation function. Used e.g. for rendering caching etc.
+-- this one does it top-down (so if f changes children to [], there's no walking down the tree)
+-- Evaluating m Widget, then applying f to it, then mapping over children
+transformWidget :: MonadIO m => (Widget m -> Widget m) -> m (Widget m) -> m (Widget m)
+transformWidget f mw = mw <&> f >>= \w -> return $ w { children = map (transformWidget f) (children w) }
+
+-------------- Basic widgets with behavior
+
+-- Editable line
+mkEditableLine :: MonadIO m => MutState Text -> m (Widget m)
+mkEditableLine mt = do
+    t <- readMutState mt
+    pure Widget {
+        element = WETextLabel { text = t, textAlign = (VAlignMiddle, HAlignMiddle), textStyle = Just defaultTextStyle},
+        children = [],
+        skeleton = emptySkeleton,
+        texture = Nothing,
+        rerender = True,
+        eventHandlers = [hndlAlterText mt]
+    }
+
+hndlAlterText :: MonadIO m => MutState Text -> Event -> m ()
+hndlAlterText mt evt = 
+    case evt of
+        SDLEvent _ evt' -> 
+            case evt' of
+                SDL.TextInputEvent ti -> updateMutState mt (<> SDL.textInputEventText ti)
+                SDL.KeyboardEvent ev  -> do
+                    let k = SDL.keysymKeycode $ SDL.keyboardEventKeysym ev
+                    case k of
+                        SDL.KeycodeBackspace -> 
+                            -- checking press only 
+                            if SDL.keyboardEventKeyMotion ev == SDL.Pressed 
+                            then updateMutState mt (\txt -> if txt == "" then txt else T.init txt)
+                            else pure ()
+                        _ -> pure ()
+                _ -> pure ()
+        _ -> pure ()
+
 
 ------------ some tests
 
@@ -150,14 +202,18 @@ board ms = do
         rerender = True
     }
 
-onClick :: MonadIO m  => m () -> Event -> m ()
-onClick handler (SDLEvent _ (MouseButtonEvent mbe)) = handler
-onClick _ _ = pure ()
-
-onLeftClick :: MonadIO m  => m () -> Event -> m ()
-onLeftClick handler (SDLEvent _ (MouseButtonEvent mbe)) = if (SDL.mouseButtonEventButton mbe == SDL.ButtonLeft) then handler else pure ()
-onLeftClick _ _ = pure ()
-
-onRightClick :: MonadIO m  => m () -> Event -> m ()
-onRightClick handler (SDLEvent _ (MouseButtonEvent mbe)) = if (SDL.mouseButtonEventButton mbe == SDL.ButtonRight) then handler else pure ()
-onRightClick _ _ = pure ()
+board' :: MonadIO m => MutState [Int] -> MutState Text -> m (Widget m)
+board' ms mt = do
+    st <- readMutState ms
+    pure Widget {
+        element = WEDebug $ "Board state is: "  ++ show st,
+        children = [
+            box (st!!0) (onLeftClick  $ updateMutState ms (const [1,0])),
+            box (st!!1) (onRightClick $ updateMutState ms (const [0,1])),
+            mkEditableLine mt
+        ],
+        eventHandlers = [],
+        skeleton = emptySkeleton,
+        texture = Nothing,
+        rerender = True
+    }

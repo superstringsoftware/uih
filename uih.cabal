@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 10b9ec3efe1670987910346c54d36ee20090e3ad864bf35375332dbb95e95901
+-- hash: fbcfa0cce295846a319f236bb325d204a88a51fbe1109c2613e32280097067c2
 
 name:           uih
 version:        0.1.0.0
@@ -36,6 +36,8 @@ library
       UI.Femto.SDL.Renderable
       UI.Femto.SDL.SDLMonad
       UI.Femto.SDL.SDLWidgets
+      UI.Hatto.Events
+      UI.Hatto.SDL.Rendering
       UI.Hatto.Widgets
       UI.PicoUI.Charts.DataSeries
       UI.PicoUI.EventLoop

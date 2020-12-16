@@ -20,7 +20,7 @@ import SDL
 import SDL.Font
 
 import UI.Femto.SDL.Renderable
-import qualified UI.Femto.Middle.Events as E
+import qualified UI.Hatto.Events as E
 
 import UI.Femto.SDL.Common as C
 
@@ -46,7 +46,7 @@ runHattoProgram prog = do
         pf <- SDL.getWindowPixelFormat window
         
         -- lbl <- label <$> newMutState (0::Int)
-        b <- board <$> newMutState [0,0]
+        b <- board' <$> (newMutState [0,0]) <*> (newMutState "Hello World")
         renderDebug b
         appLoop ren b
 
@@ -63,21 +63,25 @@ appLoop renderer w = do
   events <- pollEvents
   let eventIsQPress event =
         case eventPayload event of
-          KeyboardEvent keyboardEvent -> pure $
-            keyboardEventKeyMotion keyboardEvent == Pressed &&
-            keysymKeycode (keyboardEventKeysym keyboardEvent) == KeycodeQ
-          MouseButtonEvent mbe -> do 
-            putStrLn ("Mouse Event!\n" ++ show mbe) 
+          KeyboardEvent keyboardEvent -> do
+            putStrLn ("SDL Event!\n" ++ show event) 
+            walkWidgetWithEvents (E.sdlEvent2Event event) w
+            renderDebug w
+            pure $
+              keyboardEventKeyMotion keyboardEvent == Pressed &&
+              keysymKeycode (keyboardEventKeysym keyboardEvent) == KeycodeQ
+          _ -> do 
+            putStrLn ("SDL Event!\n" ++ show event) 
             walkWidgetWithEvents (E.sdlEvent2Event event) w
             renderDebug w
             pure False
-          _ -> pure False
+          
   qPresses <- mapM eventIsQPress events
   let qPressed = any (== True) qPresses
   rendererDrawColor renderer $= V4 0 0 255 255
   clear renderer
   present renderer
-  unless qPressed (appLoop renderer w)
+  appLoop renderer w
 
 
 testText = SDLStyledText {
