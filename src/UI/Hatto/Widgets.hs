@@ -19,6 +19,19 @@ import Control.Monad.IO.Class (liftIO, MonadIO)
 
 import Data.Functor ((<&>))
 
+import Data.Map as Map hiding (map)
+import Foreign.C.Types (CFloat)
+
+
+data SDLState = SDLState {
+    mainWindow    :: SDL.Window
+  , mainRenderer  :: SDL.Renderer
+  , loadedFonts   :: Map.Map (Text, Int) SDL.Font -- map from font names and sizes to actual fonts
+  , scaleXY       :: V2 CFloat -- in case we use highDPI, this will be the scale
+  , autoScale     :: Bool -- apply scaling automatically so that same logical size is used on high dpi displays
+  , defaultPixelFormat :: SDL.PixelFormat
+} deriving Show
+
 data TextStyle = TextStyle {
     fontName  :: Text
   , fontSize  :: !Int
@@ -122,6 +135,14 @@ walkWidgetWithEvents e mw = do
     mapM_ (walkWidgetWithEvents e) (children w)
     where processEventsInWidget e Widget{..} = mapM_ (\a -> a e) eventHandlers
 
+-- only send events to the widget if the condition is met
+walkWidgetWithEventsCond :: MonadIO m => (Widget m -> Bool) -> Event -> m (Widget m) -> m ()    
+walkWidgetWithEventsCond cond e mw = do
+    w <- mw
+    if cond w then processEventsInWidget e w >> mapM_ (walkWidgetWithEventsCond cond e) (children w)
+    else mapM_ (walkWidgetWithEventsCond cond e) (children w)
+    where processEventsInWidget e Widget{..} = mapM_ (\a -> a e) eventHandlers
+
 -- Walk a widget with a transformation function. Used e.g. for rendering caching etc.
 -- this one does it top-down (so if f changes children to [], there's no walking down the tree)
 -- Evaluating m Widget, then applying f to it, then mapping over children
@@ -151,13 +172,10 @@ hndlAlterText mt evt =
                 SDL.TextInputEvent ti -> updateMutState mt (<> SDL.textInputEventText ti)
                 SDL.KeyboardEvent ev  -> do
                     let k = SDL.keysymKeycode $ SDL.keyboardEventKeysym ev
-                    case k of
-                        SDL.KeycodeBackspace -> 
-                            -- checking press only 
-                            if SDL.keyboardEventKeyMotion ev == SDL.Pressed 
-                            then updateMutState mt (\txt -> if txt == "" then txt else T.init txt)
-                            else pure ()
-                        _ -> pure ()
+                    if (k == SDL.KeycodeBackspace) && (SDL.keyboardEventKeyMotion ev == SDL.Pressed)
+                    then updateMutState mt (\txt -> if txt == "" then txt else T.init txt)
+                    else pure ()
+                    
                 _ -> pure ()
         _ -> pure ()
 

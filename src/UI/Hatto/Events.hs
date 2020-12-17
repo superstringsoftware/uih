@@ -42,6 +42,12 @@ type EventHandlerM m = Event -> m ()
 instance Show (EventHandler w) where show _ = "[PureEventHandler]"
 
 -- various filters for events
+filterEvent :: MonadIO m  => m () -> (Event -> Bool) -> EventHandlerM m
+filterEvent handler cond e = if cond e then handler else pure ()
+
+filterEventPayload :: MonadIO m  => m () -> (SE.EventPayload -> Bool) -> EventHandlerM m
+filterEventPayload handler cond e@(SDLEvent _ epl) = if cond epl then handler else pure ()
+
 onClick :: MonadIO m  => m () -> EventHandlerM m
 onClick handler (SDLEvent _ (SE.MouseButtonEvent mbe)) = handler
 onClick _ _ = pure ()
