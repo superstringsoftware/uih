@@ -33,10 +33,8 @@ import UI.Hatto.Widgets
 import UI.Hatto.App
 
 main :: IO ()
-main = runHatto $ do -- runHattoProgram (putStrLn "Hello") -- runFemtoSDLProgram prog1
-        b <- board' <$> (newMutState [0,0]) <*> (newMutState "Hello World")
-        renderDebug b
-        appLoop b
+main = do -- runHattoProgram (putStrLn "Hello") -- runFemtoSDLProgram prog1
+        board' <$> newMutState [0,0] <*> newMutState "Hello World" >>= runHatto
 
 runHattoProgram :: MonadIO m => m () -> IO ()
 runHattoProgram prog = do
@@ -48,7 +46,7 @@ runHattoProgram prog = do
         pf <- SDL.getWindowPixelFormat window
         
         -- lbl <- label <$> newMutState (0::Int)
-        b <- board' <$> (newMutState [0,0]) <*> (newMutState "Hello World")
+        b <- board' <$> newMutState [0,0] <*> newMutState "Hello World"
         renderDebug b
         appLoop b
 

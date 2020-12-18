@@ -53,7 +53,9 @@ onClick handler (SDLEvent _ (SE.MouseButtonEvent mbe)) = handler
 onClick _ _ = pure ()
 
 onLeftClick :: MonadIO m  => m () -> EventHandlerM m
-onLeftClick handler (SDLEvent _ (SE.MouseButtonEvent mbe)) = if (SE.mouseButtonEventButton mbe == SE.ButtonLeft) then handler else pure ()
+onLeftClick handler (SDLEvent _ (SE.MouseButtonEvent mbe)) = do
+  liftIO $ putStrLn "LeftClick!"
+  if (SE.mouseButtonEventButton mbe == SE.ButtonLeft) then (liftIO $ putStrLn "REALLY LeftClick!") >> handler else pure ()
 onLeftClick _ _ = pure ()
 
 onRightClick :: MonadIO m  => m () -> EventHandlerM m

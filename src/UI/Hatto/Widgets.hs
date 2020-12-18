@@ -93,7 +93,7 @@ data Element =
   WENone
   deriving (Show, Eq)
 
--- type ComponentData s p = (s,p) -- state and props
+
 
 -- Other approach: tree of monadic actions
 data Widget m = Widget {
@@ -226,8 +226,14 @@ board' ms mt = do
     pure Widget {
         element = WEDebug $ "Board state is: "  ++ show st,
         children = [
-            box (st!!0) (onLeftClick  $ updateMutState ms (const [1,0])),
-            box (st!!1) (onRightClick $ updateMutState ms (const [0,1])),
+            box (st!!0) (onLeftClick  $ (liftIO (putStrLn "handler running") >> updateMutState ms (const [1,0]))),
+            box (st!!1) (onRightClick $ do 
+                s1 <- readMutState ms
+                liftIO (putStrLn $ "handler RIGHT running for: " ++ (show s1))
+                updateMutState ms (const [0,1])
+                s2 <- readMutState ms
+                liftIO (putStrLn $ "After updating state: " ++ (show s2))
+                ),
             mkEditableLine mt
         ],
         eventHandlers = [],

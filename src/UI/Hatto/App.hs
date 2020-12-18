@@ -7,6 +7,8 @@ import UI.Hatto.Widgets
 
 import Data.IORef
 import Control.Monad.IO.Class (liftIO, MonadIO)
+import Control.Monad (foldM)
+import Data.Functor ((<&>))
 
 import SDL
 import SDL.Font
@@ -22,8 +24,8 @@ import UI.Hatto.SDL.Fonts
 
 
 -- main GUI function that runs the app
-runHatto :: MonadIO m => m () -> m ()
-runHatto prog = do
+runHatto :: MonadIO m => m (Widget m) -> m ()
+runHatto mainAppW = do
         liftIO SDL.initializeAll
         window <- liftIO $ SDL.createWindow "My SDL Application" mainWindowSettings
         liftIO $ showWindow window
@@ -41,7 +43,7 @@ runHatto prog = do
         initFonts sdlState
         readMutState sdlState >>= liftIO . putStrLn . show
 
-        prog
+        mainLoop True mainAppW
 
         liftIO $ destroyFonts sdlState
         liftIO $ destroyRenderer ren
@@ -57,8 +59,35 @@ runHattoTry prog = do
             r
 -}  
 
+-- Actual application loop will look as follows:
+-- Initialization of SDL
+-- Initialization of SDLStatus attached to the main App
+-- Creation of MutStates for all our Widgets -- how???
+-- actuall apploop of polling events and rendering the top-level App widget
+-- So the program in essence is the set of event handlers
 
-  
+mainLoop :: MonadIO m => Bool -> m (Widget m) -> m ()
+mainLoop isDirty mainAppW = do
+    -- isDirty <- getDirty
+    -- if isDirty then renderUI >> setClean else pure ()
+    if isDirty then renderUI mainAppW else pure ()
+    events <- SDL.pollEvents -- get the events queue from SDL
+    case events of 
+        [] -> mainLoop False mainAppW
+        _  -> do
+                shouldQuit <- foldM (\a e -> fireEvent mainAppW e <&> (|| a)) False events -- gather results of firing events, folding with "or" - neat, eh?
+                if shouldQuit
+                then liftIO (putStrLn "Good-bye.")
+                else mainLoop True mainAppW
+
+renderUI :: MonadIO m => m (Widget m) -> m ()
+renderUI = renderDebug
+    
+
+fireEvent :: MonadIO m => m (Widget m) -> SDL.Event -> m Bool
+fireEvent mw e = case e of
+    (SDL.Event _ SDL.QuitEvent) -> pure True 
+    _             -> walkWidgetWithEvents (sdlEvent2Event e) mw >> pure False 
 
 mainWindowSettings = defaultWindow
   { windowBorder       = True
