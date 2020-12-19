@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, DuplicateRecordFields, RecordWildCards, ExistentialQuantification #-}
+{-# LANGUAGE OverloadedStrings, DuplicateRecordFields, RecordWildCards, ExistentialQuantification, FlexibleContexts #-}
 
 module UI.Hatto.Widgets
 where
@@ -104,6 +104,7 @@ data Widget m = Widget {
     texture :: Maybe SDL.Texture,
     rerender :: Bool
 }
+
 
 -- Wrapper around IORefs to keep our mutable state for Components in m monad
 newtype MutState s = MutState {
@@ -241,3 +242,89 @@ board' ms mt = do
         texture = Nothing,
         rerender = True
     }
+
+-- need to cache mutable state somehow - StatefulSignals approach again?
+
+data StatefulWidget m = StatefulWidget {
+    renderS :: m Element,
+    childrenS :: [StatefulWidget m],
+    handlersS :: [EventHandlerM m]
+} | PureWidget {
+
+}
+
+-- render widgets to console
+renderDebugS :: MonadIO m => StatefulWidget m -> m ()
+renderDebugS sw = do 
+    rd sw
+    mapM_ renderDebugS (childrenS sw)
+    where rd StatefulWidget{..} = renderS >>= liftIO . putStrLn . show
+
+-- send a given event to all widgets in the tree
+walkWidgetWithEventsS :: MonadIO m => Event -> StatefulWidget m -> m ()
+walkWidgetWithEventsS e sw = do
+    processEventsInWidget e sw
+    mapM_ (walkWidgetWithEventsS e) (childrenS sw)
+    where processEventsInWidget e StatefulWidget{..} = mapM_ (\a -> a e) handlersS
+
+
+-- handwritten board in this approach
+boardS :: MonadIO m => m (StatefulWidget m)
+boardS = do
+    initState <- newMutState [0 :: Int,0 :: Int]
+    el <- mkEditableLineS "Hello World NEW!"
+    pure $ StatefulWidget {
+        renderS = readMutState initState >>= \s -> pure $ WEDebug $ "Board state is: "  ++ show s,
+        handlersS = [],
+        childrenS = [
+            el
+        ]
+    }
+
+-- New approach - hiding the state inside functions!
+-- new widget with independent state
+newStatefulWidget :: MonadIO m => s -> (s -> Element) -> (Event -> s -> s) -> m (StatefulWidget m)
+newStatefulWidget initS pureRender pureHandler = do
+    cache <- newMutState initS
+    newDependentWidget cache pureRender pureHandler
+
+-- widget dependent on some mutable state, used for creation of children!
+newDependentWidget :: MonadIO m => MutState s -> (s -> Element) -> (Event -> s -> s) -> m (StatefulWidget m)
+newDependentWidget cache pureRender pureHandler = do
+    let mod f = updateMutState cache f 
+    let ren = readMutState cache <&> pureRender
+    let han = updateMutState cache . pureHandler
+    pure $ StatefulWidget {
+                renderS = ren
+              , handlersS = [han]
+              , childrenS = []
+           }
+
+mkEditableLineS :: MonadIO m => Text -> m (StatefulWidget m)
+mkEditableLineS txt = 
+    newStatefulWidget txt
+                      (\t -> WETextLabel { text = t, textAlign = (VAlignMiddle, HAlignMiddle), textStyle = Just defaultTextStyle})
+                      hndlAlterTextPure
+
+
+hndlAlterTextPure :: Event -> Text -> Text
+hndlAlterTextPure evt txt = 
+    case evt of
+        SDLEvent _ evt' -> 
+            case evt' of
+                SDL.TextInputEvent ti -> txt <> SDL.textInputEventText ti
+                SDL.KeyboardEvent ev  -> do
+                    let k = SDL.keysymKeycode $ SDL.keyboardEventKeysym ev
+                    if (k == SDL.KeycodeBackspace) && (SDL.keyboardEventKeyMotion ev == SDL.Pressed)
+                    then if txt == "" then txt else T.init txt
+                    else txt    
+                _ -> txt
+        _ -> txt
+
+
+-- newStatefulWidget :: 
+boxS :: MonadIO m => Int -> m (StatefulWidget m)
+boxS i = 
+    newStatefulWidget i (\i' -> WEDebug $ "Cell: " ++ show i) (const id)
+
+

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 34de99690558d8681e6b56fae5873d8869de5343a368e758615d933b55fa600c
+-- hash: 7f0143a9208a9f7aec9a4c67f3f26f44f99585d8a716200a533e24721896ffaf
 
 name:           uih
 version:        0.1.0.0
@@ -82,7 +82,7 @@ executable ng
       Paths_uih
   hs-source-dirs:
       examples/ng
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N -fprof-cafs
   build-depends:
       StateVar
     , base
