@@ -12,7 +12,9 @@ module UI.Hatto.Events
   , sdlEvent2Event
   , onClick
   , onLeftClick
+  , isLeftClick
   , onRightClick
+  , isRightClick
 )
 
 where
@@ -53,11 +55,15 @@ onClick handler (SDLEvent _ (SE.MouseButtonEvent mbe)) = handler
 onClick _ _ = pure ()
 
 onLeftClick :: MonadIO m  => m () -> EventHandlerM m
-onLeftClick handler (SDLEvent _ (SE.MouseButtonEvent mbe)) = do
-  liftIO $ putStrLn "LeftClick!"
-  if (SE.mouseButtonEventButton mbe == SE.ButtonLeft) then (liftIO $ putStrLn "REALLY LeftClick!") >> handler else pure ()
-onLeftClick _ _ = pure ()
+onLeftClick handler e = if isLeftClick e then (liftIO $ putStrLn "REALLY LeftClick!") >> handler else pure ()
+
+isLeftClick :: Event -> Bool
+isLeftClick (SDLEvent _ (SE.MouseButtonEvent mbe)) = SE.mouseButtonEventButton mbe == SE.ButtonLeft
+isLeftClick _ = False
+
+isRightClick :: Event -> Bool
+isRightClick (SDLEvent _ (SE.MouseButtonEvent mbe)) = SE.mouseButtonEventButton mbe == SE.ButtonRight 
+isRightClick _ = False
 
 onRightClick :: MonadIO m  => m () -> EventHandlerM m
-onRightClick handler (SDLEvent _ (SE.MouseButtonEvent mbe)) = if (SE.mouseButtonEventButton mbe == SE.ButtonRight) then handler else pure ()
-onRightClick _ _ = pure ()
+onRightClick handler e = if isRightClick e then handler else pure ()

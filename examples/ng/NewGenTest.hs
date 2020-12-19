@@ -34,7 +34,8 @@ import UI.Hatto.App
 
 main :: IO ()
 main = do -- runHattoProgram (putStrLn "Hello") -- runFemtoSDLProgram prog1
-        board' <$> newMutState [0,0] <*> newMutState "Hello World" >>= runHatto
+        -- board' <$> newMutState [0,0] <*> newMutState "Hello World" >>= runHatto
+        boardS >>= runHattoS
 
 runHattoProgram :: MonadIO m => m () -> IO ()
 runHattoProgram prog = do

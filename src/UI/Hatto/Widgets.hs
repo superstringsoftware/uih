@@ -268,16 +268,24 @@ walkWidgetWithEventsS e sw = do
     where processEventsInWidget e StatefulWidget{..} = mapM_ (\a -> a e) handlersS
 
 
--- handwritten board in this approach
+-- handwritten board in this approach -- WORKS!! Need a nicer interface!!!
 boardS :: MonadIO m => m (StatefulWidget m)
 boardS = do
     initState <- newMutState [0 :: Int,0 :: Int]
     el <- mkEditableLineS "Hello World NEW!"
+    el1 <- newDependentWidget 
+                initState
+                (\s -> WEDebug $ "Cell: " ++ show (s !! 0))
+                (\e -> if isLeftClick e then const [1,0] else id )
+    el2 <- newDependentWidget 
+                initState
+                (\s -> WEDebug $ "Cell: " ++ show (s !! 1))
+                (\e -> if isRightClick e then const [0,1] else id )
     pure $ StatefulWidget {
         renderS = readMutState initState >>= \s -> pure $ WEDebug $ "Board state is: "  ++ show s,
         handlersS = [],
         childrenS = [
-            el
+            el, el1, el2
         ]
     }
 
