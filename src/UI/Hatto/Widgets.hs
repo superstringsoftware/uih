@@ -267,19 +267,28 @@ walkWidgetWithEventsS e sw = do
     mapM_ (walkWidgetWithEventsS e) (childrenS sw)
     where processEventsInWidget e StatefulWidget{..} = mapM_ (\a -> a e) handlersS
 
+-- only send events to the widget if the condition is met
+walkWidgetWithEventsCondS :: MonadIO m => (StatefulWidget m -> Bool) -> Event -> StatefulWidget m -> m ()    
+walkWidgetWithEventsCondS cond e sw = do
+    if cond sw then processEventsInWidget e sw >> mapM_ (walkWidgetWithEventsCondS cond e) (childrenS sw)
+    else mapM_ (walkWidgetWithEventsCondS cond e) (childrenS sw)
+    where processEventsInWidget e StatefulWidget{..} = mapM_ (\a -> a e) handlersS
+
 
 -- handwritten board in this approach -- WORKS!! Need a nicer interface!!!
+boxS i = WEDebug $ "Cell: " ++ show i
+
 boardS :: MonadIO m => m (StatefulWidget m)
 boardS = do
     initState <- newMutState [0 :: Int,0 :: Int]
     el <- mkEditableLineS "Hello World NEW!"
-    el1 <- newDependentWidget 
+    el1 <- newDependentWidgetM 
                 initState
-                (\s -> WEDebug $ "Cell: " ++ show (s !! 0))
-                (\e -> if isLeftClick e then const [1,0] else id )
+                (\s -> boxS (s !! 0))
+                (onLeftClick  $ updateMutState initState (const [1,0]))
     el2 <- newDependentWidget 
                 initState
-                (\s -> WEDebug $ "Cell: " ++ show (s !! 1))
+                (\s -> boxS (s !! 1))
                 (\e -> if isRightClick e then const [0,1] else id )
     pure $ StatefulWidget {
         renderS = readMutState initState >>= \s -> pure $ WEDebug $ "Board state is: "  ++ show s,
@@ -308,6 +317,17 @@ newDependentWidget cache pureRender pureHandler = do
               , childrenS = []
            }
 
+newDependentWidgetM :: MonadIO m => MutState s -> (s -> Element) -> (Event -> m()) -> m (StatefulWidget m)
+newDependentWidgetM cache pureRender han = do
+    let mod f = updateMutState cache f 
+    let ren = readMutState cache <&> pureRender
+    pure $ StatefulWidget {
+                renderS = ren
+              , handlersS = [han]
+              , childrenS = []
+           }
+
+
 mkEditableLineS :: MonadIO m => Text -> m (StatefulWidget m)
 mkEditableLineS txt = 
     newStatefulWidget txt
@@ -330,9 +350,5 @@ hndlAlterTextPure evt txt =
         _ -> txt
 
 
--- newStatefulWidget :: 
-boxS :: MonadIO m => Int -> m (StatefulWidget m)
-boxS i = 
-    newStatefulWidget i (\i' -> WEDebug $ "Cell: " ++ show i) (const id)
 
 
