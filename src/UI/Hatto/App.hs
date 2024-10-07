@@ -50,11 +50,8 @@ bracketHatto prog = do
         liftIO $ destroyWindow window
         liftIO SDL.quit
 
-runHatto :: MonadIO m => m (Widget m) -> m()
+runHatto :: MonadIO m => StatefulWidget m -> m()
 runHatto mainAppW = bracketHatto (mainLoop True mainAppW)
-
-runHattoS :: MonadIO m => StatefulWidget m -> m()
-runHattoS mainAppW = bracketHatto (mainLoopS True mainAppW)
 
 
 {-
@@ -73,7 +70,8 @@ runHattoTry prog = do
 -- actuall apploop of polling events and rendering the top-level App widget
 -- So the program in essence is the set of event handlers
 
-mainLoop :: MonadIO m => Bool -> m (Widget m) -> m ()
+
+mainLoop :: MonadIO m => Bool -> StatefulWidget m -> m ()
 mainLoop isDirty mainAppW = do
     -- isDirty <- getDirty
     -- if isDirty then renderUI >> setClean else pure ()
@@ -87,34 +85,11 @@ mainLoop isDirty mainAppW = do
                 then liftIO (putStrLn "Good-bye.")
                 else mainLoop True mainAppW
 
-mainLoopS :: MonadIO m => Bool -> StatefulWidget m -> m ()
-mainLoopS isDirty mainAppW = do
-    -- isDirty <- getDirty
-    -- if isDirty then renderUI >> setClean else pure ()
-    if isDirty then renderUIS mainAppW else pure ()
-    events <- SDL.pollEvents -- get the events queue from SDL
-    case events of 
-        [] -> mainLoopS False mainAppW
-        _  -> do
-                shouldQuit <- foldM (\a e -> fireEventS mainAppW e <&> (|| a)) False events -- gather results of firing events, folding with "or" - neat, eh?
-                if shouldQuit
-                then liftIO (putStrLn "Good-bye.")
-                else mainLoopS True mainAppW
-
-renderUI :: MonadIO m => m (Widget m) -> m ()
-renderUI = renderDebug
-
-renderUIS :: MonadIO m => StatefulWidget m -> m ()
-renderUIS = renderDebugS
+renderUI :: MonadIO m => StatefulWidget m -> m ()
+renderUI = renderDebugS
     
-
-fireEvent :: MonadIO m => m (Widget m) -> SDL.Event -> m Bool
-fireEvent mw e = case e of
-    (SDL.Event _ SDL.QuitEvent) -> pure True 
-    _             -> walkWidgetWithEvents (sdlEvent2Event e) mw >> pure False 
-
-fireEventS :: MonadIO m => StatefulWidget m -> SDL.Event -> m Bool
-fireEventS sw e = case e of
+fireEvent :: MonadIO m => StatefulWidget m -> SDL.Event -> m Bool
+fireEvent sw e = case e of
     (SDL.Event _ SDL.QuitEvent) -> pure True 
     _             -> walkWidgetWithEventsS (sdlEvent2Event e) sw >> pure False 
 

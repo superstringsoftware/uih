@@ -70,13 +70,11 @@ data WidgetSkeleton = WidgetSkeleton {
     wid :: Text
   , pos  :: V2 CInt
   , size :: V2 CInt
-  , isInFocus :: Bool
-  , isHovering :: Bool
 } deriving (Show, Eq)
 
 emptySkeleton = WidgetSkeleton {
     wid = "",
-    pos = V2 0 0, size = V2 0 0, isInFocus = False, isHovering = False
+    pos = V2 0 0, size = V2 0 0
 }
 
 
@@ -120,128 +118,7 @@ readMutState MutState{..} = liftIO $ readIORef state
 updateMutState :: MonadIO m => MutState s -> (s -> s) -> m ()
 updateMutState MutState{..} f = liftIO $ modifyIORef' state f
 
--- render widgets to console
-renderDebug :: MonadIO m => m (Widget m) -> m ()
-renderDebug a = do 
-    a' <- a
-    rd a'
-    mapM_ renderDebug (children a')
-    where rd Widget{..} = liftIO $ putStrLn $ show element
 
--- send a given event to all widgets in the tree
-walkWidgetWithEvents :: MonadIO m => Event -> m (Widget m) -> m ()
-walkWidgetWithEvents e mw = do
-    w <- mw
-    processEventsInWidget e w
-    mapM_ (walkWidgetWithEvents e) (children w)
-    where processEventsInWidget e Widget{..} = mapM_ (\a -> a e) eventHandlers
-
--- only send events to the widget if the condition is met
-walkWidgetWithEventsCond :: MonadIO m => (Widget m -> Bool) -> Event -> m (Widget m) -> m ()    
-walkWidgetWithEventsCond cond e mw = do
-    w <- mw
-    if cond w then processEventsInWidget e w >> mapM_ (walkWidgetWithEventsCond cond e) (children w)
-    else mapM_ (walkWidgetWithEventsCond cond e) (children w)
-    where processEventsInWidget e Widget{..} = mapM_ (\a -> a e) eventHandlers
-
--- Walk a widget with a transformation function. Used e.g. for rendering caching etc.
--- this one does it top-down (so if f changes children to [], there's no walking down the tree)
--- Evaluating m Widget, then applying f to it, then mapping over children
-transformWidget :: MonadIO m => (Widget m -> Widget m) -> m (Widget m) -> m (Widget m)
-transformWidget f mw = mw <&> f >>= \w -> return $ w { children = map (transformWidget f) (children w) }
-
--------------- Basic widgets with behavior
-
--- Editable line
-mkEditableLine :: MonadIO m => MutState Text -> m (Widget m)
-mkEditableLine mt = do
-    t <- readMutState mt
-    pure Widget {
-        element = WETextLabel { text = t, textAlign = (VAlignMiddle, HAlignMiddle), textStyle = Just defaultTextStyle},
-        children = [],
-        skeleton = emptySkeleton,
-        texture = Nothing,
-        rerender = True,
-        eventHandlers = [hndlAlterText mt]
-    }
-
-hndlAlterText :: MonadIO m => MutState Text -> Event -> m ()
-hndlAlterText mt evt = 
-    case evt of
-        SDLEvent _ evt' -> 
-            case evt' of
-                SDL.TextInputEvent ti -> updateMutState mt (<> SDL.textInputEventText ti)
-                SDL.KeyboardEvent ev  -> do
-                    let k = SDL.keysymKeycode $ SDL.keyboardEventKeysym ev
-                    if (k == SDL.KeycodeBackspace) && (SDL.keyboardEventKeyMotion ev == SDL.Pressed)
-                    then updateMutState mt (\txt -> if txt == "" then txt else T.init txt)
-                    else pure ()
-                    
-                _ -> pure ()
-        _ -> pure ()
-
-
------------- some tests
-
-label :: MonadIO m => MutState Int -> m (Widget m)
-label ms = do 
-    i <- readMutState ms
-    pure Widget {
-        element = WEDebug $ show i,
-        children = [],
-        eventHandlers = [\e -> updateMutState ms (+1)],
-        skeleton = emptySkeleton,
-        texture = Nothing,
-        rerender = True
-    }
-
--- simple tic-tac-toe-like-react example
-box :: MonadIO m => Int -> (Event -> m ()) -> m (Widget m)
-box i eh = pure Widget {
-        element = WEDebug $ "Cell: " ++ show i,
-        children = [],
-        eventHandlers = [eh],
-        skeleton = emptySkeleton,
-        texture = Nothing,
-        rerender = True
-    }
-
-board :: MonadIO m => MutState [Int] -> m (Widget m)
-board ms = do
-    st <- readMutState ms
-    pure Widget {
-        element = WEDebug $ "Board state is: "  ++ show st,
-        children = [
-            box (st!!0) (onLeftClick  $ updateMutState ms (const [1,0])),
-            box (st!!1) (onRightClick $ updateMutState ms (const [0,1]))
-        ],
-        eventHandlers = [],
-        skeleton = emptySkeleton,
-        texture = Nothing,
-        rerender = True
-    }
-
-board' :: MonadIO m => MutState [Int] -> MutState Text -> m (Widget m)
-board' ms mt = do
-    st <- readMutState ms
-    pure Widget {
-        element = WEDebug $ "Board state is: "  ++ show st,
-        children = [
-            box (st!!0) (onLeftClick  $ (liftIO (putStrLn "handler running") >> updateMutState ms (const [1,0]))),
-            box (st!!1) (onRightClick $ do 
-                s1 <- readMutState ms
-                liftIO (putStrLn $ "handler RIGHT running for: " ++ (show s1))
-                updateMutState ms (const [0,1])
-                s2 <- readMutState ms
-                liftIO (putStrLn $ "After updating state: " ++ (show s2))
-                ),
-            mkEditableLine mt
-        ],
-        eventHandlers = [],
-        skeleton = emptySkeleton,
-        texture = Nothing,
-        rerender = True
-    }
 
 -- need to cache mutable state somehow - StatefulSignals approach again?
 

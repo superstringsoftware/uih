@@ -1,6 +1,6 @@
 name:                uih
 version:             0.1.0.0
-github:              https://github.com/jhoxray/uih#readme
+# github:              "https://github.com/jhoxray/uih"
 license:             BSD3
 author:              "Author name here"
 maintainer:          "jho.xray@gmail.com"

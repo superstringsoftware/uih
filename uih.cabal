@@ -1,16 +1,14 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.33.0.
+-- This file has been generated from package.yaml by hpack version 0.37.0.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 7f0143a9208a9f7aec9a4c67f3f26f44f99585d8a716200a533e24721896ffaf
+-- hash: d7777f38f9ed91976fdd370a0a5c624327c73791cfdb7051a4ba95abaf0a51fc
 
 name:           uih
 version:        0.1.0.0
 description:    Please see the README on GitHub at <https://github.com/jhoxray/uih#readme>
-homepage:       https://github.com/https://github.com/jhoxray/uih#readme#readme
-bug-reports:    https://github.com/https://github.com/jhoxray/uih#readme/issues
 author:         Author name here
 maintainer:     jho.xray@gmail.com
 copyright:      2019 Author name here
@@ -20,24 +18,13 @@ build-type:     Simple
 extra-source-files:
     README.md
 
-source-repository head
-  type: git
-  location: https://github.com/https://github.com/jhoxray/uih#readme
-
 library
   exposed-modules:
       Color
       PreludeFixes
-      UI.Femto.Middle.Components
-      UI.Femto.Middle.Events
-      UI.Femto.Middle.Widgets
-      UI.Femto.SDL.Common
-      UI.Femto.SDL.Fonts
-      UI.Femto.SDL.Renderable
-      UI.Femto.SDL.SDLMonad
-      UI.Femto.SDL.SDLWidgets
       UI.Hatto.App
       UI.Hatto.Events
+      UI.Hatto.SDL.Common
       UI.Hatto.SDL.Fonts
       UI.Hatto.SDL.Rendering
       UI.Hatto.Widgets

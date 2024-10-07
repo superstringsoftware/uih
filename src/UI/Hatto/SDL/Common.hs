@@ -1,4 +1,4 @@
-module UI.Femto.SDL.Common where
+module UI.Hatto.SDL.Common where
 
 import SDL as SDL
 import qualified SDL.Image
