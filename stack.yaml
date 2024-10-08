@@ -4,7 +4,7 @@ packages:
 - .
 extra-deps: 
 # resolver: lts-9.11
-resolver: lts-14.4
+snapshot: lts-22.36
 
 # making our solution self contained in terms of the SDL and other non-haskell dependencies
 #

@@ -4,11 +4,13 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d7777f38f9ed91976fdd370a0a5c624327c73791cfdb7051a4ba95abaf0a51fc
+-- hash: 393083ac1b1d3b3d280ba4e43dfeeea6520e1a33df37b674023c121add56ac9b
 
 name:           uih
 version:        0.1.0.0
 description:    Please see the README on GitHub at <https://github.com/jhoxray/uih#readme>
+homepage:       https://github.com/superstringsoftware/uih#readme
+bug-reports:    https://github.com/superstringsoftware/uih/issues
 author:         Author name here
 maintainer:     jho.xray@gmail.com
 copyright:      2019 Author name here
@@ -18,10 +20,20 @@ build-type:     Simple
 extra-source-files:
     README.md
 
+source-repository head
+  type: git
+  location: https://github.com/superstringsoftware/uih
+
 library
   exposed-modules:
       Color
+      Control.Monad.MRWS
       PreludeFixes
+      TextEditor.Editor
+      TextEditor.SDL.Events
+      TextEditor.SDL.Fonts
+      TextEditor.SDL.Rendering
+      TextEditor.SDL.SDLMonad
       UI.Hatto.App
       UI.Hatto.Events
       UI.Hatto.SDL.Common
@@ -50,16 +62,53 @@ library
     , bytestring
     , clock
     , containers
+    , css-text
+    , exceptions
     , extra
     , ghc-prim
+    , html-parse
     , linear
     , mtl
     , random
     , sdl2
     , sdl2-image
     , sdl2-ttf
+    , stm
     , text
     , transformers
+    , unliftio-core
+    , vector
+  default-language: Haskell2010
+
+executable he
+  main-is: Main.hs
+  other-modules:
+      Paths_uih
+  hs-source-dirs:
+      he
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      StateVar
+    , base >=4.7 && <5
+    , bytestring
+    , clock
+    , containers
+    , css-text
+    , exceptions
+    , extra
+    , ghc-prim
+    , html-parse
+    , linear
+    , mtl
+    , random
+    , sdl2
+    , sdl2-image
+    , sdl2-ttf
+    , stm
+    , text
+    , transformers
+    , uih
+    , unliftio-core
     , vector
   default-language: Haskell2010
 
@@ -76,17 +125,22 @@ executable ng
     , bytestring
     , clock
     , containers
+    , css-text
+    , exceptions
     , extra
     , ghc-prim
+    , html-parse
     , linear
     , mtl
     , random
     , sdl2
     , sdl2-image
     , sdl2-ttf
+    , stm
     , text
     , transformers
     , uih
+    , unliftio-core
     , vector
   default-language: Haskell2010
 
@@ -103,17 +157,22 @@ executable t01
     , bytestring
     , clock
     , containers
+    , css-text
+    , exceptions
     , extra
     , ghc-prim
+    , html-parse
     , linear
     , mtl
     , random
     , sdl2
     , sdl2-image
     , sdl2-ttf
+    , stm
     , text
     , transformers
     , uih
+    , unliftio-core
     , vector
   default-language: Haskell2010
 
@@ -130,9 +189,12 @@ executable uih
     , bytestring
     , clock
     , containers
+    , css-text
     , directory
+    , exceptions
     , extra
     , ghc-prim
+    , html-parse
     , linear
     , mtl
     , random
@@ -140,9 +202,11 @@ executable uih
     , sdl2-gfx
     , sdl2-image
     , sdl2-ttf
+    , stm
     , text
     , transformers
     , uih
+    , unliftio-core
     , vector
   default-language: Haskell2010
 
@@ -160,16 +224,21 @@ test-suite math-test
     , bytestring
     , clock
     , containers
+    , css-text
+    , exceptions
     , extra
     , ghc-prim
+    , html-parse
     , linear
     , mtl
     , random
     , sdl2
     , sdl2-image
     , sdl2-ttf
+    , stm
     , text
     , transformers
     , uih
+    , unliftio-core
     , vector
   default-language: Haskell2010

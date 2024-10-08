@@ -50,7 +50,7 @@ class Hex t where
     -- | Convert string into hexadecimal.
     hex   :: t -> t
     -- | Convert from hexadecimal and fail on invalid input.
-    unhex :: Monad m => t -> m t
+    unhex :: MonadFail m => t -> m t
 
 
 instance Hex String where
@@ -65,7 +65,7 @@ instance Hex String where
     unhex [_]      = fail "Non-even length"
 
 
-c :: Monad m => Char -> m Int
+c :: MonadFail m => Char -> m Int
 c '0' = return 0
 c '1' = return 1
 c '2' = return 2

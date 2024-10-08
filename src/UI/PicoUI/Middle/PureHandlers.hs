@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings, DuplicateRecordFields, 
-RecordWildCards, OverloadedLists, PostfixOperators, 
-TypeSynonymInstances, FlexibleInstances, NoImplicitPrelude #-}
+RecordWildCards, OverloadedLists, PostfixOperators, OverloadedRecordDot,
+TypeSynonymInstances, FlexibleInstances, NoImplicitPrelude, TypeApplications #-}
 
 module UI.PicoUI.Middle.PureHandlers where
 
@@ -97,7 +97,7 @@ changeBackground bg widg = widg { background = bg }
 
 -- change text with modifying function
 alterText :: (Text -> Text) -> AbstractWidget -> AbstractWidget
-alterText f w = w { text = f (text (w :: AbstractWidget) ) }
+alterText f w = w { text = f w.text  }
 
 -- shortcut for append
 appendText txt = alterText (\txt0 -> txt0 <> txt)

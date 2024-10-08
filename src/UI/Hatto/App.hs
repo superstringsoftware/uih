@@ -24,7 +24,7 @@ import UI.Hatto.SDL.Fonts
 
 
 -- main GUI function that runs the app
-bracketHatto :: MonadIO m => m () -> m ()
+bracketHatto :: (MonadFail m, MonadIO m) => m () -> m ()
 bracketHatto prog = do
         liftIO SDL.initializeAll
         window <- liftIO $ SDL.createWindow "My SDL Application" mainWindowSettings
@@ -50,7 +50,7 @@ bracketHatto prog = do
         liftIO $ destroyWindow window
         liftIO SDL.quit
 
-runHatto :: MonadIO m => StatefulWidget m -> m()
+runHatto :: (MonadFail m, MonadIO m) => StatefulWidget m -> m()
 runHatto mainAppW = bracketHatto (mainLoop True mainAppW)
 
 

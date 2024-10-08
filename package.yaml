@@ -1,6 +1,6 @@
 name:                uih
 version:             0.1.0.0
-# github:              "https://github.com/jhoxray/uih"
+github:              superstringsoftware/uih
 license:             BSD3
 author:              "Author name here"
 maintainer:          "jho.xray@gmail.com"
@@ -36,12 +36,27 @@ dependencies:
 - StateVar
 - random
 - bytestring
+- html-parse
+- css-text
+- stm
+- unliftio-core
+- exceptions
 
 
 library:
   source-dirs: src
 
 executables:
+  he:
+    main:                Main.hs
+    source-dirs:         he
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - uih
+  
   uih:
     main:                Main.hs
     source-dirs:         app

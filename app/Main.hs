@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings, DuplicateRecordFields, OverloadedLists, 
-  RecursiveDo, ScopedTypeVariables #-}
+  RecursiveDo, ScopedTypeVariables, OverloadedRecordDot, FlexibleContexts #-}
 module Main where
 
 import Color
@@ -62,7 +62,7 @@ test_widgets = mdo
     -- make it so that it can receive focus
     makeFocusable w
     makeFocusable w1
-    let logW wi = liftIO $ putStrLn $ "Widget is: " ++ (unpack $ text (wi::AbstractWidget) )
+    let logW wi = liftIO $ putStrLn $ "Widget is: " ++ (unpack wi.text)
     -- sink w logW
     -- clickW <- onClickE w
     let logClick e = liftIO $ putStrLn $ "Click event: " ++ show e
