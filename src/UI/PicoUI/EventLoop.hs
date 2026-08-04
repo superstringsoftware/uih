@@ -107,7 +107,7 @@ appLoop draw = do
         [] -> appLoop False
         _  -> do
                 results <- mapM fireEvent events -- gather results
-                let quit = True `elem` results -- checking if any of the results is True
+                let quit = True `Prelude.elem` results -- checking if any of the results is True
                 if quit 
                 then liftIO (putStrLn "Good-bye.")
                 else appLoop True

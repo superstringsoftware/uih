@@ -54,7 +54,7 @@ data SDLFontData = SDLFontData {
     fntLineSkip :: !Int
 } deriving (Eq, Show)
 
-getDefaultFont :: MonadIO m => MutState SDLState -> m Font
+getDefaultFont :: (MonadIO m, MonadFail m) => MutState SDLState -> m Font
 getDefaultFont stm = do 
     st <- readMutState stm
     let fntm = Map.lookup defaultFontKey (loadedFonts st)
@@ -67,12 +67,12 @@ getFont stm txt = do
     pure $ Map.lookup txt (loadedFonts st)
           
 
-getFontOrDefault :: MonadIO m => MutState SDLState -> (Text, Int) -> m Font
+getFontOrDefault :: (MonadIO m, MonadFail m) => MutState SDLState -> (Text, Int) -> m Font
 getFontOrDefault stm txt = do
     fntm <- getFont stm txt
     maybe (getDefaultFont stm) pure fntm
 
-initFonts :: MonadIO m => MutState SDLState -> m ()
+initFonts :: (MonadIO m, MonadFail m) => MutState SDLState -> m ()
 initFonts stm = do
     st <- readMutState stm
     fnt <- initDefaultFont

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d7777f38f9ed91976fdd370a0a5c624327c73791cfdb7051a4ba95abaf0a51fc
+-- hash: a89731cf7b179f77fd4e26670c95535653597c6f46ef780c7a3d062d51e5e5fe
 
 name:           uih
 version:        0.1.0.0
@@ -40,6 +40,19 @@ library
       UI.PicoUI.Reactive.Internal.MonadicSignals
       UI.PicoUI.Reactive.Internal.StatefulSignals
       UI.PicoUI.Reactive.ReactiveWidgets
+      UI.UIHElm.App.Runtime
+      UI.UIHElm.App.SimpleRuntime
+      UI.UIHElm.Core.App
+      UI.UIHElm.Core.Types
+      UI.UIHElm.Core.Widget
+      UI.UIHElm.Events.Events
+      UI.UIHElm.Rendering.SDL
+      UI.UIHElm.Rendering.Simple
+      UI.UIHElm.Styling.DSL
+      UI.UIHElm.Styling.SimpleStyles
+      UI.UIHElm.Styling.Stylesheet
+      UI.UIHElm.Text.Layout
+      UI.UIHElm.Text.Rendering
   other-modules:
       Paths_uih
   hs-source-dirs:
@@ -63,6 +76,33 @@ library
     , vector
   default-language: Haskell2010
 
+executable counter-test
+  main-is: Main.hs
+  other-modules:
+      Paths_uih
+  hs-source-dirs:
+      examples/counter-test
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      StateVar
+    , base
+    , bytestring
+    , clock
+    , containers
+    , extra
+    , ghc-prim
+    , linear
+    , mtl
+    , random
+    , sdl2
+    , sdl2-image
+    , sdl2-ttf
+    , text
+    , transformers
+    , uih
+    , vector
+  default-language: Haskell2010
+
 executable ng
   main-is: NewGenTest.hs
   other-modules:
@@ -70,6 +110,87 @@ executable ng
   hs-source-dirs:
       examples/ng
   ghc-options: -threaded -rtsopts -with-rtsopts=-N -fprof-cafs
+  build-depends:
+      StateVar
+    , base
+    , bytestring
+    , clock
+    , containers
+    , extra
+    , ghc-prim
+    , linear
+    , mtl
+    , random
+    , sdl2
+    , sdl2-image
+    , sdl2-ttf
+    , text
+    , transformers
+    , uih
+    , vector
+  default-language: Haskell2010
+
+executable simple-test
+  main-is: Main.hs
+  other-modules:
+      Paths_uih
+  hs-source-dirs:
+      examples/simple-test
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      StateVar
+    , base
+    , bytestring
+    , clock
+    , containers
+    , extra
+    , ghc-prim
+    , linear
+    , mtl
+    , random
+    , sdl2
+    , sdl2-image
+    , sdl2-ttf
+    , text
+    , transformers
+    , uih
+    , vector
+  default-language: Haskell2010
+
+executable simple-visual-counter
+  main-is: Main.hs
+  other-modules:
+      Paths_uih
+  hs-source-dirs:
+      examples/simple-visual-counter
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      StateVar
+    , base
+    , bytestring
+    , clock
+    , containers
+    , extra
+    , ghc-prim
+    , linear
+    , mtl
+    , random
+    , sdl2
+    , sdl2-image
+    , sdl2-ttf
+    , text
+    , transformers
+    , uih
+    , vector
+  default-language: Haskell2010
+
+executable styled-counter
+  main-is: Main.hs
+  other-modules:
+      Paths_uih
+  hs-source-dirs:
+      examples/styled-counter
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       StateVar
     , base
@@ -117,6 +238,114 @@ executable t01
     , vector
   default-language: Haskell2010
 
+executable test-sdl
+  main-is: Main.hs
+  other-modules:
+      Paths_uih
+  hs-source-dirs:
+      examples/test-sdl
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      StateVar
+    , base
+    , bytestring
+    , clock
+    , containers
+    , extra
+    , ghc-prim
+    , linear
+    , mtl
+    , random
+    , sdl2
+    , sdl2-image
+    , sdl2-ttf
+    , text
+    , transformers
+    , uih
+    , vector
+  default-language: Haskell2010
+
+executable text-demo
+  main-is: Main.hs
+  other-modules:
+      Paths_uih
+  hs-source-dirs:
+      examples/text-demo
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      StateVar
+    , base
+    , bytestring
+    , clock
+    , containers
+    , extra
+    , ghc-prim
+    , linear
+    , mtl
+    , random
+    , sdl2
+    , sdl2-image
+    , sdl2-ttf
+    , text
+    , transformers
+    , uih
+    , vector
+  default-language: Haskell2010
+
+executable text-fixed-demo
+  main-is: Main.hs
+  other-modules:
+      Paths_uih
+  hs-source-dirs:
+      examples/text-fixed-demo
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      StateVar
+    , base
+    , bytestring
+    , clock
+    , containers
+    , extra
+    , ghc-prim
+    , linear
+    , mtl
+    , random
+    , sdl2
+    , sdl2-image
+    , sdl2-ttf
+    , text
+    , transformers
+    , uih
+    , vector
+  default-language: Haskell2010
+
+executable text-problems-demo
+  main-is: Main.hs
+  other-modules:
+      Paths_uih
+  hs-source-dirs:
+      examples/text-problems-demo
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      StateVar
+    , base
+    , bytestring
+    , clock
+    , containers
+    , extra
+    , ghc-prim
+    , linear
+    , mtl
+    , random
+    , sdl2
+    , sdl2-image
+    , sdl2-ttf
+    , text
+    , transformers
+    , uih
+    , vector
+  default-language: Haskell2010
+
 executable uih
   main-is: Main.hs
   other-modules:
@@ -138,6 +367,60 @@ executable uih
     , random
     , sdl2
     , sdl2-gfx
+    , sdl2-image
+    , sdl2-ttf
+    , text
+    , transformers
+    , uih
+    , vector
+  default-language: Haskell2010
+
+executable visual-counter
+  main-is: Main.hs
+  other-modules:
+      Paths_uih
+  hs-source-dirs:
+      examples/visual-counter
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      StateVar
+    , base
+    , bytestring
+    , clock
+    , containers
+    , extra
+    , ghc-prim
+    , linear
+    , mtl
+    , random
+    , sdl2
+    , sdl2-image
+    , sdl2-ttf
+    , text
+    , transformers
+    , uih
+    , vector
+  default-language: Haskell2010
+
+executable working-styled-counter
+  main-is: Main.hs
+  other-modules:
+      Paths_uih
+  hs-source-dirs:
+      examples/working-styled-counter
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      StateVar
+    , base
+    , bytestring
+    , clock
+    , containers
+    , extra
+    , ghc-prim
+    , linear
+    , mtl
+    , random
+    , sdl2
     , sdl2-image
     , sdl2-ttf
     , text

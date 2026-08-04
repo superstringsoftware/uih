@@ -97,7 +97,10 @@ changeBackground bg widg = widg { background = bg }
 
 -- change text with modifying function
 alterText :: (Text -> Text) -> AbstractWidget -> AbstractWidget
-alterText f w = w { text = f (text (w :: AbstractWidget) ) }
+alterText f w = case w of
+    Label { text = txt } -> w { text = f txt }
+    InputText { text = txt } -> w { text = f txt }
+    _ -> w
 
 -- shortcut for append
 appendText txt = alterText (\txt0 -> txt0 <> txt)

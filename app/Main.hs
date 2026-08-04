@@ -62,7 +62,11 @@ test_widgets = mdo
     -- make it so that it can receive focus
     makeFocusable w
     makeFocusable w1
-    let logW wi = liftIO $ putStrLn $ "Widget is: " ++ (unpack $ text (wi::AbstractWidget) )
+    let logW wi = liftIO $ putStrLn $ "Widget is: " ++ (unpack $ getWidgetText wi)
+        getWidgetText w = case w of
+            Label { text = txt } -> txt
+            InputText { text = txt } -> txt
+            _ -> ""
     -- sink w logW
     -- clickW <- onClickE w
     let logClick e = liftIO $ putStrLn $ "Click event: " ++ show e

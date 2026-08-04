@@ -86,6 +86,146 @@ executables:
     - base
     - text
 
+  # UIH-Elm Examples
+  counter-test:
+    main:                Main.hs
+    source-dirs:         examples/counter-test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - uih
+    - base
+    - text
+
+  visual-counter:
+    main:                Main.hs
+    source-dirs:         examples/visual-counter
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - uih
+    - base
+    - text
+    - sdl2
+    - sdl2-ttf
+    - containers
+
+  test-sdl:
+    main:                Main.hs
+    source-dirs:         examples/test-sdl
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - uih
+    - base
+    - sdl2
+    - sdl2-ttf
+
+  simple-test:
+    main:                Main.hs
+    source-dirs:         examples/simple-test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - uih
+    - base
+    - text
+    - sdl2
+
+  simple-visual-counter:
+    main:                Main.hs
+    source-dirs:         examples/simple-visual-counter
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - uih
+    - base
+    - text
+    - sdl2
+    - sdl2-ttf
+
+  styled-counter:
+    main:                Main.hs
+    source-dirs:         examples/styled-counter
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - uih
+    - base
+    - text
+    - sdl2
+    - sdl2-ttf
+    - containers
+
+  working-styled-counter:
+    main:                Main.hs
+    source-dirs:         examples/working-styled-counter
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - uih
+    - base
+    - text
+    - sdl2
+    - sdl2-ttf
+
+  text-demo:
+    main:                Main.hs
+    source-dirs:         examples/text-demo
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - uih
+    - base
+    - text
+    - sdl2
+    - sdl2-ttf
+    - containers
+
+  text-problems-demo:
+    main:                Main.hs
+    source-dirs:         examples/text-problems-demo
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - uih
+    - base
+    - text
+    - sdl2
+    - sdl2-ttf
+
+  text-fixed-demo:
+    main:                Main.hs
+    source-dirs:         examples/text-fixed-demo
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - uih
+    - base
+    - text
+    - sdl2
+    - sdl2-ttf
+
   
 
 tests:
